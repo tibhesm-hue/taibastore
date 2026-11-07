@@ -46,6 +46,11 @@ function locate(){
     else if(km<=3){tier='من 1 إلى 3 كم';fee=sub>=20?1:3}
     else{tier='أكثر من 3 كم';fee=5}
     const near=Math.abs(km-1)<0.15||Math.abs(km-3)<0.2;
+    if(q.get('pop')&&window.opener){
+      try{window.opener.postMessage({taibaLoc:1,lat:la,lng:ln,tier:km<1?'d1':km<=3?'d3':'d9'},'*');
+        $('msg').textContent='✅ تم تحديد موقعك. ارجع لصفحة الطلب.';$('retry').hidden=true;
+        setTimeout(()=>{try{window.close()}catch(e){}},1200);return}catch(e){}
+    }
     let d='';
     if(!isNaN(sub))d+='\n\n🛵 رسوم التوصيل المقدرة: '+(fee?fee+' ريال':'مجاني');
     if(near)d+='\n⚠️ راجع الدبوس';
