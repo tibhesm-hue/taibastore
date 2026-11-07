@@ -111,6 +111,7 @@ $('pick').onclick=async()=>{
     osm.addTo(map);isSat=false;
     map.on('click',e=>map.panTo(e.latlng));
   }else{map.setView(c,17)}
+  if(!cur&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{cur=[p.coords.latitude,p.coords.longitude];map.setView(cur,17)},()=>{},{enableHighAccuracy:true,timeout:15000});
   $('mapnote').textContent='';map.invalidateSize();setTimeout(()=>{map.invalidateSize();map.setView(map.getCenter())},150);
 };
 $('ok').onclick=()=>{const p=map.getCenter();document.body.classList.remove('mapping');show(p.lat,p.lng,false)};
