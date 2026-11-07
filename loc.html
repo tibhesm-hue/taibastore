@@ -34,7 +34,7 @@ body.mapping img,body.mapping h1,body.mapping #msg{display:none}
 <button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
 <a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
 <button id="pick" type="button" hidden>🗺️ موقع آخر؟ اختره من الخريطة</button>
-<div id="mapbox" hidden><p><b>حرّك الخريطة بإصبعك</b> أو <b>المس المكان</b> مباشرة، حتى يصير الدبوس 📍 على بيتك بالضبط، ثم اضغط اعتماد.</p><div id="tabs"><button id="tMap" type="button" class="on">🗺️ خريطة</button><button id="tSat" type="button">🛰️ صور الأرض</button></div><div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button><button id="me" type="button">🎯 ارجع لموقعي الحالي</button></div>
+<div id="mapbox" hidden><p><b>حرّك الخريطة بإصبعك</b> أو <b>المس المكان</b> مباشرة، حتى يصير الدبوس 📍 على بيتك بالضبط، ثم اضغط اعتماد.</p><div id="tabs"><button id="tMap" type="button" class="on">🗺️ خريطة</button><button id="tSat" type="button">🛰️ صور الأرض</button></div><p id="mapnote" class="err"></p><div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button><button id="me" type="button">🎯 ارجع لموقعي الحالي</button></div>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
 const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
@@ -45,7 +45,7 @@ const base=order||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
-let timer=null,cur=null,map=null,sat=null,osm=null,isSat=false;
+let timer=null,cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false;
 function fail(code){
   $('retry').hidden=false;$('retry').disabled=false;$('pick').hidden=false;
   $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
@@ -103,14 +103,18 @@ $('pick').onclick=async()=>{
   if(!map){
     map=L.map('map',{zoomControl:true}).setView(c,17);
     sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
-    osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+    osm=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'});
+    osmAlt=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+    let er=0;osm.on('tileerror',()=>{if(++er===3&&!isSat&&map.hasLayer(osm)){map.removeLayer(osm);osmAlt.addTo(map)}});
+    let er2=0;osmAlt.on('tileerror',()=>{if(++er2===3&&!isSat){$('mapnote').textContent='الخريطة بطيئة. جرّب «صور الأرض» أو تأكد من الإنترنت.'}});
+    sat.on('tileerror',()=>{$('mapnote').textContent='الصور بطيئة. جرّب «خريطة» أو تأكد من الإنترنت.'});
     osm.addTo(map);isSat=false;
     map.on('click',e=>map.panTo(e.latlng));
   }else{map.setView(c,17)}
-  setTimeout(()=>map.invalidateSize(),100);
+  $('mapnote').textContent='';map.invalidateSize();setTimeout(()=>{map.invalidateSize();map.setView(map.getCenter())},150);
 };
 $('ok').onclick=()=>{const p=map.getCenter();document.body.classList.remove('mapping');show(p.lat,p.lng,false)};
-function setLayer(satOn){if(!map||satOn===isSat)return;if(satOn){map.removeLayer(osm);sat.addTo(map)}else{map.removeLayer(sat);osm.addTo(map)}isSat=satOn;$('tSat').classList.toggle('on',satOn);$('tMap').classList.toggle('on',!satOn)}
+function setLayer(satOn){if(!map||satOn===isSat)return;if(satOn){map.removeLayer(osm);map.removeLayer(osmAlt);sat.addTo(map)}else{map.removeLayer(sat);(map.hasLayer(osmAlt)?0:osm.addTo(map))}isSat=satOn;$('tSat').classList.toggle('on',satOn);$('tMap').classList.toggle('on',!satOn)}
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
 $('me').onclick=()=>{if(cur)map.setView(cur,17)};
 $('retry').onclick=locate;
