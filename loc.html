@@ -20,7 +20,7 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 #mapwrap{position:relative}
 #map{height:58vh;min-height:300px;border-radius:14px;border:1px solid #cfd8d1}
 #cpin{position:absolute;left:50%;top:50%;width:44px;height:56px;margin:-52px 0 0 -22px;z-index:1000;pointer-events:none;font-size:46px;line-height:56px;text-align:center;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
-#me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:8px;padding:12px;font-size:16px}
+#lay,#me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:8px;padding:12px;font-size:16px}
 body.mapping img,body.mapping h1,body.mapping #msg{display:none}
 #mapbox p{margin:8px 0}
 #ok{background:#0a3d2d;color:#fff;margin-top:8px}
@@ -31,7 +31,7 @@ body.mapping img,body.mapping h1,body.mapping #msg{display:none}
 <button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
 <a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
 <button id="pick" type="button" hidden>🗺️ موقع آخر؟ اختره من الخريطة</button>
-<div id="mapbox" hidden><p><b>حرّك الخريطة بإصبعك</b> حتى يصير الدبوس 📍 على بيتك بالضبط، ثم اضغط اعتماد.</p><div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button><button id="me" type="button">🎯 ارجع لموقعي الحالي</button></div>
+<div id="mapbox" hidden><p><b>حرّك الخريطة بإصبعك</b> حتى يصير الدبوس 📍 على بيتك بالضبط، ثم اضغط اعتماد.</p><div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button><button id="me" type="button">🎯 ارجع لموقعي الحالي</button><button id="lay" type="button">🗺️ عرض الخريطة العادية</button></div>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
 const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
@@ -42,7 +42,7 @@ const base=order||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
-let timer=null,cur=null,map=null;
+let timer=null,cur=null,map=null,sat=null,osm=null,isSat=true;
 function fail(code){
   $('retry').hidden=false;$('retry').disabled=false;$('pick').hidden=false;
   $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
@@ -99,11 +99,14 @@ $('pick').onclick=async()=>{
   const c=cur||[SHOP_LAT,SHOP_LNG];
   if(!map){
     map=L.map('map',{zoomControl:true}).setView(c,17);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
+    osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+    sat.addTo(map);isSat=true;$('lay').textContent='🗺️ عرض الخريطة العادية';
   }else{map.setView(c,17)}
   setTimeout(()=>map.invalidateSize(),100);
 };
 $('ok').onclick=()=>{const p=map.getCenter();document.body.classList.remove('mapping');show(p.lat,p.lng,false)};
+$('lay').onclick=()=>{if(isSat){map.removeLayer(sat);osm.addTo(map);isSat=false;$('lay').textContent='🛰️ عرض صور الأرض (قمر صناعي)'}else{map.removeLayer(osm);sat.addTo(map);isSat=true;$('lay').textContent='🗺️ عرض الخريطة العادية'}};
 $('me').onclick=()=>{if(cur)map.setView(cur,17)};
 $('retry').onclick=locate;
 locate();
