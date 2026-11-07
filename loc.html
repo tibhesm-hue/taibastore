@@ -3,7 +3,7 @@
 <link rel="icon" href="logo.png">
 <style>
 body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
-img{width:90px;border-radius:22px}
+#logo{width:90px;border-radius:22px}
 h1{font-size:22px;margin:0}
 p{margin:0;font-size:16px;line-height:1.7;max-width:420px}
 button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer}
@@ -24,16 +24,15 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 #cpin{position:absolute;left:50%;top:50%;width:44px;height:56px;margin:-52px 0 0 -22px;z-index:1000;pointer-events:none;font-size:46px;line-height:56px;text-align:center;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
 #me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:8px;padding:12px;font-size:16px}
 #mapnote{font-size:14px;margin-bottom:6px}
-body.mapping img,body.mapping h1{display:none}
+body.mapping #logo,body.mapping h1{display:none}
 </style></head><body>
-<img src="logo.png" alt="">
+<img id="logo" src="logo.png" alt="">
 <h1>📍 نحدد موقعك ونرسل طلبك</h1>
 <p id="msg">وافق على إذن الموقع، وبعدها نعرض لك موقعك على الخريطة.</p>
 <div id="mapbox" hidden>
 <div id="tabs"><button id="tMap" type="button" class="on">🗺️ خريطة</button><button id="tSat" type="button">🛰️ صور الأرض</button></div>
 <p id="mapnote" class="err"></p>
 <div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div>
-<p id="diag" style="font-size:12px;color:#5b6b62;margin-top:6px;direction:ltr"></p>
 <button id="me" type="button">🎯 ارجع لموقعي الحالي</button>
 </div>
 <a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
@@ -91,9 +90,6 @@ async function openMap(c){
     sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
     osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
     osmAlt=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'});
-    const D={};const dg=(n,k)=>{D[n]=D[n]||{ok:0,er:0};D[n][k]++;$('diag').textContent=Object.keys(D).map(x=>x+': ok '+D[x].ok+' / fail '+D[x].er).join(' | ')};
-    [['osm',osm],['carto',osmAlt],['esri',sat]].forEach(([n,l])=>{l.on('tileload',()=>dg(n,'ok'));l.on('tileerror',()=>dg(n,'er'))});
-    $('diag').textContent='map: waiting for tiles…';
     const watch=(layer,onFail)=>{let ok=false,er=0;layer.on('tileload',()=>{ok=true});layer.on('tileerror',()=>{if(++er===3&&!ok)onFail()});layer.on('add',()=>{ok=false;er=0;setTimeout(()=>{if(!ok&&map.hasLayer(layer))onFail()},7000)})};
     watch(osm,()=>{if(!isSat&&map.hasLayer(osm)){map.removeLayer(osm);osmAlt.addTo(map)}});
     watch(osmAlt,()=>{if(!isSat)$('mapnote').textContent='الخريطة بطيئة أو محجوبة على شبكتك. جرّب «صور الأرض» أو شبكة ثانية.'});
