@@ -72,11 +72,13 @@ function show(la,ln){
   $('msg').className='';
   $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+(isNaN(sub)?'':'<br>🛵 رسوم التوصيل المقدرة: <b>'+(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:15px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
+let LP=null;
 function loadLeaflet(){
-  return new Promise((res,rej)=>{
+  if(LP)return LP;
+  return LP=new Promise((res,rej)=>{
     if(window.L)return res();
-    const l=document.createElement('link');l.rel='stylesheet';l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(l);
-    const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    const l=document.createElement('link');l.rel='stylesheet';l.href='lib/leaflet.css';document.head.appendChild(l);
+    const s=document.createElement('script');s.src='lib/leaflet.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);
   });
 }
 function setLayer(satOn){if(!map||satOn===isSat)return;if(satOn){map.removeLayer(osm);map.removeLayer(osmAlt);sat.addTo(map)}else{map.removeLayer(sat);(map.hasLayer(osmAlt)?0:osm.addTo(map))}isSat=satOn;$('tSat').classList.toggle('on',satOn);$('tMap').classList.toggle('on',!satOn)}
@@ -123,6 +125,7 @@ function locate(){
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
 $('me').onclick=()=>{if(cur&&map){map.setView(cur,17)}else locate()};
 $('retry').onclick=locate;
+loadLeaflet().catch(()=>{LP=null});
 locate();
 </script>
 </body></html>
