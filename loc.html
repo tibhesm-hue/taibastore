@@ -51,8 +51,8 @@ function locate(){
     if(near)d+='\n⚠️ قريب من حد الفئة، راجع الدبوس';
     const t=base+d+'\n\n📍 موقعي: https://maps.google.com/?q='+la.toFixed(6)+','+ln.toFixed(6);
     $('wa').href=wl(t);$('wa').hidden=false;$('retry').hidden=true;$('nol').hidden=true;
-    $('msg').textContent='✅ تم تحديد موقعك. يفتح الواتساب الحين، وإن ما انفتح اضغط الزر الأخضر.';
-    location.href=wl(t);
+    $('msg').innerHTML='✅ تم تحديد موقعك.'+(isNaN(sub)?'':'<br>🛵 رسوم التوصيل المقدرة: <b>'+(fee?fee+' ريال':'مجاني')+'</b>')+'<br>📷 اختياري: لو تبي، بعد ما يفتح الواتساب أرفق صورة بيتك من 📎.<br>يفتح الواتساب بعد ثواني، أو اضغط الزر الأخضر.';
+    setTimeout(()=>{location.href=wl(t)},5000);
   },e=>fail(e.code),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 }
 $('retry').onclick=locate;
