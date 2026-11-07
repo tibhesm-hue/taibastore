@@ -55,8 +55,9 @@ function calc(la,ln){
   const a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;
   const km=2*R*Math.asin(Math.sqrt(a));
   let fee;
-  if(km<1)fee=sub>=20?0:2;else if(km<=3)fee=sub>=20?1:3;else fee=5;
-  return {km,fee,near:Math.abs(km-1)<0.15||Math.abs(km-3)<0.2};
+  const rk=km/0.75;
+  if(rk<1)fee=sub>=20?0:2;else if(rk<=3)fee=sub>=20?1:3;else fee=5;
+  return {km:rk,fee,near:Math.abs(km-0.75)<0.12||Math.abs(km-2.25)<0.15};
 }
 function show(la,ln){
   const c=calc(la,ln),fee=c.fee;
