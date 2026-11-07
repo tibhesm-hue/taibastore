@@ -1,39 +1,48 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>حدد موقعك — أسواق طيبة</title>
+<title>موقعك للتوصيل — أسواق طيبة</title>
 <link rel="icon" href="logo.png">
 <style>
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
 img{width:90px;border-radius:22px}
 h1{font-size:22px;margin:0}
 p{margin:0;font-size:16px;line-height:1.7;max-width:420px}
-button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;border:0;border-radius:14px;padding:16px;font-size:19px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer}
-#go{background:#0a3d2d;color:#fff}
+button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer}
+#retry{background:#0a3d2d;color:#fff}
 #wa{background:#25d366;color:#fff}
+#nol{background:#e3e8e4;color:#13261d}
 .err{color:#b42318}
 </style></head><body>
 <img src="logo.png" alt="">
-<h1>📍 حدد موقعك للتوصيل</h1>
-<p id="msg">اضغط الزر ووافق على إذن الموقع، وبعدها يفتح لك الواتساب برسالة فيها موقعك، أرسلها.</p>
-<button id="go" type="button">📍 حدد موقعي</button>
-<a class="btn" id="wa" href="#" hidden>أرسل موقعي على الواتساب</a>
+<h1>📍 نحدد موقعك ونرسل طلبك</h1>
+<p id="msg">وافق على إذن الموقع، وبعدها يفتح الواتساب بطلبك كامل ومعه موقعك.</p>
+<button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
+<a class="btn" id="wa" href="#" hidden>أرسل الطلب على الواتساب</a>
+<a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
 const SHOP='966539137077';
-const o=(new URLSearchParams(location.search).get('o')||'').replace(/\D/g,'').slice(0,8);
-const msg=document.getElementById('msg'),go=document.getElementById('go'),wa=document.getElementById('wa');
-go.onclick=()=>{
-  if(!navigator.geolocation){msg.className='err';msg.textContent='جوالك ما يدعم تحديد الموقع. أرسل موقعك من الواتساب: 📎 ثم «الموقع».';return}
-  go.textContent='جاري تحديد موقعك…';go.disabled=true;
+const q=new URLSearchParams(location.search);
+const order=(q.get('m')||'').slice(0,3500);
+const o=(q.get('o')||'').replace(/\D/g,'').slice(0,8);
+const base=order||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
+const $=id=>document.getElementById(id);
+const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
+function fail(code){
+  $('retry').hidden=false;$('retry').disabled=false;
+  $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
+  $('msg').className='err';
+  $('msg').textContent=code===1?'ما انسمح بالموقع. اسمح للصفحة بالموقع من إعدادات المتصفح ثم حاول مرة ثانية، أو أرسل الطلب بدون موقع.':'ما قدرنا نحدد موقعك. تأكد أن GPS شغال وحاول مرة ثانية، أو أرسل الطلب بدون موقع.';
+}
+function locate(){
+  $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
+  if(!navigator.geolocation){fail(0);return}
   navigator.geolocation.getCurrentPosition(p=>{
-    const la=p.coords.latitude.toFixed(6),ln=p.coords.longitude.toFixed(6);
-    const t='📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':'')+':\nhttps://maps.google.com/?q='+la+','+ln;
-    wa.href='https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
-    wa.hidden=false;go.hidden=true;msg.className='';
-    msg.textContent='✅ تم تحديد موقعك. اضغط الزر الأخضر وأرسل الرسالة.';
-    location.href=wa.href;
-  },e=>{
-    go.disabled=false;go.textContent='📍 حاول مرة ثانية';msg.className='err';
-    msg.textContent=e.code===1?'رفضت إذن الموقع. افتح إعدادات المتصفح واسمح بالموقع لهذه الصفحة، أو أرسل موقعك من الواتساب: 📎 ثم «الموقع».':'ما قدرنا نحدد موقعك. تأكد أن الموقع (GPS) شغال في جوالك وحاول مرة ثانية.';
-  },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
-};
+    const t=base+'\n\n📍 موقعي: https://maps.google.com/?q='+p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);
+    $('wa').href=wl(t);$('wa').hidden=false;$('retry').hidden=true;$('nol').hidden=true;
+    $('msg').textContent='✅ تم تحديد موقعك. يفتح الواتساب الحين، وإن ما انفتح اضغط الزر الأخضر.';
+    location.href=wl(t);
+  },e=>fail(e.code),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+$('retry').onclick=locate;
+locate();
 </script>
 </body></html>
