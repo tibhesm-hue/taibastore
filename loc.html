@@ -19,7 +19,7 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 <a class="btn" id="wa" href="#" hidden>أرسل الطلب على الواتساب</a>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
-const SHOP='966539137077';
+const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
 const q=new URLSearchParams(location.search);
 const order=(q.get('m')||'').slice(0,3500);
 const o=(q.get('o')||'').replace(/\D/g,'').slice(0,8);
@@ -36,7 +36,20 @@ function locate(){
   $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
   if(!navigator.geolocation){fail(0);return}
   navigator.geolocation.getCurrentPosition(p=>{
-    const t=base+'\n\n📍 موقعي: https://maps.google.com/?q='+p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);
+    const la=p.coords.latitude,ln=p.coords.longitude,R=6371,r=x=>x*Math.PI/180;
+    const dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG);
+    const a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;
+    const km=2*R*Math.asin(Math.sqrt(a));
+    const sub=parseFloat(q.get('s'));
+    let tier,fee;
+    if(km<1){tier='أقل من 1 كم';fee=sub>=20?0:2}
+    else if(km<=3){tier='من 1 إلى 3 كم';fee=sub>=20?1:3}
+    else{tier='أكثر من 3 كم';fee=5}
+    const near=Math.abs(km-1)<0.15||Math.abs(km-3)<0.2;
+    let d='\n\n📏 المسافة التقريبية (بخط مستقيم): '+km.toFixed(1)+' كم ('+tier+')';
+    if(!isNaN(sub))d+='\n🛵 رسوم التوصيل المقترحة: '+(fee?fee+' ريال':'مجاني');
+    if(near)d+='\n⚠️ قريب من حد الفئة، راجع الدبوس';
+    const t=base+d+'\n\n📍 موقعي: https://maps.google.com/?q='+la.toFixed(6)+','+ln.toFixed(6);
     $('wa').href=wl(t);$('wa').hidden=false;$('retry').hidden=true;$('nol').hidden=true;
     $('msg').textContent='✅ تم تحديد موقعك. يفتح الواتساب الحين، وإن ما انفتح اضغط الزر الأخضر.';
     location.href=wl(t);
