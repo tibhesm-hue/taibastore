@@ -17,7 +17,11 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 #msg b{font-size:24px;color:#0a3d2d}
 #pick{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d}
 #mapbox{width:100%;max-width:420px}
-#map{height:340px;border-radius:14px;border:1px solid #cfd8d1}
+#mapwrap{position:relative}
+#map{height:58vh;min-height:300px;border-radius:14px;border:1px solid #cfd8d1}
+#cpin{position:absolute;left:50%;top:50%;width:44px;height:56px;margin:-52px 0 0 -22px;z-index:1000;pointer-events:none;font-size:46px;line-height:56px;text-align:center;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
+#me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:8px;padding:12px;font-size:16px}
+body.mapping img,body.mapping h1,body.mapping #msg{display:none}
 #mapbox p{margin:8px 0}
 #ok{background:#0a3d2d;color:#fff;margin-top:8px}
 </style></head><body>
@@ -27,7 +31,7 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 <button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
 <a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
 <button id="pick" type="button" hidden>🗺️ موقع آخر؟ اختره من الخريطة</button>
-<div id="mapbox" hidden><p>المس الخريطة أو اسحب الدبوس إلى بيتك، ثم اضغط اعتماد.</p><div id="map"></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button></div>
+<div id="mapbox" hidden><p><b>حرّك الخريطة بإصبعك</b> حتى يصير الدبوس 📍 على بيتك بالضبط، ثم اضغط اعتماد.</p><div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button><button id="me" type="button">🎯 ارجع لموقعي الحالي</button></div>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
 const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
@@ -38,7 +42,7 @@ const base=order||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
-let timer=null,cur=null,map=null,pin=null;
+let timer=null,cur=null,map=null;
 function fail(code){
   $('retry').hidden=false;$('retry').disabled=false;$('pick').hidden=false;
   $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
@@ -91,17 +95,16 @@ $('pick').onclick=async()=>{
   clearTimeout(timer);$('wa').hidden=true;$('retry').hidden=true;$('nol').hidden=true;$('pick').hidden=true;
   $('msg').className='';$('msg').textContent='جاري فتح الخريطة…';
   try{await loadLeaflet()}catch(e){$('msg').className='err';$('msg').textContent='ما انفتحت الخريطة. تأكد من الإنترنت وحاول مرة ثانية.';$('pick').hidden=false;return}
-  $('mapbox').hidden=false;$('msg').textContent='اختر موقع التوصيل على الخريطة.';
+  $('mapbox').hidden=false;document.body.classList.add('mapping');
   const c=cur||[SHOP_LAT,SHOP_LNG];
   if(!map){
-    map=L.map('map').setView(c,16);
+    map=L.map('map',{zoomControl:true}).setView(c,17);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-    pin=L.marker(c,{draggable:true}).addTo(map);
-    map.on('click',e=>pin.setLatLng(e.latlng));
-  }else{map.setView(c,16);pin.setLatLng(c);setTimeout(()=>map.invalidateSize(),50)}
+  }else{map.setView(c,17)}
   setTimeout(()=>map.invalidateSize(),100);
 };
-$('ok').onclick=()=>{const p=pin.getLatLng();show(p.lat,p.lng,false)};
+$('ok').onclick=()=>{const p=map.getCenter();document.body.classList.remove('mapping');show(p.lat,p.lng,false)};
+$('me').onclick=()=>{if(cur)map.setView(cur,17)};
 $('retry').onclick=locate;
 locate();
 </script>
