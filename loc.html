@@ -33,6 +33,7 @@ body.mapping img,body.mapping h1{display:none}
 <div id="tabs"><button id="tMap" type="button" class="on">🗺️ خريطة</button><button id="tSat" type="button">🛰️ صور الأرض</button></div>
 <p id="mapnote" class="err"></p>
 <div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div>
+<p id="diag" style="font-size:12px;color:#5b6b62;margin-top:6px;direction:ltr"></p>
 <button id="me" type="button">🎯 ارجع لموقعي الحالي</button>
 </div>
 <a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
@@ -90,6 +91,9 @@ async function openMap(c){
     sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
     osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
     osmAlt=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'});
+    const D={};const dg=(n,k)=>{D[n]=D[n]||{ok:0,er:0};D[n][k]++;$('diag').textContent=Object.keys(D).map(x=>x+': ok '+D[x].ok+' / fail '+D[x].er).join(' | ')};
+    [['osm',osm],['carto',osmAlt],['esri',sat]].forEach(([n,l])=>{l.on('tileload',()=>dg(n,'ok'));l.on('tileerror',()=>dg(n,'er'))});
+    $('diag').textContent='map: waiting for tiles…';
     const watch=(layer,onFail)=>{let ok=false,er=0;layer.on('tileload',()=>{ok=true});layer.on('tileerror',()=>{if(++er===3&&!ok)onFail()});layer.on('add',()=>{ok=false;er=0;setTimeout(()=>{if(!ok&&map.hasLayer(layer))onFail()},7000)})};
     watch(osm,()=>{if(!isSat&&map.hasLayer(osm)){map.removeLayer(osm);osmAlt.addTo(map)}});
     watch(osmAlt,()=>{if(!isSat)$('mapnote').textContent='الخريطة بطيئة أو محجوبة على شبكتك. جرّب «صور الأرض» أو شبكة ثانية.'});
