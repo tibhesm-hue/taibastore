@@ -60,6 +60,7 @@ function calc(la,ln){
   return {km:rk,lv:rk<1?1:rk<=3?2:3,fee,near:Math.abs(km-0.75)<0.12||Math.abs(km-2.25)<0.15};
 }
 function calc2(la,ln,sv){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2,rk=2*R*Math.asin(Math.sqrt(a))/0.75;return rk<1?(sv>=20?0:2):rk<=3?(sv>=20?1:3):5}
+const BC={0:'90010',2:'90012',1:'90021',3:'90023',5:'90035'};
 let CR=null;
 function dcode(lv){if(CR===null)CR=Math.floor(Math.random()*33);const E=Math.floor((Date.now()+3*3600e3)/864e5),P=CR*30+(E%10)*3+(lv-1);return String((P*7919+1234)%9973).padStart(4,'0')}
 function show(la,ln){
@@ -74,7 +75,8 @@ function show(la,ln){
     body=re.test(base)?base.replace(re,()=>br):base+'\n\n'+br;
   }
   if(c.near)body+='\n⚠️ راجع الدبوس';
-  body+='\n🔖 رمز للكاشير: '+dcode(c.lv);
+  if(isNaN(sub)){const b0=BC[calc2(la,ln,0)],b20=BC[calc2(la,ln,25)];body+='\n🔖 باركود التوصيل للكاشير: '+b0+(b20!==b0?' — ولو الطلب 20 ريال فأكثر: '+b20:'');}
+  else body+='\n🔖 باركود التوصيل للكاشير: '+BC[fee];
   const t=body+'\n\n📍 موقعي: https://maps.google.com/?q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
