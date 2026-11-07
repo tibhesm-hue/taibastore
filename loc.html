@@ -25,7 +25,7 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 <h1>📍 نحدد موقعك ونرسل طلبك</h1>
 <p id="msg">وافق على إذن الموقع، وبعدها يفتح الواتساب بطلبك كامل ومعه موقعك.</p>
 <button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
-<a class="btn" id="wa" href="#" hidden>أرسل الطلب على الواتساب</a>
+<a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
 <button id="pick" type="button" hidden>🗺️ موقع آخر؟ اختره من الخريطة</button>
 <div id="mapbox" hidden><p>المس الخريطة أو اسحب الدبوس إلى بيتك، ثم اضغط اعتماد.</p><div id="map"></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button></div>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
@@ -73,8 +73,7 @@ function show(la,ln,auto){
   const t=body+'\n\n📍 موقعي: https://maps.google.com/?q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t);$('wa').hidden=false;$('retry').hidden=true;$('nol').hidden=true;$('pick').hidden=false;$('mapbox').hidden=true;
   $('msg').className='';
-  $('msg').innerHTML='✅ تم تحديد موقعك.'+(isNaN(sub)?'':'<br>🛵 رسوم التوصيل المقدرة: <b>'+(fee?fee+' ريال':'مجاني')+'</b>')+'<br>📷 اختياري: لو تبي، بعد ما يفتح الواتساب أرفق صورة بيتك من 📎.<br>'+(auto?'يفتح الواتساب بعد ثواني، أو اضغط الزر الأخضر.':'اضغط الزر الأخضر لإرسال الطلب.');
-  if(auto)timer=setTimeout(()=>{location.href=wl(t)},5000);
+  $('msg').innerHTML='✅ تم تحديد موقعك.'+(isNaN(sub)?'':'<br>🛵 رسوم التوصيل المقدرة: <b>'+(fee?fee+' ريال':'مجاني')+'</b>')+'<br>📷 اختياري: لو تبي، بعد ما يفتح الواتساب أرفق صورة بيتك من 📎.<br>'+'إذا الموقع صحيح اضغط «موافق»، وإلا اختر موقعًا آخر من الخريطة.';
 }
 function locate(){
   $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
