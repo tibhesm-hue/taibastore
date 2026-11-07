@@ -2,7 +2,7 @@
 <title>موقعك للتوصيل — أسواق طيبة</title>
 <link rel="icon" href="logo.png">
 <style>
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
 img{width:90px;border-radius:22px}
 h1{font-size:22px;margin:0}
 p{margin:0;font-size:16px;line-height:1.7;max-width:420px}
@@ -15,26 +15,28 @@ button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;bord
 #msg{font-weight:700;font-size:18px}
 #msg:not(.err){color:#0b1f16}
 #msg b{font-size:24px;color:#0a3d2d}
-#pick{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d}
 #mapbox{width:100%;max-width:420px}
-#mapwrap{position:relative}
-#map{height:58vh;min-height:300px;border-radius:14px;border:1px solid #cfd8d1}
-#cpin{position:absolute;left:50%;top:50%;width:44px;height:56px;margin:-52px 0 0 -22px;z-index:1000;pointer-events:none;font-size:46px;line-height:56px;text-align:center;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
 #tabs{display:flex;gap:8px;margin-bottom:8px}
 #tabs button{padding:12px;font-size:16px;background:#fff;color:#0a3d2d;border:2px solid #0a3d2d}
 #tabs button.on{background:#0a3d2d;color:#fff}
+#mapwrap{position:relative}
+#map{height:48vh;min-height:280px;border-radius:14px;border:1px solid #cfd8d1}
+#cpin{position:absolute;left:50%;top:50%;width:44px;height:56px;margin:-52px 0 0 -22px;z-index:1000;pointer-events:none;font-size:46px;line-height:56px;text-align:center;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
 #me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:8px;padding:12px;font-size:16px}
-body.mapping img,body.mapping h1,body.mapping #msg{display:none}
-#mapbox p{margin:8px 0}
-#ok{background:#0a3d2d;color:#fff;margin-top:8px}
+#mapnote{font-size:14px;margin-bottom:6px}
+body.mapping img,body.mapping h1{display:none}
 </style></head><body>
 <img src="logo.png" alt="">
 <h1>📍 نحدد موقعك ونرسل طلبك</h1>
-<p id="msg">وافق على إذن الموقع، وبعدها يفتح الواتساب بطلبك كامل ومعه موقعك.</p>
-<button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
+<p id="msg">وافق على إذن الموقع، وبعدها نعرض لك موقعك على الخريطة.</p>
+<div id="mapbox" hidden>
+<div id="tabs"><button id="tMap" type="button" class="on">🗺️ خريطة</button><button id="tSat" type="button">🛰️ صور الأرض</button></div>
+<p id="mapnote" class="err"></p>
+<div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div>
+<button id="me" type="button">🎯 ارجع لموقعي الحالي</button>
+</div>
 <a class="btn" id="wa" href="#" hidden>✅ موافق، أرسل الطلب على الواتساب</a>
-<button id="pick" type="button" hidden>🗺️ موقع آخر؟ اختره من الخريطة</button>
-<div id="mapbox" hidden><p><b>حرّك الخريطة بإصبعك</b> أو <b>المس المكان</b> مباشرة، حتى يصير الدبوس 📍 على بيتك بالضبط، ثم اضغط اعتماد.</p><div id="tabs"><button id="tMap" type="button" class="on">🗺️ خريطة</button><button id="tSat" type="button">🛰️ صور الأرض</button></div><p id="mapnote" class="err"></p><div id="mapwrap"><div id="map"></div><div id="cpin">📍</div></div><button id="ok" type="button">✅ اعتمد هذا الموقع</button><button id="me" type="button">🎯 ارجع لموقعي الحالي</button></div>
+<button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
 const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
@@ -45,13 +47,8 @@ const base=order||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
-let timer=null,cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false;
-function fail(code){
-  $('retry').hidden=false;$('retry').disabled=false;$('pick').hidden=false;
-  $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
-  $('msg').className='err';
-  $('msg').textContent=code===1?'ما انسمح بالموقع. اسمح للصفحة بالموقع من إعدادات المتصفح ثم حاول مرة ثانية، أو اختر موقعك من الخريطة، أو أرسل الطلب بدون موقع.':'ما قدرنا نحدد موقعك. تأكد أن GPS شغال وحاول مرة ثانية، أو اختر موقعك من الخريطة، أو أرسل الطلب بدون موقع.';
-}
+let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null;
+const money=x=>String(Math.round(x*100)/100);
 function calc(la,ln){
   const R=6371,r=x=>x*Math.PI/180;
   const dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG);
@@ -61,15 +58,8 @@ function calc(la,ln){
   if(km<1)fee=sub>=20?0:2;else if(km<=3)fee=sub>=20?1:3;else fee=5;
   return {km,fee,near:Math.abs(km-1)<0.15||Math.abs(km-3)<0.2};
 }
-const money=x=>String(Math.round(x*100)/100);
-function show(la,ln,auto){
-  clearTimeout(timer);cur=[la,ln];
+function show(la,ln){
   const c=calc(la,ln),fee=c.fee;
-  if(q.get('pop')&&window.opener){
-    try{window.opener.postMessage({taibaLoc:1,lat:la,lng:ln,tier:c.km<1?'d1':c.km<=3?'d3':'d9'},'*');
-      $('msg').textContent='✅ تم تحديد موقعك. ارجع لصفحة الطلب.';$('retry').hidden=true;
-      setTimeout(()=>{try{window.close()}catch(e){}},1200);return}catch(e){}
-  }
   let body=base;
   if(!isNaN(sub)){
     const br='🧾 قيمة الطلب: '+money(sub)+' ريال\n🛵 التوصيل (تقديري): '+(fee?fee+' ريال':'مجاني')+'\n💰 الإجمالي التقريبي: '+money(sub+fee)+' ريال\n_والمحل يؤكد السعر النهائي_';
@@ -78,14 +68,9 @@ function show(la,ln,auto){
   }
   if(c.near)body+='\n⚠️ راجع الدبوس';
   const t=body+'\n\n📍 موقعي: https://maps.google.com/?q='+la.toFixed(6)+','+ln.toFixed(6);
-  $('wa').href=wl(t);$('wa').hidden=false;$('retry').hidden=true;$('nol').hidden=true;$('pick').hidden=false;$('mapbox').hidden=true;
+  $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
-  $('msg').innerHTML='✅ تم تحديد موقعك.'+(isNaN(sub)?'':'<br>🛵 رسوم التوصيل المقدرة: <b>'+(fee?fee+' ريال':'مجاني')+'</b>')+'<br>📷 اختياري: لو تبي، بعد ما يفتح الواتساب أرفق صورة بيتك من 📎.<br>'+'إذا الموقع صحيح اضغط «موافق»، وإلا اختر موقعًا آخر من الخريطة.';
-}
-function locate(){
-  $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
-  if(!navigator.geolocation){fail(0);return}
-  navigator.geolocation.getCurrentPosition(p=>show(p.coords.latitude,p.coords.longitude,true),e=>fail(e.code),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+(isNaN(sub)?'':'<br>🛵 رسوم التوصيل المقدرة: <b>'+(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:15px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
 function loadLeaflet(){
   return new Promise((res,rej)=>{
@@ -94,30 +79,49 @@ function loadLeaflet(){
     const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);
   });
 }
-$('pick').onclick=async()=>{
-  clearTimeout(timer);$('wa').hidden=true;$('retry').hidden=true;$('nol').hidden=true;$('pick').hidden=true;
-  $('msg').className='';$('msg').textContent='جاري فتح الخريطة…';
-  try{await loadLeaflet()}catch(e){$('msg').className='err';$('msg').textContent='ما انفتحت الخريطة. تأكد من الإنترنت وحاول مرة ثانية.';$('pick').hidden=false;return}
+function setLayer(satOn){if(!map||satOn===isSat)return;if(satOn){map.removeLayer(osm);map.removeLayer(osmAlt);sat.addTo(map)}else{map.removeLayer(sat);(map.hasLayer(osmAlt)?0:osm.addTo(map))}isSat=satOn;$('tSat').classList.toggle('on',satOn);$('tMap').classList.toggle('on',!satOn)}
+async function openMap(c){
+  try{await loadLeaflet()}catch(e){show(c[0],c[1]);return}
   $('mapbox').hidden=false;document.body.classList.add('mapping');
-  const c=cur||[SHOP_LAT,SHOP_LNG];
   if(!map){
     map=L.map('map',{zoomControl:true}).setView(c,17);
     sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
     osm=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'});
     osmAlt=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
     let er=0;osm.on('tileerror',()=>{if(++er===3&&!isSat&&map.hasLayer(osm)){map.removeLayer(osm);osmAlt.addTo(map)}});
-    let er2=0;osmAlt.on('tileerror',()=>{if(++er2===3&&!isSat){$('mapnote').textContent='الخريطة بطيئة. جرّب «صور الأرض» أو تأكد من الإنترنت.'}});
+    let er2=0;osmAlt.on('tileerror',()=>{if(++er2===3&&!isSat)$('mapnote').textContent='الخريطة بطيئة. جرّب «صور الأرض» أو تأكد من الإنترنت.'});
     sat.on('tileerror',()=>{$('mapnote').textContent='الصور بطيئة. جرّب «خريطة» أو تأكد من الإنترنت.'});
-    osm.addTo(map);isSat=false;
+    osm.addTo(map);
     map.on('click',e=>map.panTo(e.latlng));
+    map.on('moveend',()=>{clearTimeout(mt);mt=setTimeout(()=>{const p=map.getCenter();show(p.lat,p.lng)},200)});
   }else{map.setView(c,17)}
-  if(!cur&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{cur=[p.coords.latitude,p.coords.longitude];map.setView(cur,17)},()=>{},{enableHighAccuracy:true,timeout:15000});
-  $('mapnote').textContent='';map.invalidateSize();setTimeout(()=>{map.invalidateSize();map.setView(map.getCenter())},150);
-};
-$('ok').onclick=()=>{const p=map.getCenter();document.body.classList.remove('mapping');show(p.lat,p.lng,false)};
-function setLayer(satOn){if(!map||satOn===isSat)return;if(satOn){map.removeLayer(osm);map.removeLayer(osmAlt);sat.addTo(map)}else{map.removeLayer(sat);(map.hasLayer(osmAlt)?0:osm.addTo(map))}isSat=satOn;$('tSat').classList.toggle('on',satOn);$('tMap').classList.toggle('on',!satOn)}
+  $('mapnote').textContent='';
+  map.invalidateSize();setTimeout(()=>{map.invalidateSize();map.setView(map.getCenter())},150);
+  show(c[0],c[1]);
+}
+function fail(code){
+  gpsFailed=true;
+  $('retry').hidden=false;$('retry').disabled=false;
+  $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
+  $('msg').className='err';
+  $('msg').textContent=code===1?'ما انسمح بالموقع. اسمح للصفحة بالموقع من إعدادات المتصفح ثم حاول مرة ثانية، أو اختر موقعك من الخريطة أدناه.':'ما قدرنا نحدد موقعك. تأكد أن GPS شغال وحاول مرة ثانية، أو اختر موقعك من الخريطة أدناه.';
+  openMap(cur||[SHOP_LAT,SHOP_LNG]).then(()=>{$('nol').hidden=false});
+}
+function locate(){
+  $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
+  if(!navigator.geolocation){fail(0);return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    const la=p.coords.latitude,ln=p.coords.longitude;
+    if(q.get('pop')&&window.opener){
+      try{const c=calc(la,ln);window.opener.postMessage({taibaLoc:1,lat:la,lng:ln,tier:c.km<1?'d1':c.km<=3?'d3':'d9'},'*');
+        $('msg').textContent='✅ تم تحديد موقعك. ارجع لصفحة الطلب.';setTimeout(()=>{try{window.close()}catch(e){}},1200);return}catch(e){}
+    }
+    gpsFailed=false;cur=[la,ln];$('retry').hidden=true;
+    openMap(cur);
+  },e=>fail(e.code),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
-$('me').onclick=()=>{if(cur)map.setView(cur,17)};
+$('me').onclick=()=>{if(cur&&map){map.setView(cur,17)}else locate()};
 $('retry').onclick=locate;
 locate();
 </script>
