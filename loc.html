@@ -2,27 +2,27 @@
 <title>موقعك للتوصيل — أسواق طيبة</title>
 <link rel="icon" href="logo.png">
 <style>
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
 #logo{width:90px;border-radius:22px}
-h1{font-size:22px;margin:0}
-p{margin:0;font-size:16px;line-height:1.7;max-width:420px}
-button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer}
+h1{font-size:18px;margin:0}
+p{margin:0;font-size:14px;line-height:1.6;max-width:420px}
+button,a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;border:0;border-radius:12px;padding:11px;font-size:16px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer}
 #retry{background:#0a3d2d;color:#fff}
 #wa{background:#25d366;color:#fff}
 #nol{background:#e3e8e4;color:#13261d}
 .err{color:#b42318}
 [hidden]{display:none!important}
-#msg{font-weight:700;font-size:18px}
+#msg{font-weight:700;font-size:15px}
 #msg:not(.err){color:#0b1f16}
-#msg b{font-size:24px;color:#0a3d2d}
+#msg b{font-size:19px;color:#0a3d2d}
 #mapbox{width:100%;max-width:420px}
-#tabs{display:flex;gap:8px;margin-bottom:8px}
-#tabs button{padding:12px;font-size:16px;background:#fff;color:#0a3d2d;border:2px solid #0a3d2d}
+#tabs{display:flex;gap:6px;margin-bottom:6px}
+#tabs button{padding:7px;font-size:14px;background:#fff;color:#0a3d2d;border:2px solid #0a3d2d}
 #tabs button.on{background:#0a3d2d;color:#fff}
 #mapwrap{position:relative}
-#map{height:48vh;min-height:280px;border-radius:14px;border:1px solid #cfd8d1}
+#map{height:36vh;min-height:220px;border-radius:14px;border:1px solid #cfd8d1}
 #cpin{position:absolute;left:50%;top:50%;width:44px;height:56px;margin:-52px 0 0 -22px;z-index:1000;pointer-events:none;font-size:46px;line-height:56px;text-align:center;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
-#me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:8px;padding:12px;font-size:16px}
+#me{background:#fff;color:#0a3d2d;border:2px solid #0a3d2d;margin-top:6px;padding:8px;font-size:14px}
 #mapnote{font-size:14px;margin-bottom:6px}
 body.mapping #logo,body.mapping h1{display:none}
 </style></head><body>
@@ -76,7 +76,7 @@ function show(la,ln){
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
-  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل المقدرة: <b>'+(isNaN(sub)?((x,y)=>(x?x+' ريال':'مجاني')+(y!==x?'</b><br><span style="font-size:15px">ولو طلبك 20 ريال فأكثر: <b>'+(y?y+' ريال':'مجاني')+'</b></span>':'</b>'))(calc2(la,ln,0),calc2(la,ln,25)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:15px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
+  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل المقدرة: <b>'+(isNaN(sub)?((x,y)=>(x?x+' ريال':'مجاني')+(y!==x?'</b><br><span style="font-size:13px">ولو طلبك 20 ريال فأكثر: <b>'+(y?y+' ريال':'مجاني')+'</b></span>':'</b>'))(calc2(la,ln,0),calc2(la,ln,25)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
 let LP=null;
 function loadLeaflet(){
