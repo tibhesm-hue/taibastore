@@ -73,7 +73,7 @@ function show(la,ln){
   }
   {const ok=c.km;body+='\n🏍️ مستوى المندوب: '+(ok<1?'١':ok<2?'٢':'٣');}
   if(c.near)body+='\n⚠️ راجع الدبوس';
-  const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?q='+la.toFixed(6)+','+ln.toFixed(6);
+  const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
   $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل المقدرة: <b>'+(isNaN(sub)?((x,y)=>(x?x+' ريال':'مجاني')+(y!==x?'</b><br><span style="font-size:13px">ولو طلبك 20 ريال فأكثر: <b>'+(y?y+' ريال':'مجاني')+'</b></span>':'</b>'))(calc2(la,ln,0),calc2(la,ln,25)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
