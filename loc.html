@@ -63,11 +63,15 @@ function dcode(lv){if(CR===null)CR=Math.floor(Math.random()*33);const E=Math.flo
 function show(la,ln){
   const c=calc(la,ln),fee=c.fee;
   let body=base;
-  if(!isNaN(sub)){
-    const br='🧾 قيمة الطلب: '+money(sub)+' ريال';
+  if(isNaN(sub)){
+    const f20=calc2(la,ln,25),fl=calc2(la,ln,0);
+    {const F=x=>x?x+' ريال':'مجاني';body+=f20!==fl?'\n\n🛵 *رسوم التوصيل (للمجهز):*\nالفاتورة أقل من 20 ← *'+F(fl)+'*\nالفاتورة 20 فأكثر ← *'+F(f20)+'*':'\n\n🛵 *رسوم التوصيل:* '+F(fl);}
+  }else{
+    const br='🧾 قيمة الطلب: '+money(sub)+' ريال\n🛵 التوصيل (تقديري): '+(fee?fee+' ريال':'مجاني')+'\n💰 الإجمالي التقريبي: '+money(sub+fee)+' ريال\n_والمحل يؤكد السعر النهائي_';
     const re=/^.*المجموع التقريبي.*$/m;
     body=re.test(base)?base.replace(re,()=>br):base+'\n\n'+br;
   }
+  {const ok=c.km;body+='\n🏍️ مستوى المندوب: '+(ok<1?'١':ok<2?'٢':'٣');}
   if(c.near)body+='\n⚠️ راجع الدبوس';
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
