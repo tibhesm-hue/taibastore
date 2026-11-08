@@ -49,13 +49,13 @@ const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
 let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null;
 const money=x=>String(Math.round(x*100)/100);
-// مستويات التوصيل (المسافة = خط مستقيم ÷ 0.75): [حد المسافة كم، أقل من 20، 20 فأكثر]
+// مستويات التوصيل (المسافة = خط مستقيم من المحل بالكيلو): [حد المسافة كم، أقل من 20، 20 فأكثر]
 const TIERS=[[0.5,2,0],[1,3,1],[1.5,3,2],[2,4,3],[1e9,5,5]];
-function rkOf(la,ln){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(a))/0.75}
+function rkOf(la,ln){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(a))}
 function feeOf(rk,sv){for(const t of TIERS)if(rk<t[0])return sv>=20?t[2]:t[1];return 5}
 function calc(la,ln){
-  const rk=rkOf(la,ln);
-  return {km:rk,lv:rk<1?1:rk<=3?2:3,fee:feeOf(rk,sub),near:TIERS.slice(0,4).some(t=>Math.abs(rk-t[0])<0.1)};
+  const rk=rkOf(la,ln),ok=rk/0.75;
+  return {km:ok,lv:ok<1?1:ok<=3?2:3,fee:feeOf(rk,sub),near:TIERS.slice(0,4).some(t=>Math.abs(rk-t[0])<0.07)};
 }
 function calc2(la,ln,sv){return feeOf(rkOf(la,ln),sv)}
 let CR=null;
