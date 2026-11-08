@@ -1,0 +1,41 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>موقع التوصيل — أسواق طيبة</title>
+<link rel="icon" href="logo.png">
+<style>
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
+.card{width:100%;max-width:420px;background:#fff;border:1px solid #cfd8d1;border-radius:16px;padding:18px;box-sizing:border-box}
+h1{font-size:20px;margin:0 0 12px}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:18px;padding:10px 0;border-top:1px solid #eef1ee}
+.row:first-of-type{border-top:0}
+.row b{font-size:26px;color:#0a3d2d}
+.lv{margin-top:14px;font-size:18px}
+.lv b{font-size:28px;color:#0a3d2d}
+a.btn{display:block;width:100%;max-width:420px;box-sizing:border-box;border-radius:14px;padding:16px;font-size:18px;font-weight:700;text-decoration:none;background:#0a3d2d;color:#fff}
+.note{font-size:14px;color:#5b6b61;max-width:420px;line-height:1.7}
+.err{color:#b42318;font-weight:700;font-size:18px}
+[hidden]{display:none!important}
+</style></head><body>
+<div class="card" id="out"></div>
+<a class="btn" id="go" hidden>🗺️ افتح الموقع في قوقل ماب</a>
+<p class="note" id="nt" hidden>الرسوم هنا محسوبة من مكان البيت. اعتمد عليها، لا على سطر الرسوم في الرسالة.</p>
+<script>
+// نفس حساب صفحة الموقع loc.html — أي تعديل على المستويات يُعدَّل في الملفين
+const SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
+const TIERS=[[0.5,2,0],[1,2,1],[1.5,3,2],[2,4,3],[1e9,5,5]];
+function rkOf(la,ln){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(a))}
+function feeOf(rk,sv){for(const t of TIERS)if(rk<t[0])return sv>=20?t[2]:t[1];return 5}
+const F=x=>x?x+' ريال':'مجاني';
+const m=(new URLSearchParams(location.search).get('q')||'').match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+const out=document.getElementById('out');
+if(!m){out.innerHTML='<p class="err">الرابط ناقص — ما فيه موقع.</p>';}
+else{
+  const la=+m[1],ln=+m[2],rk=rkOf(la,ln),lo=feeOf(rk,0),hi=feeOf(rk,25),ok=rk/0.75,lv=ok<1?'١':ok<2?'٢':'٣';
+  out.innerHTML='<h1>رسوم التوصيل</h1>'+(lo!==hi
+    ?'<div class="row"><span>الفاتورة أقل من 20</span><b>'+F(lo)+'</b></div><div class="row"><span>الفاتورة 20 فأكثر</span><b>'+F(hi)+'</b></div>'
+    :'<div class="row"><span>أي فاتورة</span><b>'+F(lo)+'</b></div>')
+    +'<div class="lv">مستوى المندوب: <b>'+lv+'</b></div>';
+  const g=document.getElementById('go');g.href='https://maps.google.com/?q='+la+','+ln;g.hidden=false;
+  document.getElementById('nt').hidden=false;
+}
+</script>
+</body></html>
