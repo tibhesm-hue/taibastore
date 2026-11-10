@@ -26,7 +26,11 @@ document.addEventListener("visibilitychange",function(){if(SENT&&document.visibi
 var CHKT={ikhlas:["قل هو الله أحد","الله الصمد","لم يلد ولم يولد","ولم يكن له كفوا أحد"],fatiha:["بسم الله الرحمن الرحيم","الحمد لله رب العالمين","الرحمن الرحيم","مالك يوم الدين","إياك نعبد وإياك نستعين","اهدنا الصراط المستقيم","صراط الذين أنعمت عليهم غير المغضوب عليهم ولا الضالين"]},EXP=CHKT[Q.chk]||null,SR=null,srOn=false,HEARD=[],SRLOG=[],CUR="";if(EXP&&!Q.trk&&!Q.rec&&!Q.wh&&!Q.gqt)Q.sro="1";
 function nrm(w){return w.replace(/[ً-ٰٟۖ-ۭـ‌-‏]/g,"").replace(/[أإآٱٲٳ]/g,"ا").replace(/[ىیےېي]/g,"ي").replace(/[کڪك]/g,"ك").replace(/[ةۀہھە]/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/ء/g,"").replace(/[^ء-ي]/g,"")}
 function lev(a,b){if(a===b)return 0;var m=a.length,n=b.length;if(Math.abs(m-n)>2)return 9;var p=[],c,i,j;for(j=0;j<=n;j++)p[j]=j;for(i=1;i<=m;i++){c=[i];for(j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
-function weq(a,b){if(a===b)return true;var L=Math.max(a.length,b.length);if(L<4)return false;var d=lev(a,b);return L>=7?d<=2:d<=1}
+function chit(E,H){var A=E.join(""),own=[];E.forEach(function(w,i){for(var k=0;k<w.length;k++)own.push(i)});var B=H.join(""),n=A.length,m=B.length;if(!n)return [];if(!m)return E.map(function(){return false});
+  var D=[],i,j;for(i=0;i<=n;i++)D.push(new Uint16Array(m+1));for(i=n-1;i>=0;i--){var r=D[i],r1=D[i+1];for(j=m-1;j>=0;j--)r[j]=A[i]===B[j]?r1[j+1]+1:(r1[j]>r[j+1]?r1[j]:r[j+1])}
+  var got=E.map(function(){return 0});i=0;j=0;while(i<n&&j<m){if(A[i]===B[j]){got[own[i]]++;i++;j++}else if(D[i+1][j]>=D[i][j+1])i++;else j++}
+  return E.map(function(w,k){return got[k]===w.length})}
+function weq(a,b){if(a===b)return true;var L=Math.max(a.length,b.length);if(L<4)return false;var d=lev(a,b);return L>=9?d<=2:d<=1}
 function words(t){return t.split(/\s+/).map(nrm).filter(function(x){return x})}
 function srStart(){var C=window.SpeechRecognition||window.webkitSpeechRecognition;if(!C){SRLOG.push("no SpeechRecognition");return}HEARD=[];SRLOG=[];srOn=true;
   function live(){var L=document.getElementById("live");if(L)L.textContent=(HEARD.concat(CUR?[CUR]:[])).join(" ")||"…"}
@@ -40,7 +44,7 @@ function lcs(A,B){var n=A.length,m=B.length,D=[],i,j;for(i=0;i<=n;i++){D.push(ne
 var RAW=false,VTH=0.04;function srOff(){SROFF=true;try{localStorage.setItem("tajsr","off")}catch(e){}}
 var REXP=null,RLAB=[],SROFF=Q.sr!=="1",NULLS=0,LASTCMP="",HASSR=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
 async function loadR(){if(!Q.r||EXP||!HASSR)return;try{var J=await (await fetch("q.json")).json(),X=[],L=[];Q.r.split(",").forEach(function(p){var m=/^(\d+):(\d+)-(\d+)$/.exec(p);if(!m)return;for(var a=+m[2];a<=+m[3];a++){var t=J[+m[1]-1]&&J[+m[1]-1][a-1];if(t){X.push(t);L.push(a)}}});if(X.length){REXP=X;RLAB=L}}catch(e){REXP=null}}
-function cmp(EX,LAB,TXT){if(TXT==null&&CUR){HEARD.push(CUR);CUR=""}var E=[],map=[];EX.forEach(function(a,ai){a.split(/\s+/).forEach(function(w){var k=nrm(w);if(!k)return;E.push(k);map.push([ai,w])})});var H=words(TXT!=null?TXT:HEARD.join(" ")),hit=lcs(E,H),ok=hit.filter(function(x){return x}).length,pc=Math.round(ok*100/Math.max(1,E.length)),lab=function(i){return LAB?LAB[i]:i+1};
+function cmp(EX,LAB,TXT){if(TXT==null&&CUR){HEARD.push(CUR);CUR=""}var E=[],map=[];EX.forEach(function(a,ai){a.split(/\s+/).forEach(function(w){var k=nrm(w);if(!k)return;E.push(k);map.push([ai,w])})});var H=words(TXT!=null?TXT:HEARD.join(" ")),h1=lcs(E,H),h2=chit(E,H),hit=E.map(function(x,i){return h1[i]||h2[i]}),ok=hit.filter(function(x){return x}).length,pc=Math.round(ok*100/Math.max(1,E.length)),lab=function(i){return LAB?LAB[i]:i+1};
   var h='<div class="card" style="text-align:right;font-size:22px;line-height:2.1">',cur=-1;map.forEach(function(x,i){if(x[0]!==cur){if(cur>=0)h+=' <span style="color:#888780;font-size:15px">('+lab(cur)+')</span><br>';cur=x[0]}h+='<span style="'+(hit[i]?"color:#0F6E56":"color:#A32D2D;background:#FCEBEB;border-radius:6px;padding:0 4px;text-decoration:underline")+'">'+esc(x[1])+'</span> '});h+=' <span style="color:#888780;font-size:15px">('+lab(cur)+')</span></div>';return{pc:pc,html:h,heard:H.length}}
 /* ---- تصحيح بنموذج يعمل داخل الجوال على التسجيل نفسه ---- */
 var ASR=null,ASRM="";
@@ -79,7 +83,7 @@ var GKEY=("d1q0bv1ATqTSv2uJV9zQ"+"qKa6YF3bydGWcjsF708PrjxUV3ed9S6N_ksg").split("
 function gqOn(){return !!REXP&&!!GKEY&&Q.gq==="1"}
 async function groqText(bl){var ty=(bl.type||"audio/webm").split(";")[0],ext=/mp4/.test(ty)?"m4a":/ogg/.test(ty)?"ogg":"webm";
   for(var tries=0;tries<4;tries++){var w=GLAST+3200-Date.now();if(w>0)await new Promise(function(r){setTimeout(r,w)});GLAST=Date.now();
-    var fd=new FormData();fd.append("file",new File([bl],"take."+ext,{type:ty}));fd.append("model",Q.gm||"whisper-large-v3");fd.append("language","ar");fd.append("response_format","json");fd.append("temperature","0");
+    var fd=new FormData();fd.append("file",new File([bl],"take."+ext,{type:ty}));fd.append("model",Q.gm||"whisper-large-v3");fd.append("language","ar");fd.append("response_format","json");fd.append("temperature","0");fd.append("prompt","تلاوة من القرآن الكريم.");
     var r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+GKEY},body:fd});
     if(r.status===429){await new Promise(function(x){setTimeout(x,8000*(tries+1))});continue}
     if(!r.ok){var t="";try{t=await r.text()}catch(e){}throw new Error("HTTP "+r.status+" "+t.slice(0,160))}
