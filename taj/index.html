@@ -20,6 +20,8 @@ var Q={};try{new URLSearchParams(location.hash.slice(1)||location.search.slice(1
 var NAME=Q.n||"",F=Q.s==="f",LES=Q.t||"",N=Math.max(1,Math.min(60,+Q.c||35)),RS=Math.max(4,+Q.rs||60),WHAT=Q.w||"التكرار",NEED=Math.max(3,Math.round(RS*0.5));
 var app=document.getElementById("app"),SK="taj|"+NAME+"|"+LES+"|"+N+"|"+WHAT+"|"+new Date().toDateString();
 var T=[],t0=0,stream=null,rec=null,recT=0,voiced=0,pk=0,iv=null,an=null,actx=null,busy=false,OUT=null,lock=null,endAt=0;
+var SENT=false,APP="https://claude.ai/artifact/7KTnUuYrXgnCqnU6PK7FQs";function goBack(){try{window.close()}catch(e){}setTimeout(function(){location.href=APP},400)}
+document.addEventListener("visibilitychange",function(){if(SENT&&document.visibilityState==="visible"){try{window.close()}catch(e){}}});
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function hm(t){var d=new Date(t),h=d.getHours(),m=d.getMinutes(),p=h<12?"ص":"م";h=h%12||12;return h+":"+(m<10?"0":"")+m+" "+p}
 function minW(n){return n===1?"دقيقة واحدة":(n===2?"دقيقتان":(n<=10?n+" دقائق":n+" دقيقة"))}
@@ -91,10 +93,10 @@ async function make(){if(busy)return;busy=true;var O=document.getElementById("ou
     var png=await new Promise(function(r){cv.toBlob(r,"image/png")}),fs=[new File([png],"injaz.png",{type:"image/png"})];T.forEach(function(x,i){var ty=(x.b.type||"audio/webm").split(";")[0],ext=/mp4/.test(ty)?"m4a":/ogg/.test(ty)?"ogg":"weba";fs.push(new File([x.b],"marrah-"+(i<9?"0":"")+(i+1)+"."+ext,{type:ty}))});OUT={files:fs}}
   busy=false;draw()}
 async function send(){if(!OUT)return;var O=document.getElementById("out"),ok=false;try{ok=navigator.canShare&&navigator.canShare({files:OUT.files})}catch(e){}
-  if(ok){try{await navigator.share({files:OUT.files});O.innerHTML='<div class="box ok">إذا أرسلته في الواتساب فقد انتهيت، بارك الله فيك 🌟<br>ارجع للبرنامج واضغط «أنهيت التكرار»</div><button class="b q" id="fin">مسح التسجيلات من الجوال</button>';document.getElementById("fin").onclick=function(){wipe();this.textContent="تم المسح";this.disabled=true};return}catch(e){if(e&&e.name==="AbortError")return}}
+  if(ok){try{await navigator.share({files:OUT.files});SENT=true;O.innerHTML='<div class="box ok">بارك الله فيك 🌟 إذا وصل الإرسال للجروب فقد انتهيت</div><button class="b g" id="back">↩️ ارجع للبرنامج</button><div class="m">في البرنامج اضغط زر الانتهاء</div>';document.getElementById("back").onclick=goBack;return}catch(e){if(e&&e.name==="AbortError")return}}
   if(OUT.v){var u=URL.createObjectURL(OUT.v);O.innerHTML='<div class="box bad">المشاركة المباشرة غير مدعومة في هذا المتصفح</div><a class="b p" href="'+u+'" download="'+OUT.files[0].name+'">⬇️ نزّل المقطع ثم أرسله من الواتساب</a>'}
   else O.innerHTML='<div class="box bad">المشاركة غير مدعومة هنا. افتح الصفحة من متصفح Chrome</div>'}
-(async function(){await idb();var S=await get();if(S&&S.T&&S.T.length){T=S.T;t0=S.t0||Date.now();endAt=S.e||0}
+(async function(){await idb();try{var today=new Date().toDateString(),rq=DB.transaction("s","readwrite").objectStore("s"),kq=rq.getAllKeys();kq.onsuccess=function(){(kq.result||[]).forEach(function(k){if(String(k).slice(-today.length)!==today)try{DB.transaction("s","readwrite").objectStore("s").delete(k)}catch(e){}})}}catch(e){}var S=await get();if(S&&S.T&&S.T.length){T=S.T;t0=S.t0||Date.now();endAt=S.e||0}
   if(!navigator.mediaDevices||typeof MediaRecorder==="undefined"){app.innerHTML=head()+'<div class="box bad">هذا المتصفح ما يدعم التسجيل. افتح الرابط من Chrome</div>';return}
   if(!LES&&!NAME){app.innerHTML='<div style="font-size:21px;font-weight:700">مسابقة تاج الوقار</div><div class="box inf">افتح هذه الصفحة من زر «سجّل التكرار» داخل برنامج المسابقة</div>';return}
   draw(T.length?"رجّعنا لك "+T.length+" مرة مسجّلة من قبل، كمّل":"")})();
