@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تاج الوقار — تجربة السماع المجاني</title><meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#F6F5F1;color:#2C2C2A;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;text-align:center}
+#app{max-width:480px;margin:0 auto;padding:16px}
+.b{display:block;width:100%;border:0;border-radius:16px;padding:16px;font-size:19px;font-weight:700;margin-top:12px;color:#fff;font-family:inherit;background:#185FA5}
+.b.g{background:#1D9E75}.b.r{background:#C0392B}.b.q{background:#E6E4DE;color:#2C2C2A}
+.card{background:#fff;border-radius:16px;padding:14px;margin-top:12px;text-align:right}
+.m{color:#5F5E5A;font-size:14px;margin-top:6px;line-height:1.7}
+.box{border-radius:12px;padding:12px;margin-top:10px;font-size:16px;line-height:1.7}
+.ok{background:#E1F5EE;color:#085041}.bad{background:#FCEBEB;color:#791F1F}.inf{background:#EEEDFE;color:#3C3489}
+.q{font-size:22px;line-height:2;margin-top:8px}
+.w{display:inline-block;margin:0 3px}.hit{color:#0F6E56}.miss{color:#C0392B;text-decoration:underline}
+#live{min-height:60px;font-size:20px;line-height:1.9;color:#0F6E56}
+.diag{direction:ltr;font-size:11px;color:#888;word-break:break-all;margin-top:10px;text-align:left}
+</style></head><body><div id="app"></div>
+<script>
+(function(){
+var EXP="قُلْ هُوَ اللَّهُ أَحَدٌ اللَّهُ الصَّمَدُ لَمْ يَلِدْ وَلَمْ يُولَدْ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ";
+var app=document.getElementById("app"),LOG=[],SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
+function log(t){LOG.push(t);var d=document.getElementById("diag");if(d)d.textContent=LOG.slice(-14).join(" | ")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function norm(s){return String(s).replace(/[ً-ٰٟۖ-ۭـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[^ء-ي\s]/g," ").trim()}
+function words(s){return norm(s).split(/\s+/).filter(Boolean)}
+function cmp(exp,heard){var E=words(exp),H=words(heard),n=E.length,m=H.length,D=[];for(var i=0;i<=n;i++){D.push(new Array(m+1).fill(0))}
+  for(var i=n-1;i>=0;i--)for(var j=m-1;j>=0;j--)D[i][j]=E[i]===H[j]?D[i+1][j+1]+1:Math.max(D[i+1][j],D[i][j+1]);
+  var hit=new Array(n).fill(false),i=0,j=0;while(i<n&&j<m){if(E[i]===H[j]){hit[i]=true;i++;j++}else if(D[i+1][j]>=D[i][j+1])i++;else j++}
+  var raw=exp.split(/\s+/),c=hit.filter(Boolean).length;return{pc:n?Math.round(c/n*100):0,html:raw.map(function(w,k){return '<span class="w '+(hit[k]?"hit":"miss")+'">'+esc(w)+'</span>'}).join(" ")}}
+var ua=navigator.userAgent,cv=(/Chrome\/(\d+)/.exec(ua)||[])[1]||"?";
+
+function home(msg){
+  var h='<div style="font-size:22px;font-weight:700">🧪 تجربة السماع المجاني</div><div class="m">صفحة تجربة فقط، ما لها علاقة بصفحة الطلاب</div>';
+  h+='<div class="card"><b>اقرأ سورة الإخلاص في كل تجربة:</b><div class="q">'+EXP+'</div></div>';
+  if(msg)h+=msg;
+  h+='<button class="b g" id="t1">١) السماع مع التسجيل (الطريقة الجديدة)</button><div class="m">يسجّل ويسمع بنفس الوقت من نفس الصوت</div>';
+  h+='<button class="b" id="t2">٢) السماع داخل الجوال بدون نت</button><div class="m">يفحص هل جوالك يقدر يسمع العربي بدون نت، ويجربه</div>';
+  h+='<button class="b q" id="t3">٣) السماع العادي بدون تسجيل (للمقارنة)</button>';
+  h+='<div class="diag" id="diag">Chrome '+cv+' · SR '+(SRC?"yes":"no")+' · available() '+(SRC&&SRC.available?"yes":"no")+'</div>';
+  app.innerHTML=h;
+  document.getElementById("t1").onclick=function(){run({track:true,local:false})};
+  document.getElementById("t2").onclick=localTest;
+  document.getElementById("t3").onclick=function(){run({track:false,local:false,norec:true})};
+}
+
+async function localTest(){
+  if(!SRC){home('<div class="box bad">المتصفح ما فيه سماع أصلاً</div>');return}
+  if(!SRC.available){home('<div class="box bad">❌ كروم عندك (نسخة '+cv+') ما يدعم السماع داخل الجوال. حدّث كروم من المتجر وجرّب مرة ثانية</div>');return}
+  app.innerHTML='<div class="box inf">يفحص هل العربي متوفر داخل الجوال...</div>';
+  var st="",langs=["ar-SA","ar"];
+  for(var k=0;k<langs.length;k++){try{st=await SRC.available({langs:[langs[k]],processLocally:true});log("available "+langs[k]+"="+st);if(st&&st!=="unavailable"){var L=langs[k];break}}catch(e){log("available err "+e.name+": "+e.message)}}
+  if(!L){home('<div class="box bad">❌ جوالك ما يدعم السماع العربي داخل الجوال ('+esc(st||"unavailable")+')</div>');return}
+  if(st==="downloadable"||st==="downloading"){app.innerHTML='<div class="box inf">⬇️ ينزّل ملف العربي داخل الجوال... (مرة وحدة بس)</div>';try{var ok=await SRC.install({langs:[L],processLocally:true});log("install="+ok);if(!ok){home('<div class="box bad">❌ ما قدر ينزّل ملف العربي</div>');return}}catch(e){log("install err "+e.name+": "+e.message);home('<div class="box bad">❌ ما قدر ينزّل ملف العربي: '+esc(e.message)+'</div>');return}}
+  run({track:true,local:true,lang:L});
+}
+
+async function run(o){
+  if(!SRC){home('<div class="box bad">المتصفح ما فيه سماع</div>');return}
+  var stream=null,rec=null,ch=[],heard=[],cur="",errs=[],ended=false,t0=Date.now(),sr=null,restarts=0;
+  try{if(!o.norec)stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}})}catch(e){home('<div class="box bad">ما انفتح المايك: '+esc(e.message)+'</div>');return}
+  var track=stream&&stream.getAudioTracks()[0];
+  if(stream){try{rec=new MediaRecorder(stream);rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};rec.start(1000)}catch(e){log("rec err "+e.message)}}
+  function mk(){var r=new SRC();r.lang=o.lang||"ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=1;if(o.local)try{r.processLocally=true}catch(e){}
+    r.onresult=function(ev){cur="";for(var i=ev.resultIndex;i<ev.results.length;i++){var t=ev.results[i][0].transcript;if(ev.results[i].isFinal)heard.push(t);else cur+=t}var L=document.getElementById("live");if(L)L.textContent=(heard.join(" ")+" "+cur).trim()||"…"};
+    r.onerror=function(ev){errs.push(ev.error);log("err "+ev.error+(ev.message?" "+ev.message:""))};
+    r.onstart=function(){log("start"+(o.track&&track?"(track)":"(mic)"))};
+    r.onend=function(){log("end");if(!ended&&restarts<20){restarts++;try{sr=mk();go(sr)}catch(e){log("restart err "+e.message)}}};
+    return r}
+  function go(r){try{if(o.track&&track)r.start(track);else r.start()}catch(e){errs.push("start:"+e.name);log("start err "+e.name+": "+e.message);if(o.track&&track&&!o.triedPlain){o.triedPlain=true;log("track start failed → plain start");try{r.start()}catch(e2){log("plain err "+e2.message)}}}}
+  sr=mk();go(sr);
+  app.innerHTML='<div style="font-size:20px;font-weight:700">🔴 '+(o.norec?'يسمع (بدون تسجيل)':o.local?'يسجّل ويسمع داخل الجوال':'يسجّل ويسمع')+'</div><div class="box inf">اقرأ سورة الإخلاص الحين</div><div class="card"><b>اللي يسمعه:</b><div id="live">…</div></div><button class="b r" id="stop">⏹ خلّصت</button><div class="diag" id="diag"></div>';
+  document.getElementById("stop").onclick=function(){ended=true;try{sr.stop()}catch(e){}var fin=function(){var txt=(heard.join(" ")+" "+cur).trim(),c=cmp(EXP,txt),dur=Math.round((Date.now()-t0)/1000);
+      var res='<div class="card"><div style="font-size:18px;font-weight:700">النتيجة: '+(o.norec?'السماع العادي':o.local?'داخل الجوال':'مع التسجيل')+'</div>';
+      if(txt){res+='<div class="box '+(c.pc>=70?"ok":"bad")+'" style="font-size:22px;font-weight:700;text-align:center">تطابق '+c.pc+'%</div><div class="q">'+c.html+'</div><div class="m"><b>اللي سمعه:</b> '+esc(txt)+'</div>'}
+      else res+='<div class="box bad">❌ ما سمع شي'+(errs.length?' ('+esc(errs.join(", "))+')':'')+'</div>';
+      if(rec){res+='<div class="m">التسجيل نفسه:</div><audio id="au" controls style="width:100%;margin-top:6px"></audio>'}
+      res+='<div class="m">'+dur+' ثانية</div></div>';
+      home(res);
+      if(rec){try{rec.onstop=function(){var bl=new Blob(ch,{type:(ch[0]&&ch[0].type)||"audio/webm"});var a=document.getElementById("au");if(a)a.src=URL.createObjectURL(bl);log("rec "+Math.round(bl.size/1024)+"KB")};rec.stop()}catch(e){}}
+      if(stream)stream.getTracks().forEach(function(t){t.stop()});
+      log("errors: "+(errs.join(",")||"none"));};
+    setTimeout(fin,1200)};
+}
+home();
+})();
+</script></body></html>
