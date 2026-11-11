@@ -1,10 +1,10 @@
 const KEY="taj-48132d5dec65",MODEL="@cf/openai/whisper-large-v3-turbo";
 export default{async fetch(req,env){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};const json=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const vals=Object.values(env||{}),AI=env.AI||vals.find(v=>v&&typeof v.run==="function"),KV=vals.find(v=>v&&typeof v.get==="function"&&typeof v.put==="function"&&typeof v.run!=="function"),day="u"+new Date().toISOString().slice(0,10);
-const usage=async()=>{if(!KV)return null;try{return JSON.parse(await KV.get(day))||{n:0,s:0}}catch(e){return{n:0,s:0}}};
-if(req.method==="OPTIONS")return new Response(null,{headers:cors});if(req.method!=="POST")return json({ok:true,ai:!!AI,kv:!!KV,u:await usage(),v:3});if(req.headers.get("X-Taj-Key")!==KEY)return json({error:"key"},403);if(!AI)return json({error:"no AI binding"},500);
+const usage=async(k)=>{if(!KV)return null;try{return JSON.parse(await KV.get(k||day))||{n:0,s:0}}catch(e){return{n:0,s:0}}};const bump=async(k,d)=>{if(!KV)return;try{const u=await usage(k);u.n++;u.s+=d;await KV.put(k,JSON.stringify(u),{expirationTtl:259200})}catch(e){}};
+if(req.method==="OPTIONS")return new Response(null,{headers:cors});if(req.method!=="POST")return json({ok:true,ai:!!AI,kv:!!KV,u:await usage(),g:await usage("g"+day),v:4});if(req.headers.get("X-Taj-Key")!==KEY)return json({error:"key"},403);{const q0=new URL(req.url).searchParams;if(q0.get("t")==="g"){await bump("g"+day,Math.max(10,Math.min(600,+q0.get("d")||10)));return json({ok:true})}}if(!AI)return json({error:"no AI binding"},500);
 const buf=new Uint8Array(await req.arrayBuffer());if(!buf.length)return json({error:"empty"},400);if(buf.length>8e6)return json({error:"too large"},413);let bin="";for(let i=0;i<buf.length;i+=32768)bin+=String.fromCharCode.apply(null,buf.subarray(i,i+32768));const b64=btoa(bin);
 const q=new URL(req.url).searchParams,p=q.get("p")||"",d=Math.max(1,Math.min(600,+q.get("d")||Math.round(buf.length/6000))),opt={task:"transcribe",language:"ar"};if(p)opt.initial_prompt=p;let r,mode="b64";
 try{r=await AI.run(MODEL,{audio:b64,...opt})}catch(e1){try{mode="bytes";r=await AI.run(MODEL,{audio:[...buf],...opt})}catch(e2){return json({error:String(e2&&e2.message||e2),first:String(e1&&e1.message||e1)},502)}}
-if(KV){try{const u=await usage();u.n++;u.s+=d;await KV.put(day,JSON.stringify(u),{expirationTtl:259200})}catch(e){}}
+await bump(day,d);
 const text=(r&&(r.text||(r.transcription_info&&r.transcription_info.text)))||((r&&r.segments)||[]).map(s=>s.text).join(" ")||"";return json({text,mode})}};
