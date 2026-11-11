@@ -35,10 +35,13 @@ function home(msg){
   h+='<button class="b g" id="t1">١) السماع مع التسجيل (الطريقة الجديدة)</button><div class="m">يسجّل ويسمع بنفس الوقت من نفس الصوت</div>';
   h+='<button class="b" id="t2">٢) السماع داخل الجوال بدون نت</button><div class="m">يفحص هل جوالك يقدر يسمع العربي بدون نت، ويجربه</div>';
   h+='<button class="b q" id="t3">٣) السماع العادي بدون تسجيل (للمقارنة)</button>';
+  h+='<button class="b g" id="t4">٤) السماع أول، ثم التسجيل</button><button class="b g" id="t5">٥) التسجيل أول، ثم السماع</button>';
   h+='<div class="diag" id="diag">Chrome '+cv+' · SR '+(SRC?"yes":"no")+' · available() '+(SRC&&SRC.available?"yes":"no")+'</div>';
   app.innerHTML=h;
   document.getElementById("t1").onclick=function(){run({track:true,local:false})};
   document.getElementById("t2").onclick=localTest;
+  document.getElementById("t4").onclick=function(){run({track:false,local:false,srFirst:true})};
+  document.getElementById("t5").onclick=function(){run({track:false,local:false})};
   document.getElementById("t3").onclick=function(){run({track:false,local:false,norec:true})};
 }
 
@@ -56,6 +59,7 @@ async function localTest(){
 async function run(o){
   if(!SRC){home('<div class="box bad">المتصفح ما فيه سماع</div>');return}
   var stream=null,rec=null,ch=[],heard=[],cur="",errs=[],ended=false,t0=Date.now(),sr=null,restarts=0;
+  if(o.srFirst){sr=mk();go(sr);await new Promise(function(r){setTimeout(r,1500)})}
   try{if(!o.norec)stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}})}catch(e){home('<div class="box bad">ما انفتح المايك: '+esc(e.message)+'</div>');return}
   var track=stream&&stream.getAudioTracks()[0];
   if(stream){try{rec=new MediaRecorder(stream);rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};rec.start(1000)}catch(e){log("rec err "+e.message)}}
@@ -66,16 +70,17 @@ async function run(o){
     r.onend=function(){log("end");if(!ended&&restarts<20){restarts++;try{sr=mk();go(sr)}catch(e){log("restart err "+e.message)}}};
     return r}
   function go(r){try{if(o.track&&track)r.start(track);else r.start()}catch(e){errs.push("start:"+e.name);log("start err "+e.name+": "+e.message);if(o.track&&track&&!o.triedPlain){o.triedPlain=true;log("track start failed → plain start");try{r.start()}catch(e2){log("plain err "+e2.message)}}}}
-  sr=mk();go(sr);
+  if(!o.srFirst){sr=mk();go(sr)}
   app.innerHTML='<div style="font-size:20px;font-weight:700">🔴 '+(o.norec?'يسمع (بدون تسجيل)':o.local?'يسجّل ويسمع داخل الجوال':'يسجّل ويسمع')+'</div><div class="box inf">اقرأ سورة الإخلاص الحين</div><div class="card"><b>اللي يسمعه:</b><div id="live">…</div></div><button class="b r" id="stop">⏹ خلّصت</button><div class="diag" id="diag"></div>';
   document.getElementById("stop").onclick=function(){ended=true;try{sr.stop()}catch(e){}var fin=function(){var txt=(heard.join(" ")+" "+cur).trim(),c=cmp(EXP,txt),dur=Math.round((Date.now()-t0)/1000);
-      var res='<div class="card"><div style="font-size:18px;font-weight:700">النتيجة: '+(o.norec?'السماع العادي':o.local?'داخل الجوال':'مع التسجيل')+'</div>';
+      var res='<div class="card"><div style="font-size:18px;font-weight:700">النتيجة: '+(o.norec?'السماع العادي':o.local?'داخل الجوال':o.srFirst?'السماع أول ثم التسجيل':o.track?'مع التسجيل (نفس الصوت)':'التسجيل أول ثم السماع')+'</div>';
       if(txt){res+='<div class="box '+(c.pc>=70?"ok":"bad")+'" style="font-size:22px;font-weight:700;text-align:center">تطابق '+c.pc+'%</div><div class="q">'+c.html+'</div><div class="m"><b>اللي سمعه:</b> '+esc(txt)+'</div>'}
       else res+='<div class="box bad">❌ ما سمع شي'+(errs.length?' ('+esc(errs.join(", "))+')':'')+'</div>';
-      if(rec){res+='<div class="m">التسجيل نفسه:</div><audio id="au" controls style="width:100%;margin-top:6px"></audio>'}
+      if(rec){res+='<div id="vol"></div><div class="m">التسجيل نفسه:</div><audio id="au" controls style="width:100%;margin-top:6px"></audio>'}
       res+='<div class="m">'+dur+' ثانية</div></div>';
       home(res);
-      if(rec){try{rec.onstop=function(){var bl=new Blob(ch,{type:(ch[0]&&ch[0].type)||"audio/webm"});var a=document.getElementById("au");if(a)a.src=URL.createObjectURL(bl);log("rec "+Math.round(bl.size/1024)+"KB")};rec.stop()}catch(e){}}
+      if(rec){try{rec.onstop=async function(){var bl=new Blob(ch,{type:(ch[0]&&ch[0].type)||"audio/webm"});var a=document.getElementById("au");if(a)a.src=URL.createObjectURL(bl);log("rec "+Math.round(bl.size/1024)+"KB");
+        var v=document.getElementById("vol");try{var ac=new (window.AudioContext||window.webkitAudioContext)(),au=await ac.decodeAudioData(await bl.arrayBuffer()),d=au.getChannelData(0),pk=0,sq=0;for(var i=0;i<d.length;i++){var x=Math.abs(d[i]);if(x>pk)pk=x;sq+=x*x}var rms=Math.sqrt(sq/Math.max(1,d.length));log("rec peak "+pk.toFixed(3)+" rms "+rms.toFixed(4));if(v)v.innerHTML=pk>0.05?'<div class="box ok">🎙️ التسجيل فيه صوت</div>':'<div class="box bad">🔇 التسجيل صامت (المايك راح للسماع)</div>'}catch(e){if(v)v.innerHTML='<div class="box inf">ما قدر يقيس صوت التسجيل</div>';log("vol err "+e.message)}};rec.stop()}catch(e){}}
       if(stream)stream.getTracks().forEach(function(t){t.stop()});
       log("errors: "+(errs.join(",")||"none"));};
     setTimeout(fin,1200)};
