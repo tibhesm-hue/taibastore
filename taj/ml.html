@@ -17,7 +17,7 @@
 <script>
 (function(){
 var app=document.getElementById("app"),LOG=[],J=null,PASS="ikh",VAR="q4",WK=null,READY=false,LOADMS=0,MODE="",stream=null,rec=null,ch=[],t0=0,iv=null,RES=[];
-var V="م1";
+var V="م2";
 function log(t){LOG.push(t);var d=document.getElementById("diag");if(d)d.textContent=LOG.slice(-12).join(" | ")}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function norm(s){return String(s).replace(/[ً-ٰٟۖ-ۭـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[^ء-ي\s]/g," ").trim()}
@@ -34,14 +34,15 @@ function startWorker(){if(WK)return;var code='import {pipeline,env} from "https:
  'const mk=(dev,dt)=>pipeline("automatic-speech-recognition","iqbalaesthetic/Basira",{device:dev,dtype:dt,progress_callback:p=>{if(p&&p.status==="progress"&&p.total)postMessage({t:"p",l:p.loaded,tt:p.total,f:p.file})}});'+
  'if(v==="q4"&&gpu){try{asr=await mk("webgpu","q4");mode="webgpu/q4"}catch(e){mode="[webgpu q4 fail: "+String(e&&e.message||e).slice(0,80)+"] "}}'+
  'if(!asr){const L=v==="q4"?["q4","q8","int8"]:["q8","int8"];let last="";for(const dt of L){if(asr)break;try{asr=await mk("wasm",dt);mode+="wasm/"+dt}catch(e){last=String(e&&e.message||e);mode+="[wasm "+dt+" fail] "}}if(!asr){postMessage({t:"le",msg:last});return}}'+
- 'postMessage({t:"ready",ms:performance.now()-t,mode:mode,gpu:gpu})}'+
+ 'const tl=performance.now()-t;postMessage({t:"warm"});const tw=performance.now();try{await asr(new Float32Array(16000),{language:"arabic",task:"transcribe"})}catch(e){}postMessage({t:"ready",ms:tl,wm:performance.now()-tw,mode:mode,gpu:gpu})}'+
  'async function run(pcm){try{const t=performance.now();let out;try{out=await asr(pcm,{chunk_length_s:30,stride_length_s:5,language:"arabic",task:"transcribe"})}catch(x){out=await asr(pcm,{chunk_length_s:30,stride_length_s:5})}postMessage({t:"r",text:(out&&out.text)||"",ms:performance.now()-t,sec:pcm.length/16000})}catch(e){postMessage({t:"e",msg:String(e&&e.message||e)})}}'+
  'onmessage=e=>{const d=e.data;if(d.init)init(d.v);else run(d.pcm)};';
   try{WK=new Worker(URL.createObjectURL(new Blob([code],{type:"text/javascript"})),{type:"module"})}catch(e){log("worker "+e.message);return}
   WK.onerror=function(e){log("worker error "+(e.message||""));status('<div class="box bad">❌ ما اشتغل النموذج: '+esc(e.message||"خطأ")+'</div>')};
   WK.onmessage=function(e){var d=e.data;
     if(d.t==="p"){var p=document.getElementById("prog");if(p)p.textContent="⬇️ يحمّل النموذج (مرة وحدة): "+Math.round(d.l/1048576)+" من "+Math.round(d.tt/1048576)+" م.ب"}
-    else if(d.t==="ready"){READY=true;LOADMS=d.ms;MODE=d.mode;log("ready "+d.mode+" "+Math.round(d.ms)+"ms gpu:"+d.gpu);home()}
+    else if(d.t==="warm"){var p=document.getElementById("prog");if(p)p.textContent="🔥 يسخّن النموذج (مرة وحدة)..."}
+    else if(d.t==="ready"){READY=true;LOADMS=d.ms;MODE=d.mode;log("ready "+d.mode+" load "+Math.round(d.ms)+"ms warm "+Math.round(d.wm)+"ms gpu:"+d.gpu);home()}
     else if(d.t==="le"){log("load err "+d.msg);WK=null;home('<div class="box bad">❌ ما قدر يحمّل النموذج: '+esc(d.msg)+'</div>')}
     else if(d.t==="r"){var c=cmp(passText(),d.text);RES.unshift({pc:c.pc,ms:d.ms,sec:d.sec,html:c.html,text:d.text,p:PASS,mode:MODE});log("run "+Math.round(d.sec)+"s in "+(d.ms/1000).toFixed(1)+"s");home()}
     else if(d.t==="e"){log("run err "+d.msg);home('<div class="box bad">❌ تعطل التصحيح: '+esc(d.msg)+'</div>')}}}
