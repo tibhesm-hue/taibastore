@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تاج الوقار — تجربة التصحيح داخل الجوال</title><meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#F6F5F1;color:#2C2C2A;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;text-align:center}
+#app{max-width:480px;margin:0 auto;padding:16px}
+.b{display:block;width:100%;border:0;border-radius:16px;padding:16px;font-size:19px;font-weight:700;margin-top:12px;color:#fff;font-family:inherit;background:#185FA5}
+.b.g{background:#1D9E75}.b.r{background:#C0392B}.b.q{background:#E6E4DE;color:#2C2C2A}.b:disabled{opacity:.45}
+.card{background:#fff;border-radius:16px;padding:14px;margin-top:12px;text-align:right}
+.m{color:#5F5E5A;font-size:14px;margin-top:6px;line-height:1.7}
+.box{border-radius:12px;padding:12px;margin-top:10px;font-size:16px;line-height:1.7}
+.ok{background:#E1F5EE;color:#085041}.bad{background:#FCEBEB;color:#791F1F}.inf{background:#EEEDFE;color:#3C3489}
+.q{font-size:20px;line-height:2;margin-top:8px}.w{display:inline-block;margin:0 3px}.hit{color:#0F6E56}.miss{color:#C0392B;text-decoration:underline}
+.seg{display:flex;gap:8px;margin-top:10px}.seg button{flex:1;border:2px solid #185FA5;background:#fff;color:#185FA5;border-radius:12px;padding:10px;font-family:inherit;font-size:16px;font-weight:700}.seg button.on{background:#185FA5;color:#fff}
+.big{font-size:30px;font-weight:800}
+.diag{direction:ltr;font-size:11px;color:#888;word-break:break-all;margin-top:10px;text-align:left}
+</style></head><body><div id="app"></div>
+<script>
+(function(){
+var app=document.getElementById("app"),LOG=[],J=null,PASS="ikh",VAR="q4",WK=null,READY=false,LOADMS=0,MODE="",stream=null,rec=null,ch=[],t0=0,iv=null,RES=[];
+var V="م1";
+function log(t){LOG.push(t);var d=document.getElementById("diag");if(d)d.textContent=LOG.slice(-12).join(" | ")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function norm(s){return String(s).replace(/[ً-ٰٟۖ-ۭـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[^ء-ي\s]/g," ").trim()}
+function words(s){return norm(s).split(/\s+/).filter(Boolean)}
+function cmp(exp,heard){var E=words(exp),H=words(heard),n=E.length,m=H.length,D=[];for(var i=0;i<=n;i++)D.push(new Array(m+1).fill(0));
+  for(var i=n-1;i>=0;i--)for(var j=m-1;j>=0;j--)D[i][j]=E[i]===H[j]?D[i+1][j+1]+1:Math.max(D[i+1][j],D[i][j+1]);
+  var hit=new Array(n).fill(false),i=0,j=0;while(i<n&&j<m){if(E[i]===H[j]){hit[i]=true;i++;j++}else if(D[i+1][j]>=D[i][j+1])i++;else j++}
+  var raw=exp.split(/\s+/).filter(function(w){return norm(w)}),c=hit.filter(Boolean).length;return{pc:n?Math.round(c/n*100):0,html:raw.map(function(w,k){return '<span class="w '+(hit[k]?"hit":"miss")+'">'+esc(w)+'</span>'}).join(" ")}}
+function passText(){if(!J)return "";return PASS==="ikh"?J[111].slice(0,4).join(" "):J[1][254]}
+function passName(){return PASS==="ikh"?"سورة الإخلاص (قصيرة، حوالي 10 ثواني)":"آية الكرسي (طويلة، حوالي 40 ثانية)"}
+
+function startWorker(){if(WK)return;var code='import {pipeline,env} from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3";let asr=null,mode="";'+
+ 'async function init(v){const t=performance.now();let gpu=false;try{const ad=navigator.gpu&&await navigator.gpu.requestAdapter();gpu=!!ad}catch(e){}'+
+ 'const mk=(dev,dt)=>pipeline("automatic-speech-recognition","iqbalaesthetic/Basira",{device:dev,dtype:dt,progress_callback:p=>{if(p&&p.status==="progress"&&p.total)postMessage({t:"p",l:p.loaded,tt:p.total,f:p.file})}});'+
+ 'if(v==="q4"&&gpu){try{asr=await mk("webgpu","q4");mode="webgpu/q4"}catch(e){mode="[webgpu q4 fail: "+String(e&&e.message||e).slice(0,80)+"] "}}'+
+ 'if(!asr){const L=v==="q4"?["q4","q8","int8"]:["q8","int8"];let last="";for(const dt of L){if(asr)break;try{asr=await mk("wasm",dt);mode+="wasm/"+dt}catch(e){last=String(e&&e.message||e);mode+="[wasm "+dt+" fail] "}}if(!asr){postMessage({t:"le",msg:last});return}}'+
+ 'postMessage({t:"ready",ms:performance.now()-t,mode:mode,gpu:gpu})}'+
+ 'async function run(pcm){try{const t=performance.now();let out;try{out=await asr(pcm,{chunk_length_s:30,stride_length_s:5,language:"arabic",task:"transcribe"})}catch(x){out=await asr(pcm,{chunk_length_s:30,stride_length_s:5})}postMessage({t:"r",text:(out&&out.text)||"",ms:performance.now()-t,sec:pcm.length/16000})}catch(e){postMessage({t:"e",msg:String(e&&e.message||e)})}}'+
+ 'onmessage=e=>{const d=e.data;if(d.init)init(d.v);else run(d.pcm)};';
+  try{WK=new Worker(URL.createObjectURL(new Blob([code],{type:"text/javascript"})),{type:"module"})}catch(e){log("worker "+e.message);return}
+  WK.onerror=function(e){log("worker error "+(e.message||""));status('<div class="box bad">❌ ما اشتغل النموذج: '+esc(e.message||"خطأ")+'</div>')};
+  WK.onmessage=function(e){var d=e.data;
+    if(d.t==="p"){var p=document.getElementById("prog");if(p)p.textContent="⬇️ يحمّل النموذج (مرة وحدة): "+Math.round(d.l/1048576)+" من "+Math.round(d.tt/1048576)+" م.ب"}
+    else if(d.t==="ready"){READY=true;LOADMS=d.ms;MODE=d.mode;log("ready "+d.mode+" "+Math.round(d.ms)+"ms gpu:"+d.gpu);home()}
+    else if(d.t==="le"){log("load err "+d.msg);WK=null;home('<div class="box bad">❌ ما قدر يحمّل النموذج: '+esc(d.msg)+'</div>')}
+    else if(d.t==="r"){var c=cmp(passText(),d.text);RES.unshift({pc:c.pc,ms:d.ms,sec:d.sec,html:c.html,text:d.text,p:PASS,mode:MODE});log("run "+Math.round(d.sec)+"s in "+(d.ms/1000).toFixed(1)+"s");home()}
+    else if(d.t==="e"){log("run err "+d.msg);home('<div class="box bad">❌ تعطل التصحيح: '+esc(d.msg)+'</div>')}}}
+function status(h){var s=document.getElementById("st");if(s)s.innerHTML=h}
+
+function home(msg){
+  var h='<div style="font-size:22px;font-weight:700">🧠 تجربة التصحيح داخل الجوال</div><div class="m">مجاني وبدون حد وبدون نت (بعد أول تحميل). صفحة تجربة، ما لها علاقة بالطلاب</div>';
+  if(!READY){
+    h+='<div class="card"><b>١) اختر نسخة النموذج:</b><div class="seg"><button data-v="q4" class="'+(VAR==="q4"?"on":"")+'">الخفيفة q4</button><button data-v="q8" class="'+(VAR==="q8"?"on":"")+'">q8 (بدون معالج رسوم)</button></div><div class="m">ابدأ بالخفيفة. إذا علّقت، جرّب q8</div></div>';
+    h+='<button class="b" id="load"'+(WK?' disabled':'')+'>⬇️ حمّل النموذج</button><div id="st"><div class="m" id="prog">'+(WK?'⏳ يجهّز...':'')+'</div></div>';
+  }else{
+    h+='<div class="box ok">✅ النموذج جاهز · التحميل أخذ '+(LOADMS/1000).toFixed(1)+' ثانية · <span dir="ltr">'+esc(MODE)+'</span></div>';
+    h+='<div class="card"><b>٢) اختر المقطع:</b><div class="seg"><button data-p="ikh" class="'+(PASS==="ikh"?"on":"")+'">الإخلاص</button><button data-p="kur" class="'+(PASS==="kur"?"on":"")+'">آية الكرسي</button></div><div class="m">'+passName()+'</div><div class="q">'+esc(passText())+'</div></div>';
+    h+='<button class="b g" id="rec">🎙️ سجّل واقرأ</button><div id="st"></div>';
+  }
+  if(msg)h+=msg;
+  RES.forEach(function(r,i){h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+(i===0?'آخر نتيجة':'نتيجة سابقة')+' · '+(r.p==="ikh"?"الإخلاص":"آية الكرسي")+'</b><span class="m" dir="ltr">'+esc(r.mode)+'</span></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px"><div class="box '+(r.ms/1000<=r.sec?"ok":"inf")+'" style="flex:1;text-align:center"><div class="big">'+(r.ms/1000).toFixed(1)+' ث</div>وقت التصحيح<br><span style="font-size:13px">لتسجيل '+Math.round(r.sec)+' ث</span></div><div class="box '+(r.pc>=85?"ok":"bad")+'" style="flex:1;text-align:center"><div class="big">'+r.pc+'%</div>التطابق</div></div>'+
+    (i===0?'<div class="q">'+r.html+'</div><div class="m"><b>اللي سمعه:</b> '+esc(r.text||"—")+'</div>':'')+'</div>'});
+  h+='<div class="diag" id="diag">'+V+' · '+esc(navigator.userAgent.replace(/^.*?(Android[^;)]*).*?(Chrome\/\d+).*$/,"$1 $2"))+' · gpu:'+(!!navigator.gpu)+' · '+LOG.slice(-10).join(" | ")+'</div>';
+  app.innerHTML=h;
+  Array.prototype.forEach.call(document.querySelectorAll("[data-v]"),function(b){b.onclick=function(){VAR=b.getAttribute("data-v");home()}});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-p]"),function(b){b.onclick=function(){PASS=b.getAttribute("data-p");home()}});
+  var L=document.getElementById("load");if(L)L.onclick=function(){startWorker();if(!WK)return;L.disabled=true;document.getElementById("prog").textContent="⏳ يجهّز...";WK.postMessage({init:1,v:VAR})};
+  var R=document.getElementById("rec");if(R)R.onclick=startRec;
+}
+async function startRec(){
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}})}catch(e){home('<div class="box bad">ما انفتح المايك</div>');return}
+  ch=[];rec=new MediaRecorder(stream);rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};rec.start(1000);t0=Date.now();
+  app.innerHTML='<div style="font-size:22px;font-weight:700">🔴 يسجّل <span id="tm" dir="ltr">0:00</span></div><div class="card"><div class="q">'+esc(passText())+'</div></div><button class="b r" id="stop">⏹ خلّصت</button>';
+  iv=setInterval(function(){var s=Math.floor((Date.now()-t0)/1000),t=document.getElementById("tm");if(t)t.textContent=Math.floor(s/60)+":"+(s%60<10?"0":"")+s%60},250);
+  document.getElementById("stop").onclick=function(){clearInterval(iv);rec.onstop=async function(){stream.getTracks().forEach(function(t){t.stop()});
+      app.innerHTML='<div class="box inf" style="font-size:20px">🧠 يصحح داخل الجوال... <span id="el" dir="ltr">0</span> ث</div><div class="m">لا تقفل الصفحة</div>';var e0=Date.now(),ev=setInterval(function(){var x=document.getElementById("el");if(x)x.textContent=Math.floor((Date.now()-e0)/1000);else clearInterval(ev)},500);
+      try{var bl=new Blob(ch,{type:(ch[0]&&ch[0].type)||"audio/webm"}),ac=new (window.AudioContext||window.webkitAudioContext)(),a0=await ac.decodeAudioData(await bl.arrayBuffer()),off=new OfflineAudioContext(1,Math.ceil(a0.duration*16000),16000),src=off.createBufferSource();src.buffer=a0;src.connect(off.destination);src.start();
+        var pcm=(await off.startRendering()).getChannelData(0),pk=0;for(var i=0;i<pcm.length;i+=8){var a=Math.abs(pcm[i]);if(a>pk)pk=a}if(pk>0.001&&pk<0.6){var g=0.9/pk;for(var j=0;j<pcm.length;j++)pcm[j]*=g}
+        log("pcm "+(pcm.length/16000).toFixed(1)+"s peak "+pk.toFixed(2));WK.postMessage({pcm:pcm},[pcm.buffer])}catch(e){clearInterval(ev);home('<div class="box bad">ما قدر يقرأ التسجيل: '+esc(e.message)+'</div>')}};
+    rec.stop()};
+}
+fetch("q.json").then(function(r){return r.json()}).then(function(j){J=j;home()}).catch(function(e){app.innerHTML='<div class="box bad">ما تحمّل نص القرآن</div>'});
+app.innerHTML='<div class="box inf">يجهّز...</div>';
+})();
+</script></body></html>
