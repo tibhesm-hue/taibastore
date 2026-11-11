@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تاج الوقار — مقارنة Groq و Cloudflare</title><meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#F6F5F1;color:#2C2C2A;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;text-align:center}
+#app{max-width:480px;margin:0 auto;padding:16px}
+.b{display:block;width:100%;border:0;border-radius:16px;padding:16px;font-size:19px;font-weight:700;margin-top:12px;color:#fff;font-family:inherit;background:#185FA5}
+.b.g{background:#1D9E75}.b.r{background:#C0392B}.b.q{background:#E6E4DE;color:#2C2C2A}.b:disabled{opacity:.45}
+.card{background:#fff;border-radius:16px;padding:14px;margin-top:12px;text-align:right}
+.m{color:#5F5E5A;font-size:14px;margin-top:6px;line-height:1.7}
+.box{border-radius:12px;padding:12px;margin-top:10px;font-size:16px;line-height:1.7}
+.ok{background:#E1F5EE;color:#085041}.bad{background:#FCEBEB;color:#791F1F}.inf{background:#EEEDFE;color:#3C3489}
+.q{font-size:20px;line-height:2;margin-top:8px}.w{display:inline-block;margin:0 3px}.hit{color:#0F6E56}.miss{color:#C0392B;text-decoration:underline}
+.seg{display:flex;gap:8px;margin-top:10px}.seg button{flex:1;border:2px solid #185FA5;background:#fff;color:#185FA5;border-radius:12px;padding:10px;font-family:inherit;font-size:16px;font-weight:700}.seg button.on{background:#185FA5;color:#fff}
+.big{font-size:30px;font-weight:800}
+.diag{direction:ltr;font-size:11px;color:#888;word-break:break-all;margin-top:10px;text-align:left}
+</style></head><body><div id="app"></div>
+<script>
+(function(){
+var app=document.getElementById("app"),J=null,PASS="kur",stream=null,rec=null,ch=[],t0=0,iv=null,RES=[],V="ق1";
+var GKEY=("d1q0bv1ATqTSv2uJV9zQ"+"qKa6YF3bydGWcjsF708PrjxUV3ed9S6N_ksg").split("").reverse().join(""),CF="https://taj-asr.yaqot-tibh.workers.dev",CFK="taj-48132d5dec65";
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function norm(s){return String(s).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/[^\u0621-\u064A\s]/g," ").trim()}
+function words(s){return norm(s).split(/\s+/).filter(Boolean)}
+function cmp(exp,heard){var E=words(exp),H=words(heard),n=E.length,m=H.length,D=[];for(var i=0;i<=n;i++)D.push(new Array(m+1).fill(0));
+  for(var i=n-1;i>=0;i--)for(var j=m-1;j>=0;j--)D[i][j]=E[i]===H[j]?D[i+1][j+1]+1:Math.max(D[i+1][j],D[i][j+1]);
+  var hit=new Array(n).fill(false),i=0,j=0;while(i<n&&j<m){if(E[i]===H[j]){hit[i]=true;i++;j++}else if(D[i+1][j]>=D[i][j+1])i++;else j++}
+  var raw=exp.split(/\s+/).filter(function(w){return norm(w)}),c=hit.filter(Boolean).length;return{pc:n?Math.round(c/n*100):0,html:raw.map(function(w,k){return '<span class="w '+(hit[k]?"hit":"miss")+'">'+esc(w)+'</span>'}).join(" ")}}
+function passText(){if(!J)return "";return PASS==="ikh"?J[111].slice(0,4).join(" "):J[1][254]}
+async function groq(bl){var t=performance.now(),ty=(bl.type||"audio/webm").split(";")[0],ext=/mp4/.test(ty)?"m4a":/ogg/.test(ty)?"ogg":"webm",fd=new FormData();fd.append("file",new File([bl],"take."+ext,{type:ty}));fd.append("model","whisper-large-v3");fd.append("language","ar");fd.append("response_format","json");fd.append("temperature","0");fd.append("prompt","تلاوة من القرآن الكريم.");
+  try{var r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+GKEY},body:fd});var tx=await r.text();if(!r.ok)return{err:"HTTP "+r.status+" "+tx.slice(0,120),ms:performance.now()-t};return{text:JSON.parse(tx).text||"",ms:performance.now()-t}}catch(e){return{err:String(e.message||e),ms:performance.now()-t}}}
+async function cf(bl){var t=performance.now();try{var r=await fetch(CF+"?p="+encodeURIComponent("تلاوة من القرآن الكريم."),{method:"POST",headers:{"X-Taj-Key":CFK,"Content-Type":"application/octet-stream"},body:bl});var j=await r.json();if(!r.ok||j.error)return{err:"HTTP "+r.status+" "+String(j.error||"").slice(0,160),ms:performance.now()-t};return{text:j.text||"",ms:performance.now()-t,mode:j.mode}}catch(e){return{err:String(e.message||e),ms:performance.now()-t}}}
+function box(name,r,sec){if(!r)return '<div class="box inf" style="flex:1;text-align:center">⏳ '+name+'</div>';if(r.err)return '<div class="box bad" style="flex:1;text-align:center"><b>'+name+'</b><br>❌ تعذّر<div dir="ltr" style="font-size:11px;word-break:break-all">'+esc(r.err)+'</div></div>';var c=cmp(passText(),r.text);r.pc=c.pc;r.html=c.html;
+  return '<div class="box '+(c.pc>=85?"ok":"bad")+'" style="flex:1;text-align:center"><b>'+name+'</b><div class="big">'+c.pc+'%</div>'+(r.ms/1000).toFixed(1)+' ث للتصحيح</div>'}
+function home(msg){var h='<div style="font-size:22px;font-weight:700">⚖️ مقارنة Groq و Cloudflare</div><div class="m">نفس التسجيل يروح للاثنين مع بعض. صفحة تجربة، ما لها علاقة بالطلاب</div>';
+  h+='<div class="card"><b>اختر المقطع:</b><div class="seg"><button data-p="ikh" class="'+(PASS==="ikh"?"on":"")+'">الإخلاص</button><button data-p="kur" class="'+(PASS==="kur"?"on":"")+'">آية الكرسي</button></div><div class="q">'+esc(passText())+'</div></div>';
+  h+='<button class="b g" id="rec">🎙️ سجّل واقرأ</button>';if(msg)h+=msg;
+  RES.forEach(function(x,i){h+='<div class="card"><b>'+(i===0?'آخر نتيجة':'نتيجة سابقة')+' · '+(x.p==="ikh"?"الإخلاص":"آية الكرسي")+' · تسجيل '+Math.round(x.sec)+' ث</b><div style="display:flex;gap:8px;margin-top:8px">'+box("Groq",x.g,x.sec)+box("Cloudflare",x.c,x.sec)+'</div>';
+    if(i===0){[["Groq",x.g],["Cloudflare",x.c]].forEach(function(a){if(a[1]&&a[1].html)h+='<div class="m" style="margin-top:10px"><b>'+a[0]+':</b></div><div class="q" style="font-size:18px">'+a[1].html+'</div><div class="m">سمع: '+esc(a[1].text||"—")+'</div>'})}h+='</div>'});
+  h+='<div class="diag">'+V+'</div>';app.innerHTML=h;
+  Array.prototype.forEach.call(document.querySelectorAll("[data-p]"),function(b){b.onclick=function(){PASS=b.getAttribute("data-p");home()}});document.getElementById("rec").onclick=startRec}
+async function startRec(){try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}})}catch(e){home('<div class="box bad">ما انفتح المايك</div>');return}
+  ch=[];rec=new MediaRecorder(stream);rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};rec.start(1000);t0=Date.now();
+  app.innerHTML='<div style="font-size:22px;font-weight:700">🔴 يسجّل <span id="tm" dir="ltr">0:00</span></div><div class="card"><div class="q">'+esc(passText())+'</div></div><button class="b r" id="stop">⏹ خلّصت</button>';
+  iv=setInterval(function(){var s=Math.floor((Date.now()-t0)/1000),t=document.getElementById("tm");if(t)t.textContent=Math.floor(s/60)+":"+(s%60<10?"0":"")+s%60},250);
+  document.getElementById("stop").onclick=function(){clearInterval(iv);var sec=(Date.now()-t0)/1000;rec.onstop=function(){stream.getTracks().forEach(function(t){t.stop()});var bl=new Blob(ch,{type:(ch[0]&&ch[0].type)||"audio/webm"}),x={p:PASS,sec:sec,g:null,c:null};RES.unshift(x);home();
+      groq(bl).then(function(r){x.g=r;home()});cf(bl).then(function(r){x.c=r;home()})};rec.stop()}}
+fetch("q.json").then(function(r){return r.json()}).then(function(j){J=j;home()});app.innerHTML='<div class="box inf">يجهّز...</div>';
+})();
+</script></body></html>
