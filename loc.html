@@ -76,7 +76,7 @@ function show(la,ln){
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
-  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل المقدرة: <b>'+(isNaN(sub)?((x,y)=>(x?x+' ريال':'مجاني')+(y!==x?'</b><br><span style="font-size:13px">ولو طلبك 20 ريال فأكثر: <b>'+(y?y+' ريال':'مجاني')+'</b></span>':'</b>'))(calc2(la,ln,0),calc2(la,ln,25)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
+  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل: <b>'+(isNaN(sub)?(x=>(x?x+' ريال':'مجاني')+'</b>')(calc2(la,ln,0)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
 let LP=null;
 function loadLeaflet(){
