@@ -52,7 +52,7 @@ const money=x=>String(Math.round(x*100)/100);
 // مستويات التوصيل (المسافة = خط مستقيم من المحل بالكيلو): [حد المسافة كم، أقل من 20، 20 فأكثر]
 const TIERS=[[0.5,2,0],[1,2,1],[1.5,3,2],[2,4,3],[1e9,5,5]];
 function rkOf(la,ln){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(a))}
-function feeOf(rk,sv){for(const t of TIERS)if(rk<t[0])return sv>=20?t[2]:t[1];return 5}
+function feeOf(rk,sv){if(rk>=3)return Math.min(15,Math.round(rk*2));/* owner 18 Nov: over 3 km = 1 riyal per km there and back (2 per km), whole riyals, at most 15 */for(const t of TIERS)if(rk<t[0])return sv>=20?t[2]:t[1];return 5}
 function calc(la,ln){
   const rk=rkOf(la,ln),ok=rk/0.75;
   return {km:ok,lv:ok<1?1:ok<=3?2:3,fee:feeOf(rk,sub),near:TIERS.slice(0,4).some(t=>Math.abs(rk-t[0])<0.07)};
