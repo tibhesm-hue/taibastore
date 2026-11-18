@@ -43,8 +43,7 @@ const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
 const q=new URLSearchParams(location.search);
 const order=(q.get('m')||'').slice(0,3500);
 const o=(q.get('o')||'').replace(/\D/g,'').slice(0,8);
-const PKRE=/^📦 صور الطلب للتجهيز:.*$/m,pkLine=(order.match(PKRE)||[''])[0];/* the picking-photos link goes last so WhatsApp previews the location link, not Claude */
-const base=(order?order.replace(PKRE,'').replace(/\n{3,}/g,'\n\n'):'')||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
+const base=order||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
@@ -75,7 +74,7 @@ function show(la,ln){
   {const ok=c.km;body+='\n🏍️ مستوى المندوب: '+(ok<1?'١':ok<2?'٢':'٣');}
   if(c.near)body+='\n⚠️ راجع الدبوس';
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
-  $('wa').href=wl(t+(pkLine?'\n\n'+pkLine:''));$('wa').hidden=false;$('nol').hidden=true;
+  $('wa').href=wl(t);$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
   $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل: <b>'+(isNaN(sub)?(x=>(x?x+' ريال':'مجاني')+'</b>')(calc2(la,ln,0)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
@@ -112,7 +111,7 @@ async function openMap(c){
 function fail(code){
   gpsFailed=true;
   $('retry').hidden=false;$('retry').disabled=false;
-  $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب'+(pkLine?'\n\n'+pkLine:''));$('nol').hidden=false;
+  $('nol').href=wl(base+'\n\n📍 الموقع: ما تحدد، بأرسله من الواتساب');$('nol').hidden=false;
   $('msg').className='err';
   $('msg').textContent=code===1?'ما انسمح بالموقع. اسمح للصفحة بالموقع من إعدادات المتصفح ثم حاول مرة ثانية، أو اختر موقعك من الخريطة أدناه.':'ما قدرنا نحدد موقعك. تأكد أن GPS شغال وحاول مرة ثانية، أو اختر موقعك من الخريطة أدناه.';
   openMap(cur||[SHOP_LAT,SHOP_LNG]).then(()=>{$('nol').hidden=false});
