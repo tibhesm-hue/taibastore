@@ -42,6 +42,7 @@ body.mapping #logo,body.mapping h1{display:none}
 const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
 const q=new URLSearchParams(location.search);
 const order=(q.get('m')||'').slice(0,3500);
+const PK=q.get('pk')==='1';/* استلام من المحل: صفحة تأكيد بلا موقع، وتُعدّ على نموذج Tally ثالث */
 const o=(q.get('o')||'').replace(/\D/g,'').slice(0,8);
 const PKRE=/\n*📦 صور الطلب للتجهيز:.*$/m,pkLine=((order.match(PKRE)||[''])[0]).trim();/* picking-photos link goes last, after the location link, with the delivery fee added */
 const base=(order?order.replace(PKRE,''):'')||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
@@ -135,8 +136,8 @@ function locate(){
    B = الزبون وصل لهذه الصفحة من زر «أرسل الطلب» في رابط الأسعار، A = ضغط زر الإرسال للواتساب.
    العدّ مرة واحدة لكل رقم طلب (الجديد، أو تعديل لرقم ما انعدّ)، ولا يظهر للزبون ولا يؤخّر فتح الواتساب، وأي خطأ فيه لا يمسّ الطلب.
    إن ضغط الزبون وانتقل قبل ما يكتمل العدّ، تُعاد المحاولة لما يرجع للصفحة (3 محاولات على الأكثر). */
-const CNT_A='rDOMyX',CNT_B='jeoAbJ',CNT_K='tb-cnt';
-const cntNo=((order.match(/(?:طلب جديد|تعديل طلب)[^#\n]*#\s*(\d{3,8})/)||[])[1])||'';
+const CNT_A='rDOMyX',CNT_B='jeoAbJ',CNT_C='M1apV8',CNT_K='tb-cnt';
+const cntNo=((order.match(/(?:طلب جديد|تعديل طلب)[^#\n]*#\s*(\d{3,8})/)||[])[1])||(PK?'pk'+Date.now().toString(36):'');
 let cntMem={},cntFA=null,cntFB=null;
 function cntAll(){try{const m=JSON.parse(localStorage.getItem(CNT_K)||'{}');return m&&typeof m==='object'?m:{}}catch(e){return {}}}
 function cntGet(){return cntAll()[cntNo]||cntMem[cntNo]||null}
@@ -148,17 +149,17 @@ function cntFrame(form,kind,done){const f=document.createElement('iframe');
   f.addEventListener('load',()=>setTimeout(()=>{try{done()}catch(x){}},1800));
   document.body.appendChild(f);return f}
 function cntReach(){try{if(!cntNo||cntFB)return;const e=cntGet();if(e&&e.r)return;cntFB=cntFrame(CNT_B,'r',()=>cntSet({r:1}))}catch(x){}}
-function cntTap(kind){try{if(!cntNo||cntFA)return;const e=cntGet()||{};if(e.a===2||(+e.n||0)>=3)return;cntSet({a:1,n:(+e.n||0)+1,k:kind});cntFA=cntFrame(CNT_A,kind,()=>cntSet({a:2}))}catch(x){}}
+function cntTap(kind){try{if(!cntNo||cntFA)return;const e=cntGet()||{};if(e.a===2||(+e.n||0)>=3)return;cntSet({a:1,n:(+e.n||0)+1,k:kind});cntFA=cntFrame(kind==='pk'?CNT_C:CNT_A,kind,()=>cntSet({a:2}))}catch(x){}}
 function cntBack(){try{const e=cntGet();if(!e||e.a!==1)return;setTimeout(()=>{try{const x=cntGet();if(x&&x.a===1){if(cntFA){cntFA.remove();cntFA=null}cntTap(x.k||'del')}}catch(y){}},3500)}catch(x){}}
-$('wa').addEventListener('click',()=>cntTap('del'));
+$('wa').addEventListener('click',()=>cntTap(PK?'pk':'del'));
 $('nol').addEventListener('click',()=>cntTap('noloc'));
 window.addEventListener('pageshow',cntBack);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cntBack()});
-if(cntNo)setTimeout(cntReach,1500);
+if(cntNo&&!PK)setTimeout(cntReach,1500);
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
 $('me').onclick=()=>{if(cur&&map){map.setView(cur,17)}else locate()};
 $('retry').onclick=locate;
-loadLeaflet().catch(()=>{LP=null});
-locate();
+if(PK){document.querySelector('h1').textContent='🛍️ تأكيد طلب الاستلام من المحل';$('msg').className='';$('msg').textContent='اضغط الزر الأخضر لإرسال طلبك على الواتساب، ونجهزه لك للاستلام.';$('wa').href=wl(order||'🛍️ طلب استلام من المحل');$('wa').textContent='✅ أرسل الطلب على الواتساب';$('wa').hidden=false}else{loadLeaflet().catch(()=>{LP=null});
+locate()}
 </script>
 </body></html>
