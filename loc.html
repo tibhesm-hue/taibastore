@@ -130,6 +130,31 @@ function locate(){
     openMap(cur);
   },e=>fail(e.code),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 }
+/* عدّاد طلبات رابط الأسعار (19/11، صاحب المحل: «أدري كم زبون طلب من رابط الأسعار»).
+   نموذجان مخفيان على Tally، وعدد زياراتهما يُقرأ في دفتر طيبة:
+   B = الزبون وصل لهذه الصفحة من زر «أرسل الطلب» في رابط الأسعار، A = ضغط زر الإرسال للواتساب.
+   العدّ مرة واحدة لكل رقم طلب (الجديد، أو تعديل لرقم ما انعدّ)، ولا يظهر للزبون ولا يؤخّر فتح الواتساب، وأي خطأ فيه لا يمسّ الطلب.
+   إن ضغط الزبون وانتقل قبل ما يكتمل العدّ، تُعاد المحاولة لما يرجع للصفحة (3 محاولات على الأكثر). */
+const CNT_A='rDOMyX',CNT_B='jeoAbJ',CNT_K='tb-cnt';
+const cntNo=((order.match(/(?:طلب جديد|تعديل طلب)[^#\n]*#\s*(\d{3,8})/)||[])[1])||'';
+let cntMem={},cntFA=null,cntFB=null;
+function cntAll(){try{const m=JSON.parse(localStorage.getItem(CNT_K)||'{}');return m&&typeof m==='object'?m:{}}catch(e){return {}}}
+function cntGet(){return cntAll()[cntNo]||cntMem[cntNo]||null}
+function cntSet(p){const m=cntAll(),now=Date.now(),e=Object.assign({t:now},m[cntNo]||cntMem[cntNo]||{},p);cntMem[cntNo]=e;m[cntNo]=e;for(const k in m)if(now-(+m[k].t||0)>2*864e5)delete m[k];try{localStorage.setItem(CNT_K,JSON.stringify(m))}catch(x){}}
+function cntFrame(form,kind,done){const f=document.createElement('iframe');
+  f.src='https://tally.so/embed/'+form+'?hideTitle=1&transparentBackground=1&no='+encodeURIComponent(cntNo)+'&k='+kind+'&t='+Date.now();
+  f.title='';f.setAttribute('aria-hidden','true');f.tabIndex=-1;
+  f.style.cssText='position:fixed;left:0;bottom:0;width:320px;height:240px;border:0;opacity:0;pointer-events:none;z-index:-1';
+  f.addEventListener('load',()=>setTimeout(()=>{try{done()}catch(x){}},1800));
+  document.body.appendChild(f);return f}
+function cntReach(){try{if(!cntNo||cntFB)return;const e=cntGet();if(e&&e.r)return;cntFB=cntFrame(CNT_B,'r',()=>cntSet({r:1}))}catch(x){}}
+function cntTap(kind){try{if(!cntNo||cntFA)return;const e=cntGet()||{};if(e.a===2||(+e.n||0)>=3)return;cntSet({a:1,n:(+e.n||0)+1,k:kind});cntFA=cntFrame(CNT_A,kind,()=>cntSet({a:2}))}catch(x){}}
+function cntBack(){try{const e=cntGet();if(!e||e.a!==1)return;setTimeout(()=>{try{const x=cntGet();if(x&&x.a===1){if(cntFA){cntFA.remove();cntFA=null}cntTap(x.k||'del')}}catch(y){}},3500)}catch(x){}}
+$('wa').addEventListener('click',()=>cntTap('del'));
+$('nol').addEventListener('click',()=>cntTap('noloc'));
+window.addEventListener('pageshow',cntBack);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cntBack()});
+if(cntNo)setTimeout(cntReach,1500);
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
 $('me').onclick=()=>{if(cur&&map){map.setView(cur,17)}else locate()};
 $('retry').onclick=locate;
