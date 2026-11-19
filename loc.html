@@ -42,7 +42,7 @@ body.mapping #logo,body.mapping h1{display:none}
 const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
 const q=new URLSearchParams(location.search);
 const order=(q.get('m')||'').slice(0,3500);
-const PK=q.get('pk')==='1';/* استلام من المحل: صفحة تأكيد بلا موقع، وتُعدّ على نموذج Tally ثالث */
+const PK=q.get('pk')==='1'||q.get('pk')==='2',PKD=q.get('pk')==='2';/* pk=2: توصيل وموقع الزبون محفوظ في صفحة الأسعار، فلا نحدد موقعه من جديد ونكتفي بتأكيد وعدّ *//* استلام من المحل: صفحة تأكيد بلا موقع، وتُعدّ على نموذج Tally ثالث */
 const o=(q.get('o')||'').replace(/\D/g,'').slice(0,8);
 const PKRE=/\n*📦 صور الطلب للتجهيز:.*$/m,pkLine=((order.match(PKRE)||[''])[0]).trim();/* picking-photos link goes last, after the location link, with the delivery fee added */
 const base=(order?order.replace(PKRE,''):'')||('📍 موقعي للتوصيل'+(o?' (طلب #'+o+')':''));
@@ -151,7 +151,7 @@ function cntFrame(form,kind,done){const f=document.createElement('iframe');
 function cntReach(){try{if(!cntNo||cntFB)return;const e=cntGet();if(e&&e.r)return;cntFB=cntFrame(CNT_B,'r',()=>cntSet({r:1}))}catch(x){}}
 function cntTap(kind){try{if(!cntNo||cntFA)return;const e=cntGet()||{};if(e.a===2||(+e.n||0)>=3)return;cntSet({a:1,n:(+e.n||0)+1,k:kind});cntFA=cntFrame(kind==='pk'?CNT_C:CNT_A,kind,()=>cntSet({a:2}))}catch(x){}}
 function cntBack(){try{const e=cntGet();if(!e||e.a!==1)return;setTimeout(()=>{try{const x=cntGet();if(x&&x.a===1){if(cntFA){cntFA.remove();cntFA=null}cntTap(x.k||'del')}}catch(y){}},3500)}catch(x){}}
-$('wa').addEventListener('click',()=>cntTap(PK?'pk':'del'));
+$('wa').addEventListener('click',()=>cntTap(PK&&!PKD?'pk':'del'));
 $('nol').addEventListener('click',()=>cntTap('noloc'));
 window.addEventListener('pageshow',cntBack);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cntBack()});
@@ -159,7 +159,7 @@ if(cntNo&&!PK)setTimeout(cntReach,1500);
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
 $('me').onclick=()=>{if(cur&&map){map.setView(cur,17)}else locate()};
 $('retry').onclick=locate;
-if(PK){document.querySelector('h1').textContent='🛍️ تأكيد طلب الاستلام من المحل';$('msg').className='';$('msg').textContent='اضغط الزر الأخضر لإرسال طلبك على الواتساب، ونجهزه لك للاستلام.';$('wa').href=wl(order||'🛍️ طلب استلام من المحل');$('wa').textContent='✅ أرسل الطلب على الواتساب';$('wa').hidden=false}else{loadLeaflet().catch(()=>{LP=null});
+if(PK){document.querySelector('h1').textContent=PKD?'🛵 تأكيد طلب التوصيل':'🛍️ تأكيد طلب الاستلام من المحل';$('msg').className='';$('msg').textContent='اضغط الزر الأخضر لإرسال طلبك على الواتساب، ونجهزه لك للاستلام.';$('wa').href=wl(order||(PKD?'🛵 طلب توصيل':'🛍️ طلب استلام من المحل'));$('wa').textContent='✅ أرسل الطلب على الواتساب';$('wa').hidden=false}else{loadLeaflet().catch(()=>{LP=null});
 locate()}
 </script>
 </body></html>
