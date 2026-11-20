@@ -50,7 +50,7 @@ const base=(order?order.replace(PKRE,''):'')||('📍 موقعي للتوصيل'+
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
-let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null;
+let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null,acc=0;
 const money=x=>String(Math.round(x*100)/100);
 // الحساب كله من lib/fee.js (المصدر الوحيد لكل الصفحات)
 const TIERS=TBFEE.TIERS;
@@ -77,7 +77,7 @@ function show(la,ln){
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t+(pkLine?'\n\n'+pkLine+'~f.'+(isNaN(sub)?calc2(la,ln,0):fee):''));$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
-  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':'✅ تم تحديد موقعك.')+'<br>🛵 رسوم التوصيل: <b>'+(isNaN(sub)?(x=>(x?x+' ريال':'مجاني')+'</b>')(calc2(la,ln,0)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
+  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':acc>50?'⚠️ موقعك تقريبي (±'+acc+' متر) — تأكد أن الدبوس على بيتك.':'✅ تم تحديد موقعك'+(acc?' (دقة القراءة ±'+acc+' متر)':'')+'.')+'<br>🛵 رسوم التوصيل: <b>'+(isNaN(sub)?(x=>(x?x+' ريال':'مجاني')+'</b>')(calc2(la,ln,0)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
 let LP=null;
 function loadLeaflet(){
@@ -120,16 +120,22 @@ function fail(code){
 function locate(){
   $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
   if(!navigator.geolocation){fail(0);return}
-  navigator.geolocation.getCurrentPosition(p=>{
-    const la=p.coords.latitude,ln=p.coords.longitude;
+  /* 20/11 (صاحب المحل: «هنا الموقع غلط»): أول قراءة من الجوال غالباً تقريبية (من الشبكة لا من GPS)،
+     فنجمع القراءات حتى 12 ثانية ونأخذ أدقّها، ونوقف مبكراً إذا وصلت الدقة 25 متر أو أقل */
+  let best=null,wid=null,done=false;
+  const finish=()=>{if(done)return;done=true;try{navigator.geolocation.clearWatch(wid)}catch(e){}if(best)got(best);else fail(3)};
+  wid=navigator.geolocation.watchPosition(p=>{if(!best||p.coords.accuracy<best.coords.accuracy)best=p;$('msg').textContent='جاري تحديد موقعك بدقة… ±'+Math.round(best.coords.accuracy)+' متر';if(best.coords.accuracy<=25)finish()},e=>{if(best)finish();else{done=true;try{navigator.geolocation.clearWatch(wid)}catch(_){}fail(e.code)}},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  setTimeout(()=>{if(best)finish()},12000);setTimeout(()=>{if(!done)finish()},25000);
+}
+function got(p){{
+    const la=p.coords.latitude,ln=p.coords.longitude;acc=Math.round(p.coords.accuracy||0);
     if(q.get('pop')&&window.opener){
       try{const c=calc(la,ln);window.opener.postMessage({taibaLoc:1,lat:la,lng:ln,tier:['','d1','d3','d9'][c.lv]},'*');
         $('msg').textContent='✅ تم تحديد موقعك. ارجع لصفحة الطلب.';setTimeout(()=>{try{window.close()}catch(e){}},1200);return}catch(e){}
     }
     gpsFailed=false;cur=[la,ln];$('retry').hidden=true;
     openMap(cur);
-  },e=>fail(e.code),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
-}
+  }}
 /* عدّاد طلبات رابط الأسعار (19/11، صاحب المحل: «أدري كم زبون طلب من رابط الأسعار»).
    نموذجان مخفيان على Tally، وعدد زياراتهما يُقرأ في دفتر طيبة:
    B = الزبون وصل لهذه الصفحة من زر «أرسل الطلب» في رابط الأسعار، A = ضغط زر الإرسال للواتساب.
@@ -156,7 +162,9 @@ window.addEventListener('pageshow',cntBack);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cntBack()});
 if(cntNo&&!PK)setTimeout(cntReach,1500);
 $('tMap').onclick=()=>setLayer(false);$('tSat').onclick=()=>setLayer(true);
-$('me').onclick=()=>{if(cur&&map){map.setView(cur,17)}else locate()};
+$('me').onclick=()=>locate();
+/* 20/11 (صاحب المحل: «كل ما دخل الرابط يحدد الموقع من جديد»): لما يرجع الزبون للصفحة من نفس التبويب (المتصفح يرجّعها محفوظة بدون ما يعيد تحميلها)، يتحدد الموقع من جديد */
+window.addEventListener('pageshow',e=>{if(e.persisted&&!PK)locate()});
 $('retry').onclick=locate;
 if(PK){document.querySelector('h1').textContent=PKD?'🛵 تأكيد طلب التوصيل':'🛍️ تأكيد طلب الاستلام من المحل';$('msg').className='';$('msg').textContent='اضغط الزر الأخضر لإرسال طلبك على الواتساب، ونجهزه لك للاستلام.';$('wa').href=wl(order||(PKD?'🛵 طلب توصيل':'🛍️ طلب استلام من المحل'));$('wa').textContent='✅ أرسل الطلب على الواتساب';$('wa').hidden=false}else{loadLeaflet().catch(()=>{LP=null});
 locate()}
