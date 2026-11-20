@@ -121,11 +121,11 @@ function locate(){
   $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
   if(!navigator.geolocation){fail(0);return}
   /* 20/11 (صاحب المحل: «هنا الموقع غلط»): أول قراءة من الجوال غالباً تقريبية (من الشبكة لا من GPS)،
-     فنجمع القراءات حتى 12 ثانية ونأخذ أدقّها، ونوقف مبكراً إذا وصلت الدقة 25 متر أو أقل */
+     فنجمع القراءات حتى 25 ثانية ونأخذ أدقّها، ونوقف مبكراً إذا وصلت الدقة 10 أمتار أو أقل (طلب المالك: «خل دقة القراءة عالية») */
   let best=null,wid=null,done=false;
   const finish=()=>{if(done)return;done=true;try{navigator.geolocation.clearWatch(wid)}catch(e){}if(best)got(best);else fail(3)};
-  wid=navigator.geolocation.watchPosition(p=>{if(!best||p.coords.accuracy<best.coords.accuracy)best=p;$('msg').textContent='جاري تحديد موقعك بدقة… ±'+Math.round(best.coords.accuracy)+' متر';if(best.coords.accuracy<=25)finish()},e=>{if(best)finish();else{done=true;try{navigator.geolocation.clearWatch(wid)}catch(_){}fail(e.code)}},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
-  setTimeout(()=>{if(best)finish()},12000);setTimeout(()=>{if(!done)finish()},25000);
+  wid=navigator.geolocation.watchPosition(p=>{if(!best||p.coords.accuracy<best.coords.accuracy)best=p;$('msg').textContent='جاري تحديد موقعك بدقة… ±'+Math.round(best.coords.accuracy)+' متر';if(best.coords.accuracy<=10)finish()},e=>{if(best)finish();else{done=true;try{navigator.geolocation.clearWatch(wid)}catch(_){}fail(e.code)}},{enableHighAccuracy:true,timeout:30000,maximumAge:0});
+  setTimeout(()=>{if(best)finish()},25000);setTimeout(()=>{if(!done)finish()},35000);
 }
 function got(p){{
     const la=p.coords.latitude,ln=p.coords.longitude;acc=Math.round(p.coords.accuracy||0);
