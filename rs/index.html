@@ -6,7 +6,7 @@
 textarea{width:100%;box-sizing:border-box;font-size:15px;padding:8px;border-radius:8px;border:1px solid #ccc;min-height:70px}
 button{font-size:16px;padding:10px 14px;border-radius:8px;border:0;background:#0f766e;color:#fff;width:100%;margin-top:8px}
 .bad{color:#b91c1c;font-weight:700}.ok{color:#047857;font-weight:700}</style></head><body>
-<h1>رسوم التوصيل — تجربة 3</h1>
+<h1>رسوم التوصيل — تجربة 4</h1>
 <div class="c" id="inst" hidden>ثبّت التطبيق أولاً: من قائمة كروم ⋮ اختر «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».<button id="ib">تثبيت</button></div>
 <div class="c" id="res"><span class="mu">شارك موقع الزبون من خرائط قوقل واختر «رسوم التوصيل».</span></div>
 <div class="c"><div class="mu">ما وصل من المشاركة (للتجربة):</div><div class="mu" id="raw">—</div></div>
@@ -26,7 +26,7 @@ function run(s){$('raw').textContent=s||'—';const p=parse(s);
 function $(i){return document.getElementById(i)}
 async function resolveShort(s){const m=(s||'').match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/[A-Za-z0-9_-]+/);if(!m)return null;
  $('res').innerHTML='<span class="mu">جاري فتح رابط الخرائط…</span>';const u=encodeURIComponent(m[0]);
- const W=(new URLSearchParams(location.search).get('w')||localStorage.getItem('tbW')||'').replace(/\/$/,'');
+ const W=(new URLSearchParams(location.search).get('w')||localStorage.getItem('tbW')||'https://taiba-loc.tibh-esm.workers.dev').replace(/\/$/,'');
  const tries=[];if(W)tries.push(['وسيطنا',async()=>{const r=await fetch(W+'/?u='+u);const j=await r.json();return j.lat?j.lat+','+j.lng:JSON.stringify(j)}]);
  tries.push(['allorigins',async()=>{const r=await fetch('https://api.allorigins.win/get?url='+u);const j=await r.json();return ((j.status&&j.status.url)||'')+' '+(j.contents||'').slice(0,300000)}],
   ['corsproxy',async()=>{const r=await fetch('https://corsproxy.io/?url='+u);return r.url+' '+(await r.text()).slice(0,300000)}]);
