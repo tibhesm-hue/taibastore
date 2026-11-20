@@ -1,27 +1,34 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>كود الوسيط</title>
 <style>body{font-family:system-ui;margin:0;padding:16px;background:#f6f7f8}button{font-size:18px;padding:14px;border:0;border-radius:10px;background:#0f766e;color:#fff;width:100%}textarea{width:100%;height:50vh;font-size:12px;direction:ltr;box-sizing:border-box;margin-top:12px}#m{margin-top:8px;font-weight:700;color:#047857}</style></head><body>
-<button id="b">انسخ الكود</button><div id="m"></div><textarea id="t" readonly>// وسيط أسواق طيبة: يفك رابط خرائط قوقل المختصر ويرجع الإحداثيات فقط
-const OK_HOST=/^(maps\.app\.goo\.gl|goo\.gl|(www\.|maps\.)?google\.[a-z.]+)$/;
+<button id="b">انسخ الكود (نسخة 2)</button><div id="m"></div><textarea id="t" readonly>// وسيط أسواق طيبة: يفك رابط خرائط قوقل المختصر ويرجع الإحداثيات فقط (نسخة 2)
+const OK_HOST=/^(maps\.app\.goo\.gl|goo\.gl|(www\.|maps\.|consent\.)?google\.[a-z.]+)$/;
+function unesc(s){return s.replace(/\\u0026/gi,&#x27;&amp;&#x27;).replace(/\\u003d/gi,&#x27;=&#x27;).replace(/\\u0021/gi,&#x27;!&#x27;).replace(/\\u002f/gi,&#x27;/&#x27;).replace(/\\\//g,&#x27;/&#x27;).replace(/&amp;amp;/g,&#x27;&amp;&#x27;)}
 function parse(s){
-  try{s=decodeURIComponent(s)}catch(e){}
-  const pats=[/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,/@(-?\d+\.\d+),(-?\d+\.\d+)/,/[?&amp;](?:q|query|ll|daddr|destination|center)=(?:loc:)?(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/,/(-?\d{1,2}\.\d{4,})\s*,\s*(-?\d{1,3}\.\d{4,})/];
-  for(const p of pats){const m=s.match(p);if(m){const la=+m[1],ln=+m[2];if(la&gt;15&amp;&amp;la&lt;33&amp;&amp;ln&gt;34&amp;&amp;ln&lt;56)return[la,ln]}}
+  s=unesc(s);try{s=decodeURIComponent(s)}catch(e){}
+  const pats=[/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,/@(-?\d+\.\d+),(-?\d+\.\d+)/,/[?&amp;](?:q|query|ll|daddr|destination|center)=(?:loc:)?(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i,/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/,/(-?\d{1,2}\.\d{4,})\s*,\s*(-?\d{1,3}\.\d{4,})/];
+  for(const p of pats){const re=new RegExp(p.source,p.flags+&#x27;g&#x27;);let m;while((m=re.exec(s))){const la=+m[1],ln=+m[2];if(la&gt;15&amp;&amp;la&lt;33&amp;&amp;ln&gt;34&amp;&amp;ln&lt;56)return[la,ln]}}
   return null}
+function nextUrl(t,cur){t=unesc(t);
+  const m=t.match(/https?:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^&quot;&#x27;\s&lt;&gt;\\]*/i)||t.match(/http-equiv=[&quot;&#x27;]?refresh[&quot;&#x27;]?[^&gt;]*url=([^&quot;&#x27;&gt;]+)/i)||t.match(/(?:location\.href|location\.replace\(|window\.location)\s*=?\s*[&quot;&#x27;]([^&quot;&#x27;]+)/i);
+  if(!m)return null;const u=m[1]||m[0];try{return new URL(u,cur).href}catch(e){return null}}
 const H={&#x27;access-control-allow-origin&#x27;:&#x27;*&#x27;,&#x27;content-type&#x27;:&#x27;application/json; charset=utf-8&#x27;};
-const UA={&#x27;user-agent&#x27;:&#x27;Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36&#x27;,&#x27;accept-language&#x27;:&#x27;ar,en;q=0.8&#x27;,&#x27;cookie&#x27;:&#x27;CONSENT=YES+&#x27;};
+const UA={&#x27;user-agent&#x27;:&#x27;Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36&#x27;,&#x27;accept-language&#x27;:&#x27;ar,en;q=0.8&#x27;,&#x27;cookie&#x27;:&#x27;CONSENT=YES+cb; SOCS=CAESHAgBEhJnd3NfMjAyNDA1MDEtMF9SQzEaAmVuIAEaBgiA_LyaBg&#x27;};
+const J=(o)=&gt;new Response(JSON.stringify(o),{headers:H});
 export default{async fetch(req){
   const u=new URL(req.url).searchParams.get(&#x27;u&#x27;)||&#x27;&#x27;;
   let url;try{url=new URL(u)}catch(e){return new Response(&#x27;{&quot;err&quot;:&quot;bad&quot;}&#x27;,{status:400,headers:H})}
   if(!OK_HOST.test(url.hostname))return new Response(&#x27;{&quot;err&quot;:&quot;host&quot;}&#x27;,{status:400,headers:H});
-  let cur=url.href;
-  for(let i=0;i&lt;6;i++){
-    const p=parse(cur);if(p)return new Response(JSON.stringify({lat:p[0],lng:p[1],via:&#x27;url&#x27;}),{headers:H});
-    const r=await fetch(cur,{redirect:&#x27;manual&#x27;,headers:UA});
-    const loc=r.headers.get(&#x27;location&#x27;);
+  let cur=url.href,dbg=[];
+  for(let i=0;i&lt;8;i++){
+    const p=parse(cur);if(p)return J({lat:p[0],lng:p[1],via:&#x27;url&#x27;});
+    let r;try{r=await fetch(cur,{redirect:&#x27;manual&#x27;,headers:UA})}catch(e){dbg.push(&#x27;fetchErr &#x27;+e.message);break}
+    const loc=r.headers.get(&#x27;location&#x27;);dbg.push(r.status+(loc?&#x27; -&gt; &#x27;+loc.slice(0,150):&#x27;&#x27;));
     if(loc){cur=new URL(loc,cur).href;continue}
-    const t=(await r.text()).slice(0,800000);const q=parse(t);
-    if(q)return new Response(JSON.stringify({lat:q[0],lng:q[1],via:&#x27;page&#x27;}),{headers:H});
-    break}
-  return new Response(JSON.stringify({err:&#x27;nocoords&#x27;,last:cur.slice(0,200)}),{headers:H})}}
+    const t=(await r.text()).slice(0,1500000);const q=parse(t);
+    if(q)return J({lat:q[0],lng:q[1],via:&#x27;page&#x27;});
+    const n=nextUrl(t,cur);
+    if(n&amp;&amp;n!==cur&amp;&amp;OK_HOST.test(new URL(n).hostname)){dbg.push(&#x27;body -&gt; &#x27;+n.slice(0,150));cur=n;continue}
+    dbg.push(&#x27;body: &#x27;+t.replace(/\s+/g,&#x27; &#x27;).slice(0,600));break}
+  return J({err:&#x27;nocoords&#x27;,last:cur.slice(0,300),dbg})}}
 </textarea>
 <script>document.getElementById('b').onclick=async()=>{const t=document.getElementById('t');try{await navigator.clipboard.writeText(t.value)}catch(e){t.select();document.execCommand('copy')}document.getElementById('m').textContent='تم النسخ ✓'}</script></body></html>
