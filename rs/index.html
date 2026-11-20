@@ -1,41 +1,36 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>رسوم التوصيل (تجربة)</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f766e">
-<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f6f7f8;color:#111}h1{font-size:20px;margin:0 0 12px}
-.c{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
-.big{font-size:28px;font-weight:700}.mu{color:#666;font-size:13px;word-break:break-all}
+<title>رسوم التوصيل</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f766e">
+<style>body{font-family:system-ui,Tahoma,sans-serif;margin:0;padding:16px;background:#f6f7f8;color:#111}h1{font-size:22px;margin:4px 0 14px}
+.c{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px #0001}
+.mu{color:#666;font-size:14px}.bad{color:#b91c1c;font-weight:700}
+.lnk{display:block;text-align:center;color:#0f766e;font-size:14px;text-decoration:underline;margin-top:8px;background:none;border:0;width:100%;font-family:inherit}
 textarea{width:100%;box-sizing:border-box;font-size:15px;padding:8px;border-radius:8px;border:1px solid #ccc;min-height:70px}
-button{font-size:16px;padding:10px 14px;border-radius:8px;border:0;background:#0f766e;color:#fff;width:100%;margin-top:8px}
-.bad{color:#b91c1c;font-weight:700}.ok{color:#047857;font-weight:700}</style></head><body>
-<h1>رسوم التوصيل — تجربة 4</h1>
-<div class="c" id="inst" hidden>ثبّت التطبيق أولاً: من قائمة كروم ⋮ اختر «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».<button id="ib">تثبيت</button></div>
-<div class="c" id="res"><span class="mu">شارك موقع الزبون من خرائط قوقل واختر «رسوم التوصيل».</span></div>
-<div class="c"><div class="mu">ما وصل من المشاركة (للتجربة):</div><div class="mu" id="raw">—</div></div>
-<div class="c"><div class="mu">أو الصق هنا:</div><textarea id="pt"></textarea><button id="go">احسب</button></div>
+.go{font-size:16px;padding:10px;border-radius:10px;border:0;background:#0f766e;color:#fff;width:100%;margin-top:8px;font-family:inherit}
+[hidden]{display:none!important}</style></head><body>
+<h1>رسوم التوصيل</h1>
+<div class="c" id="inst" hidden>ثبّت التطبيق مرة واحدة: من قائمة كروم ⋮ اختر «تثبيت التطبيق».<button class="go" id="ib">تثبيت</button></div>
+<div id="out"><div class="c mu">شارك موقع الزبون من خرائط قوقل واختر «رسوم التوصيل».</div></div>
+<button class="lnk" id="pl" type="button">الموقع ما وصل؟ الصقه هنا</button>
+<div class="c" id="pbox" hidden><textarea id="pt" placeholder="الصق رابط الموقع أو الإحداثيات"></textarea><button class="go" id="go">احسب</button></div>
+<script src="../lib/fee.js?v=1"></script>
 <script>
-const SHOP_LAT=26.3092878,SHOP_LNG=44.8183906,TIERS=[[0.5,2,0],[1,2,1],[1.5,3,2],[2,4,3],[1e9,5,5]];
-function rkOf(la,ln){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(a))}
-function feeOf(rk,sv){if(rk>=3)return Math.min(15,Math.round(rk*2));for(const t of TIERS)if(rk<t[0])return sv>=20?t[2]:t[1];return 5}
-function dcode(lv){const CR=Math.floor(Math.random()*33),E=Math.floor((Date.now()+3*3600e3)/864e5),P=CR*30+(E%10)*3+(lv-1);return String((P*7919+1234)%9973).padStart(4,'0')}
-function parse(s){s=decodeURIComponent(s||'');const pats=[/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/[?&](?:q|query|ll|daddr|destination)=(?:loc:)?(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/];
- for(const p of pats){const m=s.match(p);if(m){const la=+m[1],ln=+m[2];if(la>15&&la<33&&ln>34&&ln<56)return[la,ln]}}return null}
-const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function run(s){$('raw').textContent=s||'—';const p=parse(s);
- if(!p){$('res').innerHTML=s?'<div class="bad">ما فيه إحداثيات في اللي وصل.</div><div class="mu">صوّر هذه الشاشة وأرسلها لي.</div>':'<span class="mu">شارك موقع الزبون من خرائط قوقل واختر «رسوم التوصيل».</span>';return}
- const rk=rkOf(p[0],p[1]),ok=rk/0.75,lv=ok<1?1:ok<=3?2:3,nm=['قريب','متوسط','بعيد'][lv-1];
- $('res').innerHTML='<div class="ok">وصلت الإحداثيات ✓</div><div class="big">'+nm+'</div><div>المسافة تقريباً '+rk.toFixed(2)+' كم</div><div>الرسوم: '+feeOf(rk,0)+' ريال (وإذا الطلب 20 ريال فأكثر: '+feeOf(rk,20)+')</div><div class="big">الرمز: '+dcode(lv)+'</div><div class="mu">'+p[0].toFixed(6)+', '+p[1].toFixed(6)+'</div>'}
-function $(i){return document.getElementById(i)}
-async function resolveShort(s){const m=(s||'').match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/[A-Za-z0-9_-]+/);if(!m)return null;
- $('res').innerHTML='<span class="mu">جاري فتح رابط الخرائط…</span>';const u=encodeURIComponent(m[0]);
- const W=(new URLSearchParams(location.search).get('w')||localStorage.getItem('tbW')||'https://taiba-loc.tibh-esm.workers.dev').replace(/\/$/,'');
- const tries=[];if(W)tries.push(['وسيطنا',async()=>{const r=await fetch(W+'/?u='+u);const j=await r.json();return j.lat?j.lat+','+j.lng:JSON.stringify(j)}]);
- tries.push(['allorigins',async()=>{const r=await fetch('https://api.allorigins.win/get?url='+u);const j=await r.json();return ((j.status&&j.status.url)||'')+' '+(j.contents||'').slice(0,300000)}],
-  ['corsproxy',async()=>{const r=await fetch('https://corsproxy.io/?url='+u);return r.url+' '+(await r.text()).slice(0,300000)}]);
- const log=[];for(const [n,f] of tries){try{const t=await Promise.race([f(),new Promise((_,j)=>setTimeout(()=>j(new Error('مهلة')),12000))]);const pp=parse(t);log.push(n+': '+(pp?'نجح':'وصل بلا إحداثيات'));if(pp)return {p:pp,log}}catch(e){log.push(n+': فشل ('+e.message+')')}}
- return {p:null,log}}
-const q=new URLSearchParams(location.search);try{if(q.get('w'))localStorage.setItem('tbW',q.get('w'))}catch(e){}const sh=[q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' \n');
-(async()=>{run(sh);if(sh&&!parse(sh)){const r=await resolveShort(sh);if(r&&r.p){run(r.p[0]+','+r.p[1]);$('raw').textContent=sh+'\n['+r.log.join(' | ')+']'}else if(r){run(sh);$('raw').textContent=sh+'\n['+r.log.join(' | ')+']'}}})();
+const $=i=>document.getElementById(i);
+const W='https://taiba-loc.tibh-esm.workers.dev';
+function show(p){TBFEE.render($('out'),p[0],p[1])}
+function fail(t){$('out').innerHTML='<div class="c"><div class="bad">'+t+'</div><div class="mu" style="margin-top:6px">جرّب «الموقع ما وصل؟ الصقه هنا».</div></div>';$('pbox').hidden=false}
+async function run(s){
+ if(!s)return;const p=TBFEE.parse(s);if(p)return show(p);
+ const m=s.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/[A-Za-z0-9_-]+/);
+ if(!m)return fail('ما فيه موقع في اللي وصل.');
+ $('out').innerHTML='<div class="c mu">جاري قراءة الموقع…</div>';
+ try{const r=await Promise.race([fetch(W+'/?u='+encodeURIComponent(m[0])),new Promise((_,j)=>setTimeout(()=>j(new Error('t')),15000))]);const j=await r.json();
+  if(j.lat)return show([j.lat,j.lng]);}catch(e){}
+ fail('ما قدرت أقرأ الموقع من الرابط.');
+}
+const q=new URLSearchParams(location.search);
+run([q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' \n'));
+$('pl').onclick=()=>{$('pbox').hidden=!$('pbox').hidden};
 $('go').onclick=()=>run($('pt').value);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('ib').onclick=()=>dp&&dp.prompt();
-if(matchMedia('(display-mode: standalone)').matches)$('inst').hidden=true;
 </script></body></html>

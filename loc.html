@@ -1,6 +1,7 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>موقعك للتوصيل — أسواق طيبة</title>
 <link rel="icon" href="logo.png">
+<script src="lib/fee.js?v=1"></script>
 <style>
 body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;box-sizing:border-box;background:#f4f6f3;color:#13261d;font-family:Tahoma,sans-serif;text-align:center}
 #logo{width:90px;border-radius:22px}
@@ -39,7 +40,7 @@ body.mapping #logo,body.mapping h1{display:none}
 <button id="retry" type="button" hidden>📍 حاول مرة ثانية</button>
 <a class="btn" id="nol" href="#" hidden>أرسل الطلب بدون موقع (أرسله من الواتساب)</a>
 <script>
-const SHOP='966539137077',SHOP_LAT=26.3092878,SHOP_LNG=44.8183906;
+const SHOP='966539137077',SHOP_LAT=TBFEE.SHOP_LAT,SHOP_LNG=TBFEE.SHOP_LNG;
 const q=new URLSearchParams(location.search);
 const order=(q.get('m')||'').slice(0,3500);
 const PK=q.get('pk')==='1'||q.get('pk')==='2',PKD=q.get('pk')==='2';/* pk=2: توصيل وموقع الزبون محفوظ في صفحة الأسعار، فلا نحدد موقعه من جديد ونكتفي بتأكيد وعدّ *//* استلام من المحل: صفحة تأكيد بلا موقع، وتُعدّ على نموذج Tally ثالث */
@@ -51,17 +52,15 @@ const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
 let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null;
 const money=x=>String(Math.round(x*100)/100);
-// مستويات التوصيل (المسافة = خط مستقيم من المحل بالكيلو): [حد المسافة كم، أقل من 20، 20 فأكثر]
-const TIERS=[[0.5,2,0],[1,2,1],[1.5,3,2],[2,4,3],[1e9,5,5]];
-function rkOf(la,ln){const R=6371,r=x=>x*Math.PI/180,dl=r(la-SHOP_LAT),dn=r(ln-SHOP_LNG),a=Math.sin(dl/2)**2+Math.cos(r(SHOP_LAT))*Math.cos(r(la))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(a))}
-function feeOf(rk,sv){if(rk>=3)return Math.min(15,Math.round(rk*2));/* owner 18 Nov: over 3 km = 1 riyal per km there and back (2 per km), whole riyals, at most 15 */for(const t of TIERS)if(rk<t[0])return sv>=20?t[2]:t[1];return 5}
+// الحساب كله من lib/fee.js (المصدر الوحيد لكل الصفحات)
+const TIERS=TBFEE.TIERS;
+function rkOf(la,ln){return TBFEE.rk(la,ln)}
+function feeOf(rk,sv){return TBFEE.fee(rk,sv)}
 function calc(la,ln){
-  const rk=rkOf(la,ln),ok=rk/0.75;
-  return {km:ok,lv:ok<1?1:ok<=3?2:3,fee:feeOf(rk,sub),near:TIERS.slice(0,4).some(t=>Math.abs(rk-t[0])<0.07)};
+  const rk=rkOf(la,ln);
+  return {km:TBFEE.road(rk),lv:TBFEE.lvl(rk),fee:feeOf(rk,sub),near:TBFEE.near(rk)};
 }
 function calc2(la,ln,sv){return feeOf(rkOf(la,ln),sv)}
-let CR=null;
-function dcode(lv){if(CR===null)CR=Math.floor(Math.random()*33);const E=Math.floor((Date.now()+3*3600e3)/864e5),P=CR*30+(E%10)*3+(lv-1);return String((P*7919+1234)%9973).padStart(4,'0')}
 function show(la,ln){
   const c=calc(la,ln),fee=c.fee;
   let body=base;
@@ -73,7 +72,7 @@ function show(la,ln){
     const re=/^.*المجموع التقريبي.*$/m;
     body=re.test(base)?base.replace(re,()=>br):base+'\n\n'+br;
   }
-  {const ok=c.km;body+='\n🏍️ مستوى المندوب: '+(ok<1?'١':ok<2?'٢':'٣');}
+  body+='\n🏍️ مستوى المندوب: '+['','١','٢','٣'][c.lv];
   if(c.near)body+='\n⚠️ راجع الدبوس';
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t+(pkLine?'\n\n'+pkLine+'~f.'+(isNaN(sub)?calc2(la,ln,0):fee):''));$('wa').hidden=false;$('nol').hidden=true;
@@ -124,7 +123,7 @@ function locate(){
   navigator.geolocation.getCurrentPosition(p=>{
     const la=p.coords.latitude,ln=p.coords.longitude;
     if(q.get('pop')&&window.opener){
-      try{const c=calc(la,ln);window.opener.postMessage({taibaLoc:1,lat:la,lng:ln,tier:c.km<1?'d1':c.km<=3?'d3':'d9'},'*');
+      try{const c=calc(la,ln);window.opener.postMessage({taibaLoc:1,lat:la,lng:ln,tier:['','d1','d3','d9'][c.lv]},'*');
         $('msg').textContent='✅ تم تحديد موقعك. ارجع لصفحة الطلب.';setTimeout(()=>{try{window.close()}catch(e){}},1200);return}catch(e){}
     }
     gpsFailed=false;cur=[la,ln];$('retry').hidden=true;
