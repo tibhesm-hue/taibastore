@@ -50,7 +50,7 @@ const base=(order?order.replace(PKRE,''):'')||('📍 موقعي للتوصيل'+
 const $=id=>document.getElementById(id);
 const wl=t=>'https://wa.me/'+SHOP+'?text='+encodeURIComponent(t);
 const sub=parseFloat(q.get('s'));
-let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null,acc=0;
+let cur=null,map=null,sat=null,osm=null,osmAlt=null,isSat=false,gpsFailed=false,mt=null,acc=0,WID=null,touched=false;
 const money=x=>String(Math.round(x*100)/100);
 // الحساب كله من lib/fee.js (المصدر الوحيد لكل الصفحات)
 const TIERS=TBFEE.TIERS;
@@ -77,7 +77,7 @@ function show(la,ln){
   const t=body+'\n\n📍 موقعي (اضغطه للرسوم والخريطة): https://tibhesm-hue.github.io/taibastore/m.html?v=2&q='+la.toFixed(6)+','+ln.toFixed(6);
   $('wa').href=wl(t+(pkLine?'\n\n'+pkLine+'~f.'+(isNaN(sub)?calc2(la,ln,0):fee):''));$('wa').hidden=false;$('nol').hidden=true;
   $('msg').className='';
-  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':acc>50?'⚠️ موقعك تقريبي (±'+acc+' متر) — تأكد أن الدبوس على بيتك.':'✅ تم تحديد موقعك'+(acc?' (دقة القراءة ±'+acc+' متر)':'')+'.')+'<br>🛵 رسوم التوصيل: <b>'+(isNaN(sub)?(x=>(x?x+' ريال':'مجاني')+'</b>')(calc2(la,ln,0)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
+  $('msg').innerHTML=(gpsFailed?'⚠️ ما تحدد موقعك تلقائيًا، حرّك الخريطة إلى بيتك.':acc>10?'⚠️ دقة القراءة ±'+acc+' متر (أقل من المطلوب 10 متر) — تأكد أن الدبوس على بيتك، أو اضغط «ارجع لموقعي الحالي» عند الشباك أو برا البيت.':'✅ تم تحديد موقعك'+(acc?' (دقة القراءة ±'+acc+' متر)':'')+'.')+'<br>🛵 رسوم التوصيل: <b>'+(isNaN(sub)?(x=>(x?x+' ريال':'مجاني')+'</b>')(calc2(la,ln,0)):(fee?fee+' ريال':'مجاني')+'</b>')+'<br><span style="font-size:13px;font-weight:400">إذا الدبوس مو على بيتك: حرّك الخريطة أو المس المكان، ثم اضغط «موافق».</span>';
 }
 let LP=null;
 function loadLeaflet(){
@@ -102,7 +102,7 @@ async function openMap(c){
     watch(osmAlt,()=>{if(!isSat)$('mapnote').textContent='الخريطة بطيئة أو محجوبة على شبكتك. جرّب «صور الأرض» أو شبكة ثانية.'});
     watch(sat,()=>{if(isSat)$('mapnote').textContent='صور الأرض ما تحمّلت على شبكتك. اضغط «خريطة».'});
     osm.addTo(map);
-    map.on('click',e=>map.panTo(e.latlng));
+    map.on('click',e=>{touched=true;map.panTo(e.latlng)});map.on('dragstart',()=>{touched=true});
     map.on('moveend',()=>{clearTimeout(mt);mt=setTimeout(()=>{const p=map.getCenter();show(p.lat,p.lng)},200)});
   }else{map.setView(c,17)}
   $('mapnote').textContent='';
@@ -120,12 +120,19 @@ function fail(code){
 function locate(){
   $('retry').hidden=true;$('nol').hidden=true;$('msg').className='';$('msg').textContent='جاري تحديد موقعك…';
   if(!navigator.geolocation){fail(0);return}
-  /* 20/11 (صاحب المحل: «هنا الموقع غلط»): أول قراءة من الجوال غالباً تقريبية (من الشبكة لا من GPS)،
-     فنجمع القراءات حتى 25 ثانية ونأخذ أدقّها، ونوقف مبكراً إذا وصلت الدقة 10 أمتار أو أقل (طلب المالك: «خل دقة القراءة عالية») */
-  let best=null,wid=null,done=false;
-  const finish=()=>{if(done)return;done=true;try{navigator.geolocation.clearWatch(wid)}catch(e){}if(best)got(best);else fail(3)};
-  wid=navigator.geolocation.watchPosition(p=>{if(!best||p.coords.accuracy<best.coords.accuracy)best=p;$('msg').textContent='جاري تحديد موقعك بدقة… ±'+Math.round(best.coords.accuracy)+' متر';if(best.coords.accuracy<=10)finish()},e=>{if(best)finish();else{done=true;try{navigator.geolocation.clearWatch(wid)}catch(_){}fail(e.code)}},{enableHighAccuracy:true,timeout:30000,maximumAge:0});
-  setTimeout(()=>{if(best)finish()},25000);setTimeout(()=>{if(!done)finish()},35000);
+  /* 20/11 (صاحب المحل: «هنا الموقع غلط» ثم «ابي دقة 10 متر على الأكثر»): أول قراءة من الجوال غالباً تقريبية،
+     فنستمر نقرأ GPS لين توصل الدقة 10 أمتار أو أقل. إذا ما وصلت خلال 25 ثانية نعرض أدق قراءة مع تنبيه،
+     ونستمر نقرأ دقيقتين إضافيتين: أول ما توصل 10 أمتار ينتقل الدبوس لها — إلا إذا الزبون حرّك الخريطة بنفسه */
+  try{if(WID!=null)navigator.geolocation.clearWatch(WID)}catch(e){}
+  let best=null,shown=false,stopT=null;touched=false;
+  const stop=()=>{try{navigator.geolocation.clearWatch(WID)}catch(e){}WID=null;clearTimeout(stopT)};
+  WID=navigator.geolocation.watchPosition(p=>{if(!best||p.coords.accuracy<best.coords.accuracy)best=p;const a=Math.round(best.coords.accuracy);
+      if(a<=10){stop();if(!shown||!touched){shown=true;got(best)}return}
+      if(!shown)$('msg').textContent='جاري تحديد موقعك بدقة… ±'+a+' متر (المطلوب 10 متر أو أقل)'},
+    e=>{if(best){if(!shown){shown=true;got(best)}}else{stop();fail(e.code)}},{enableHighAccuracy:true,timeout:30000,maximumAge:0});
+  setTimeout(()=>{if(!shown&&best){shown=true;got(best)}},25000);
+  setTimeout(()=>{if(!shown&&!best){stop();fail(3)}},35000);
+  stopT=setTimeout(stop,145000);
 }
 function got(p){{
     const la=p.coords.latitude,ln=p.coords.longitude;acc=Math.round(p.coords.accuracy||0);
