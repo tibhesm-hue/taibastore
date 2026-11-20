@@ -6,7 +6,7 @@
 textarea{width:100%;box-sizing:border-box;font-size:15px;padding:8px;border-radius:8px;border:1px solid #ccc;min-height:70px}
 button{font-size:16px;padding:10px 14px;border-radius:8px;border:0;background:#0f766e;color:#fff;width:100%;margin-top:8px}
 .bad{color:#b91c1c;font-weight:700}.ok{color:#047857;font-weight:700}</style></head><body>
-<h1>رسوم التوصيل — تجربة</h1>
+<h1>رسوم التوصيل — تجربة 2</h1>
 <div class="c" id="inst" hidden>ثبّت التطبيق أولاً: من قائمة كروم ⋮ اختر «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».<button id="ib">تثبيت</button></div>
 <div class="c" id="res"><span class="mu">شارك موقع الزبون من خرائط قوقل واختر «رسوم التوصيل».</span></div>
 <div class="c"><div class="mu">ما وصل من المشاركة (للتجربة):</div><div class="mu" id="raw">—</div></div>
@@ -24,7 +24,14 @@ function run(s){$('raw').textContent=s||'—';const p=parse(s);
  const rk=rkOf(p[0],p[1]),ok=rk/0.75,lv=ok<1?1:ok<=3?2:3,nm=['قريب','متوسط','بعيد'][lv-1];
  $('res').innerHTML='<div class="ok">وصلت الإحداثيات ✓</div><div class="big">'+nm+'</div><div>المسافة تقريباً '+rk.toFixed(2)+' كم</div><div>الرسوم: '+feeOf(rk,0)+' ريال (وإذا الطلب 20 ريال فأكثر: '+feeOf(rk,20)+')</div><div class="big">الرمز: '+dcode(lv)+'</div><div class="mu">'+p[0].toFixed(6)+', '+p[1].toFixed(6)+'</div>'}
 function $(i){return document.getElementById(i)}
-const q=new URLSearchParams(location.search);const sh=[q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' \n');run(sh);
+async function resolveShort(s){const m=(s||'').match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/[A-Za-z0-9_-]+/);if(!m)return null;
+ $('res').innerHTML='<span class="mu">جاري فتح رابط الخرائط…</span>';const u=encodeURIComponent(m[0]);
+ const tries=[['allorigins',async()=>{const r=await fetch('https://api.allorigins.win/get?url='+u);const j=await r.json();return ((j.status&&j.status.url)||'')+' '+(j.contents||'').slice(0,300000)}],
+  ['corsproxy',async()=>{const r=await fetch('https://corsproxy.io/?url='+u);return r.url+' '+(await r.text()).slice(0,300000)}]];
+ const log=[];for(const [n,f] of tries){try{const t=await Promise.race([f(),new Promise((_,j)=>setTimeout(()=>j(new Error('مهلة')),12000))]);const pp=parse(t);log.push(n+': '+(pp?'نجح':'وصل بلا إحداثيات'));if(pp)return {p:pp,log}}catch(e){log.push(n+': فشل ('+e.message+')')}}
+ return {p:null,log}}
+const q=new URLSearchParams(location.search);const sh=[q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' \n');
+(async()=>{run(sh);if(sh&&!parse(sh)){const r=await resolveShort(sh);if(r&&r.p){run(r.p[0]+','+r.p[1]);$('raw').textContent=sh+'\n['+r.log.join(' | ')+']'}else if(r){run(sh);$('raw').textContent=sh+'\n['+r.log.join(' | ')+']'}}})();
 $('go').onclick=()=>run($('pt').value);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('ib').onclick=()=>dp&&dp.prompt();
