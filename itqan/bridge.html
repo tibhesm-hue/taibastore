@@ -1,7 +1,7 @@
 <!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الإتقان</title>
 <body style="font-family:sans-serif;text-align:center;padding:40px;font-size:18px;color:#444">⏳ لحظة…
 <script>
-var W="https://itqan.w-f-almateq.workers.dev",K="taj-48132d5dec65",O=window.opener;
+var W="https://itqan.w-f-almateq.workers.dev",K="taj-48132d5dec65",O=window.opener||(window.parent!==window?window.parent:null);
 function send(m){try{if(O)O.postMessage(m,"*")}catch(e){}}
 window.addEventListener("message",function(ev){var q=ev.data||{};if(!q||q.k!=="tjb"||!q.a)return;var A=null;try{A=JSON.parse(localStorage.getItem("itqAuth")||"null")}catch(e){}var o=q.o||{};if(q.auth){if(!A){send({k:"tjb",id:q.id,r:{ok:false,err:"noauth"}});return}o.e=A.e;o.h=A.h}
   fetch(W+"/?it="+encodeURIComponent(q.a)+"&k="+K,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(o)}).then(function(r){return r.json()}).then(function(r){send({k:"tjb",id:q.id,r:r});if(q.close)setTimeout(function(){window.close()},300)}).catch(function(e){send({k:"tjb",id:q.id,r:{ok:false,err:"net"}})})});
