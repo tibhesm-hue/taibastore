@@ -5,6 +5,7 @@ on:
       key: {description: "one-time key", required: true}
       data: {description: "gzip+base64 data", required: true}
       force: {description: "replace existing", required: false, default: "0"}
+      delorg: {description: "root org to delete", required: false, default: ""}
 jobs:
   imp:
     runs-on: ubuntu-latest
@@ -13,9 +14,10 @@ jobs:
           echo "::add-mask::$KEY"
           node -e '
           const z=require("zlib");const D=JSON.parse(z.gunzipSync(Buffer.from(process.env.DATA,"base64")).toString());
-          fetch("https://itqan.w-f-almateq.workers.dev/?it=tjimp&k=taj-48132d5dec65",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({key:process.env.KEY,data:D,force:process.env.FORCE==="1"})}).then(r=>r.json()).then(r=>{console.log("result:",JSON.stringify(r));if(!r.ok)process.exit(1)})'
+          fetch("https://itqan.w-f-almateq.workers.dev/?it=tjimp&k=taj-48132d5dec65",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({key:process.env.KEY,data:D,force:process.env.FORCE==="1",delOrg:process.env.DELORG||""})}).then(r=>r.json()).then(r=>{console.log("result:",JSON.stringify(r));if(!r.ok)process.exit(1)})'
           node -e 'fetch("https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65",{method:"POST",body:"{}"}).then(r=>r.json()).then(r=>console.log("counts:",JSON.stringify(Object.fromEntries(Object.entries(r.data||{}).map(([k,v])=>[k,Object.keys(v).length])))))'
         env:
           KEY: ${{ inputs.key }}
           DATA: ${{ inputs.data }}
           FORCE: ${{ inputs.force }}
+          DELORG: ${{ inputs.delorg }}
