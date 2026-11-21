@@ -1077,7 +1077,7 @@ function migTaj(O,key){var A=itAuth();if(!A)return;var C=function(a,o){o.e=A.e;o
   (OD.kids||[]).forEach(function(k){if(!/^مجمع/.test(k.n))ch.push(C("oren",{o:O.o,c:k.o,ck:"o",n:"مجمع "+k.n}))});
   (OD.groups||[]).forEach(function(G){if(/^أسرة /.test(G.n))ch.push(C("oren",{o:G.par||O.o,c:G.g,ck:"g",n:G.n.replace(/^أسرة /,"حلقة ")}))});
   Promise.all(ch).then(function(){try{localStorage.setItem(key,"1")}catch(e){}ODat=0;OD=null;oLoad()}).catch(function(){})}
-function tajSync(O){if(window.__tjs)return;window.__tjs=1;fetch("taj-sync.json?t="+Date.now()).then(function(r){return r.ok?r.json():null}).then(function(D){if(!D||!D.st)return;window.__tjD=D;var k="itqSync|"+O.o,last="";try{last=localStorage.getItem(k)||""}catch(e){}if(last===D.at)return;var A=itAuth();
+function tajSync(O){if(window.__tjs)return;window.__tjs=1;tjSyncSrc().then(function(D){if(!D||!D.st)return;window.__tjD=D;var k="itqSync|"+O.o,last="";try{last=localStorage.getItem(k)||""}catch(e){}if(last===D.at)return;var A=itAuth();
   var jobs=(OD.groups||[]).map(function(G){var NL=tNL(G),fam=String(G.n).replace(/^(حلقة|أسرة) /,"");return Promise.all(NL.map(function(x){return itH12(x.n)})).then(function(H){var ch=0,NL2=NL.map(function(x,i){var R=D.st[H[i]];if(!R||!x.p)return x;var P={};try{P=JSON.parse(x.p)}catch(e){}var N=impPlan({id:"x",lv:R.lv,lvFrom:R.lvFrom,ss:R.ss,sa:R.sa,mode:R.mode,dn:new Array(+R.n||0)},fam);if(+P.ss===+N.ss&&+P.sa===+N.sa)return x;["ss","sa","re","rv","parts"].forEach(function(f){P[f]=N[f]});ch=1;var y=JSON.parse(JSON.stringify(x));y.p=JSON.stringify(P);y.at=Date.now();return y});
     if(!ch)return 0;return itCall("tnames",{e:A.e,h:A.h,g:G.g,nl:JSON.stringify(NL2)}).then(function(r){return r&&r.ok?1:0})})});
   Promise.all(jobs).then(function(R){try{localStorage.setItem(k,D.at)}catch(e){}if(R.reduce(function(a,b){return a+b},0)){ITS.note="حُدّثت مواضع الطلاب من تاج الوقار حتى "+fmt(D.d||todayStr());ODat=0;oLoad()}})}).catch(function(){})}
@@ -1354,7 +1354,7 @@ function supErr(m){window.__supE=m;var V={};["supn","supe","supp"].forEach(funct
 function supGo(X){var em=itEm((document.getElementById("supe")||{}).value),pw=String((document.getElementById("supp")||{}).value||""),pn=String((document.getElementById("supn")||{}).value||"").trim().slice(0,60);var cl=X&&X!=="login"?(window.__supL||[]).filter(function(y){return y.c===X})[0]:null;
   if(cl&&!pn)return supErr("اكتبي اسمك");if(!em)return supErr("اكتبي الإيميل صحيحاً، مثل name@gmail.com");if(!pw)return supErr("اكتبي كلمة المرور");
   var W=null;try{W=window.open("about:blank","_blank")}catch(e){W=null}supErr("⏳ لحظة…");
-  var go=function(h){var U=ITQURL+"#ia="+encodeURIComponent(em+"|"+h);window.__supE="";window.__supL=null;window.__supX=null;if(W&&!W.closed){try{W.location.href=U;window.__sup=0;window.__supU=null;render();return}catch(e){}}window.__supU=U;render()},bad=function(m){try{if(W)W.close()}catch(e){}supErr(m)},
+  var go=function(h){if(!window.ITQ&&EDITOR){itSetAuth({e:em,h:h});setTimeout(function(){tjPush(1)},300)}var U=ITQURL+"#ia="+encodeURIComponent(em+"|"+h);window.__supE="";window.__supL=null;window.__supX=null;if(W&&!W.closed){try{W.location.href=U;window.__sup=0;window.__supU=null;render();return}catch(e){}}window.__supU=U;render()},bad=function(m){try{if(W)W.close()}catch(e){}supErr(m)},
     ce=function(r){return r&&r.err==="taken"?"هذا الاسم سجّلت عليه وحدة قبلك، كلّمي المسؤول":r&&r.err==="noslot"?"هذا الاسم ما عاد موجود، حدّثي الصفحة":"تعذّر التسجيل، أعيدي المحاولة"};
   itHash(em,pw).then(function(h){return itCall("login",{e:em,h:h}).then(function(r){
     if(r&&r.ok){if(!cl)return go(h);return itCall("oclaim",{e:em,h:h,cl:cl.c,ck:cl.ck,pn:pn}).then(function(r2){if(r2&&r2.ok)return go(h);bad(ce(r2))})}
@@ -1395,6 +1395,25 @@ var _ce56=OVW.ce;OVW.ce=function(){var E=PTS.ce,h=_ce56.apply(this,arguments);if
   if(u==="r")h=h.replace('<h2>الجوائز بالنقاط</h2>','<h2>المكافآت بالريال</h2>').replace('يرى المشاركون نقاط غيرهم وترتيبهم','يرى المشاركون درجات غيرهم وترتيبهم');return h};TVW.ce=OVW.ce;
 OACT.ceu=function(p){ceRead();PTS.ce.d.u=p[1]==="r"?"r":"p";render()};
 var _oce56=OACT.ce;OACT.ce=function(p){var r=_oce56.apply(this,arguments);try{if(p[1]==="new"&&PTS.ce&&!PTS.ce.d.u){var on=OD&&OD.org?(OD.org.n||"")+(OD.org.pn||""):"";PTS.ce.d.u=/تاج/.test(on)?"r":"p";if(PTS.v==="ce")render()}}catch(e){}return r};
+
+
+/* ربط تاج الوقار بالإتقان: صفحة المسؤول ترسل نسخة فورية، والإتقان يعرضها */
+function tjPush(force){if(window.ITQ||!EDITOR)return;var A=itAuth();if(!A)return;var o;try{o=snapObj()}catch(e){return}var k=snapKey(o);if(!force&&k===window.__tjpk)return;itCall("tjpush",{e:A.e,h:A.h,snap:o}).then(function(r){var b=window.__tjpOk;if(r&&r.ok){window.__tjpk=k;window.__tjpOk=1}else window.__tjpOk=r&&r.err==="perm"?-1:0;if(b!==window.__tjpOk&&effTab()==="pls")render()}).catch(function(){})}
+var _doPub57=doPub;doPub=async function(){try{await _doPub57()}finally{tjPush()}};
+if(!window.__tjpOn){window.__tjpOn=1;setInterval(function(){tjPush()},60000);setTimeout(function(){tjPush()},8000)}
+var _vpl57=vPubLs;vPubLs=function(){var h=_vpl57();if(window.ITQ||!EDITOR)return h;var A=itAuth(),st=window.__tjpOk;return '<div class="card" style="margin:0 0 10px;font-size:14px;'+(A&&st!==-1?'background:#E1F5EE;border:1px solid #5DCAA5;color:#085041':'background:#FAEEDA;border:1px solid #EF9F27;color:#633806')+'">🔗 الإتقان: '+(A?(st===-1?'الإيميل <span dir="ltr">'+esc(A.e)+'</span> ليس مسؤولاً في جمعية تاج الوقار، فادخل بإيميل الجمعية أو المجمع':'مربوط بـ <span dir="ltr">'+esc(A.e)+'</span>، وكل حفظ هنا يظهر في الإتقان فوراً'):'غير مربوط. ادخل بإيميلك مرة واحدة من «دخول المشرفة والمعلمة» أسفل القائمة')+'</div>'+h};
+function tjOrg(){return !!(window.ITQ&&OD&&OD.org&&/تاج/.test((OD.org.n||"")+" "+(OD.org.pn||"")))}
+function tjSnapGet(){var S=window.__tjS;if(S&&Date.now()-S.t<60000)return S.d;if(!window.__tjSl){window.__tjSl=1;itCall("tjsnap",{}).then(function(r){window.__tjSl=0;window.__tjS={t:Date.now(),d:r&&r.snap&&r.snap.students?r.snap:null};render()}).catch(function(){window.__tjSl=0;window.__tjS={t:Date.now(),d:null};render()})}return S?S.d:undefined}
+function tjRun(D,fn){var sv=[cfg,students,logs,encs,results,wds,pcyc];cfg=Object.assign({},DEF,D.cfg||{});students=(D.students||[]).slice().sort(function(x,y){return (x.name||"").localeCompare(y.name||"","ar")});logs=D.logs||[];encs=D.encs||[];results=D.results||{};wds=D.wd||{};pcyc=null;var h="";try{h=fn()}catch(e){h='<div class="card muted">تعذّر العرض</div>'}cfg=sv[0];students=sv[1];logs=sv[2];encs=sv[3];results=sv[4];wds=sv[5];pcyc=sv[6];return h}
+var _oCmp57=oCmpTab;oCmpTab=function(T){if(!tjOrg())return _oCmp57.apply(this,arguments);var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return _oCmp57.apply(this,arguments);
+  var sc=PTS.tjsc||"m",h='<div class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">من تاج الوقار مباشرة'+(D.at?' · آخر تحديث '+esc(D.at):'')+'</div>'+cmpChips([["m","المتنافسون"],["f","المتنافسات"]],sc,"tjsc")+'<div style="margin-top:10px"></div>';
+  h+=tjRun(D,function(){return T==="rw"?vPubRw(sc):vPubSec(sc)});return h+'<a href="#" data-pt="cl|o" style="display:block;text-align:center;margin:14px 0;font-size:14px">مسابقات الإتقان الأخرى ›</a>'};
+OACT.tjsc=function(p){PTS.tjsc=p[1];render()};
+var _odash57=OVW.odash;if(_odash57){OVW.odash=function(){var h=_odash57.apply(this,arguments);return tjOrg()?h.replace(/(data-pt="otb\|rw"[^>]*>)النقاط/,"$1المكافآت"):h};if(TVW.odash===_odash57)TVW.odash=OVW.odash}
+function tjSyncSrc(){var file=function(){return fetch("taj-sync.json?t="+Date.now()).then(function(r){return r.ok?r.json():null})};
+  return itCall("tjsnap",{}).then(function(r){var D=r&&r.snap;if(!D||!D.students||!D.cfg)return file();var last="";(D.logs||[]).forEach(function(l){if(l.date>last)last=l.date});
+    var L=D.students.filter(function(s){return !s.wd});return Promise.all(L.map(function(s){return itH12(s.name)})).then(function(H){var st={};L.forEach(function(s,i){var lf=s.lvFrom||"",n=0;if(lf&&last){for(var d=lf;d<=last;d=addDays(d,1)){var w=new Date(d+"T00:00:00Z").getUTCDay();if(w!==4&&w!==5)n++}}st[H[i]]={ss:s.ss,sa:s.sa,lv:s.lv||"",lvFrom:lf,mode:s.mode||"rec",sec:s.section||"m",n:n}});
+      var c0=D.cfg.start,cl=7*(+D.cfg.weeks||5),td=todayStr(),k=0,nx="";if(c0){while(addDays(c0,cl*k)<=td&&k<200)k++;nx=addDays(c0,cl*k)}return {at:JSON.stringify(st).length+"|"+last+"|"+(D.at||""),d:last,next:nx,st:st}})}).catch(function(){return file()})}
 
 
 OACT.addt=function(){var A=itAuth();try{if(!itT())localStorage.setItem("itqT",JSON.stringify({e:A.e,name:(itO()||{}).name||(myP()||{}).name||"",gn:[]}))}catch(e){}accGo("t");render()};
