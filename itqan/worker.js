@@ -1,5 +1,5 @@
 import {B} from "./b.js";
-const KEY="taj-48132d5dec65",ADMH="e8cdf946bf1d0637d6c0e55cf9ee4700a8f9d4b4906f9fcb42ec44f0ed4e41d0",RK={a:3,c:2,t:1};
+const KEY="taj-48132d5dec65",ADMH="e8cdf946bf1d0637d6c0e55cf9ee4700a8f9d4b4906f9fcb42ec44f0ed4e41d0",RK={a:3,c:2,t:1},SUP=["amalmateq1@gmail.com","w.f.almateq@gmail.com"];
 export default{async fetch(req,env){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};const json=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const vals=Object.values(env||{});if(req.method==="OPTIONS")return new Response(null,{headers:cors});const DB=vals.find(v=>v&&typeof v.prepare==="function"&&typeof v.batch==="function");
 const qi=new URL(req.url).searchParams,a=qi.get("it");
@@ -20,10 +20,10 @@ const ctxG=async g=>{const G=await one("SELECT * FROM itg WHERE g=?",g);if(!G)re
 const dk=(C,K)=>{const{G,P1,P2}=C,hp=pj(G.perm);if(!P1)return "t";if(P1.k==="a")return hp[K]==="a"?"a":"t";const cv=P2?(pj(P1.perm)[K]||"c"):"c";if(cv!=="c")return cv;return hp[K]==="c"?"c":"t"};
 const no=v=>v===0||v==="0";
 const db=(C,K)=>{const{G,P1,P2}=C,hp=pj(G.perm);if(!P1)return true;if(P1.k==="a")return !no(hp[K]);const cb=P2?pj(P1.perm)[K]:1;return !no(cb)&&!no(hp[K])};
-const rankG=(C,e)=>{const{G,P1,P2}=C;if(P2&&P2.own===e)return 3;if(P1&&P1.own===e)return P1.k==="a"?3:2;if(G.t===e)return 1;return 0};
+const rankG=(C,e)=>{if(SUP.includes(e))return 3;const{G,P1,P2}=C;if(P2&&P2.own===e)return 3;if(P1&&P1.own===e)return P1.k==="a"?3:2;if(G.t===e)return 1;return 0};
 const canG=(C,e)=>{const r=rankG(C,e),dS=dk(C,"addS"),dP=dk(C,"plan"),pl=r>0&&r>=RK[dP];return {r,addS:r>0&&r>=RK[dS],plan:pl,own:pl||(r===1&&db(C,"own")),free:r>1||(r===1&&db(C,"free")),file:pl,dS,dP,oOwn:db(C,"own"),oFree:db(C,"free"),sub:!!C.P1}};
 const ctxO=async oc=>{const O=await one("SELECT * FROM ito WHERE o=?",oc);if(!O)return null;const PA=O.par?await one("SELECT * FROM ito WHERE o=?",O.par):null;return {O,PA}};
-const rankO=(C,e)=>{if(C.PA&&C.PA.own===e)return 3;if(C.O.own===e)return C.O.k==="a"?3:2;return 0};
+const rankO=(C,e)=>{if(SUP.includes(e))return 3;if(C.PA&&C.PA.own===e)return 3;if(C.O.own===e)return C.O.k==="a"?3:2;return 0};
 const dH=C=>C.O.k==="a"?"a":(C.PA?(pj(C.O.perm).addH||"c"):"c");
 const fixP=(nw,old)=>{const n=pj(nw),ol=pj(old);if(!n.tw){n.tw=ol.tw||"";if(ol.ht!=null)n.ht=ol.ht}if(!n.fk&&ol.fk)n.fk=ol.fk;for(const k of ["hm","tm","rm"]){if(n.ht==="1"&&n[k]==="rec")n[k]="rect";if(n.ht==="0"&&n[k]==="rect")n[k]="rec"}return JSON.stringify(n)};
 const gc=String(o.g||"").trim().toUpperCase().slice(0,12),oc=String(o.o||"").trim().toUpperCase().slice(0,12),sid=String(o.sid||"").slice(0,20);
@@ -36,7 +36,7 @@ const preOf=async e=>{const O1=await one("SELECT o,n FROM ito WHERE pe=? AND (ow
 const auto=async(e,pn)=>{let st=null;for(const r of await all("SELECT o,onm FROM ito WHERE pe=? AND (own IS NULL OR own='')",e))await run("UPDATE ito SET own=?,onm=? WHERE o=?",e,pn||r.onm||"",r.o);for(const r of await all("SELECT g,tn FROM itg WHERE pe=? AND (t IS NULL OR t='')",e))await run("UPDATE itg SET t=?,tn=?,at=? WHERE g=?",e,pn||r.tn||"",Date.now(),r.g);const P=await preOf(e);if(P&&P.k==="s"){await run("INSERT INTO itm (e,g,sid,nm,s,at) VALUES (?,?,?,?,?,?)",e,P.g,P.sid,P.nm,"",Date.now());st=P}return st};
 const hsUp=async(e,sm)=>{const q=pj(sm);if(!q.d||!/^\d{4}-\d\d-\d\d$/.test(q.d))return;const m=await one("SELECT hs FROM itm WHERE e=?",e);if(!m)return;const H2=pj(m.hs),x=H2[q.d]||{},t=new Date(Date.now()+3*3600000).toISOString().slice(11,16);if(q.h&&!x.h){x.h=1;x.ht=t}if(q.r===1&&!x.r){x.r=1;x.rt=t}if(q.r===-1)x.rn=1;if(q.z)x.z=1;H2[q.d]=x;const ks=Object.keys(H2).sort();while(ks.length>400)delete H2[ks.shift()];await run("UPDATE itm SET hs=? WHERE e=?",JSON.stringify(H2),e)};
 const cpOf=async par=>{if(!par)return null;const P1=await one("SELECT o,par,cp,n FROM ito WHERE o=?",par);if(!P1)return null;const R0=P1.par?await one("SELECT o,cp,n FROM ito WHERE o=?",P1.par):P1;return R0&&R0.cp?{o:R0.o,n:R0.n,cp:pj(R0.cp)}:null};
-const mine=async e=>({orgs:await all("SELECT o,k,n,par FROM ito WHERE own=? ORDER BY at",e),groups:(await all("SELECT g FROM itg WHERE t=?",e)).length,gn:(await all("SELECT n FROM itg WHERE t=? ORDER BY at LIMIT 5",e)).map(x=>x.n)});
+const mine=async e=>({sup:SUP.includes(e)?1:0,orgs:SUP.includes(e)?await all("SELECT o,k,n,par FROM ito WHERE own=? OR par='' OR par IS NULL ORDER BY at",e):await all("SELECT o,k,n,par FROM ito WHERE own=? ORDER BY at",e),groups:(await all("SELECT g FROM itg WHERE t=?",e)).length,gn:(await all("SELECT n FROM itg WHERE t=? ORDER BY at LIMIT 5",e)).map(x=>x.n)});
 if(a==="gfile"){const f=await one("SELECT nm,d FROM itf WHERE g=?",gc);return json(f?{ok:true,nm:f.nm,d:f.d}:{ok:false,err:"nofile"})}
 if(a==="ginfo"){const r=await one("SELECT g,n,at,tn,nl FROM itg WHERE g=?",gc);if(!r)return json({ok:false,err:"nogrp"});r.nl=JSON.stringify(pj2(r.nl).map(x=>({i:x.i,n:x.n})));r.taken=await taken(gc);return json({ok:true,grp:r})}
 if(a==="oinfo"){const C=await ctxO(oc);if(!C)return json({ok:false,err:"noorg"});const O=C.O;const orgs=(O.k==="a"&&O.sub!=="h")?(await all("SELECT o,n,own FROM ito WHERE par=? ORDER BY at",O.o)).map(x=>({o:x.o,n:x.n,own:x.own?1:0})):[];const gs=(await all("SELECT g,n,par,t FROM itg WHERE par=? OR par IN (SELECT o FROM ito WHERE par=?) ORDER BY at",O.o,O.o)).map(x=>({g:x.g,n:x.n,par:x.par,t:x.t?1:0}));return json({ok:true,org:{o:O.o,k:O.k,n:O.n,sub:O.sub,pn:C.PA?C.PA.n:"",lb:pj(C.PA?C.PA.lb:O.lb)},kids:await kidsFree(O),orgs,groups:gs})}
@@ -70,6 +70,6 @@ if(["tupd","tnames","tfree","tfile","tfdel","ttw","snote","smark"].includes(a)){
  if(a==="tfdel"){if(!K.file)return json({ok:false,err:"perm"});await run("DELETE FROM itf WHERE g=?",gc);return json({ok:true})}}
 const pack=async(GS,e)=>{const out=[];for(const G of GS){const C=await ctxG(G.g);const K=canG(C,e);const CP=await cpOf(G.par);out.push({pe:G.pe||"",cp:CP?CP.cp:null,g:G.g,n:G.n,p:G.p,nl:G.nl,at:G.at,tn:G.tn||"",t:G.t?1:0,par:G.par||"",perm:pj(G.perm),pn:C.P1?C.P1.n:"",ppn:C.P2?C.P2.n:"",pk:C.P1?C.P1.k:"",root:C.P2?C.P2.o:(C.P1?C.P1.o:""),rn:C.P2?C.P2.n:(C.P1?C.P1.n:""),lb:pj(C.P2?C.P2.lb:(C.P1?C.P1.lb:"")),can:K})}return out};
 if(a==="tlist"){const GS=await all("SELECT * FROM itg WHERE t=? ORDER BY at",e);const M=await all("SELECT itm.e e,itm.g g,itm.sid sid,itm.nm nm,itm.s s,itm.at at,itm.nt nt,itm.mk mk,itm.hs hs FROM itm JOIN itg ON itm.g=itg.g WHERE itg.t=?",e);const F=await all("SELECT itf.g g,itf.nm nm FROM itf JOIN itg ON itf.g=itg.g WHERE itg.t=?",e);return json({ok:true,groups:await pack(GS,e),members:M,files:F,mine:await mine(e)})}
-{const _r=await B({RK,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn});if(_r)return _r}
+{const _r=await B({RK,SUP,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn});if(_r)return _r}
 return json({ok:false,err:"act"})}catch(x){return json({ok:false,err:"db",m:String(x&&x.message||x).slice(0,200)})}}
 return json({ok:true,itq:!!DB,v:6})}};

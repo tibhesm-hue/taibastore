@@ -1,9 +1,9 @@
-export async function B(X){const {RK,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn}=X;
+export async function B(X){const {RK,SUP,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn}=X;
 const rootOfO=async o=>{const r=await one("SELECT o,par FROM ito WHERE o=?",o);return r?(r.par||r.o):""};
 const scG=async sc=>{if(sc.startsWith("o:")){const X=sc.slice(2);return (await all("SELECT g FROM itg WHERE par=? OR par IN (SELECT o FROM ito WHERE par=?)",X,X)).map(x=>x.g)}if(sc.startsWith("t:"))return (await all("SELECT g FROM itg WHERE t=?",sc.slice(2))).map(x=>x.g);return []};
 const scCan=async(sc,e)=>{if(sc.startsWith("o:")){const C=await ctxO(sc.slice(2));if(!C)return 0;const r=rankO(C,e);if(r>=3)return 2;if(r===2)return no(pj(C.O.perm).cmp)?0:2;return 0}if(sc==="t:"+e){const gs=await all("SELECT g FROM itg WHERE t=?",e);for(const G of gs){const C=await ctxG(G.g);if(rankG(C,e)>=2||db(C,"cmp"))return 1}return 0}return 0};
 const cGroups=d=>{const S=new Set();if(d.t==="h")(d.hs||[]).forEach(g=>S.add(g));else Object.keys(d.st||{}).forEach(k=>S.add(k.split("|")[0]));return [...S]};
-const cVis=async e=>{const own=(await all("SELECT o,par FROM ito WHERE own=?",e)),R=new Set(own.map(x=>x.par||x.o)),tg=(await all("SELECT g,par FROM itg WHERE t=?",e)),me=await one("SELECT g,sid FROM itm WHERE e=?",e);
+const cVis=async e=>{const own=SUP.includes(e)?(await all("SELECT o,par FROM ito")):(await all("SELECT o,par FROM ito WHERE own=?",e)),R=new Set(own.map(x=>x.par||x.o)),tg=(await all("SELECT g,par FROM itg WHERE t=?",e)),me=await one("SELECT g,sid FROM itm WHERE e=?",e);
   const ownO=new Set(own.map(x=>x.o));for(const G of tg)if(G.par)R.add(await rootOfO(G.par));let mg=null;if(me){mg=await one("SELECT g,par FROM itg WHERE g=?",me.g);if(mg&&mg.par)R.add(await rootOfO(mg.par))}
   const rows=await all("SELECT * FROM itc WHERE root IN ("+([...R].map(()=>"?").join(",")||"''")+") OR root='' ORDER BY at",...R),out=[];
   for(const r of rows){const d=pj(r.d),gs=cGroups(d);let role=0;const ed=await scCan(r.sc,e);if(ed||r.sc==="t:"+e)role=3;
