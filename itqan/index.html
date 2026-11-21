@@ -771,14 +771,14 @@ function itEm(x){x=String(x||"").trim().toLowerCase();return /^[^@\s]+@[^@\s]+\.
 function itAuth(){try{return JSON.parse(localStorage.getItem("itqAuth")||"null")}catch(e){return null}}
 function itSetAuth(a){try{if(a)localStorage.setItem("itqAuth",JSON.stringify(a));else localStorage.removeItem("itqAuth")}catch(e){}}
 function itHash(em,pw){return crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(em).trim().toLowerCase()+"|"+pw)).then(function(b){return Array.from(new Uint8Array(b)).map(function(x){return ("0"+x.toString(16)).slice(-2)}).join("")})}
-function itCall(a,o){return fetch(ITW+"/?it="+a,{method:"POST",headers:{"Content-Type":"application/json","X-Taj-Key":ITK},body:JSON.stringify(o)}).then(function(r){return r.json()})}
+function itCall(a,o){return fetch(ITW+"/?it="+a+"&k="+ITK,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(o)}).then(function(r){return r.json()})}
 function itProbe(){var done=0,t=setTimeout(function(){if(!done){done=1;ITS.ok=false;render()}},7000);fetch(ITW+"/",{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(done)return;done=1;clearTimeout(t);ITS.ok=!!(j&&j.itq);render()}).catch(function(){if(done)return;done=1;clearTimeout(t);ITS.ok=false;render()})}
 function itBundle(p){var ids=(ptMig(JSON.parse(JSON.stringify(p))).courses||[]).map(function(c){return c.cid}),K={};try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i),q=k?k.split("|"):[];if(q.length>=3&&ids.indexOf(q[1])>=0)K[k]=localStorage.getItem(k)}}catch(e){}return JSON.stringify({p:p,k:K})}
 function itApply(d){var o=JSON.parse(d),L=ptAll().filter(function(x){return x.id!==o.p.id&&x.em!==o.p.em});L.push(o.p);ptSave(L);Object.keys(o.k||{}).forEach(function(k){try{localStorage.setItem(k,o.k[k])}catch(e){}});return o.p.id}
 function itSt(t){ITS.st=t;var x=document.getElementById("itst");if(x)x.textContent=t}
 function itSync(){if(!window.ITQ||!ITS.ok)return;var A=itAuth();if(!A||!PTS.id||PTS.v!=="day")return;var p=ptGet(PTS.id);if(!p||p.em!==A.e)return;var d=itBundle(p);if(d===ITS.last||ITS.busy)return;ITS.busy=1;itSt("⏳ يحفظ…");
   itCall("save",{e:A.e,h:A.h,d:d}).then(function(r){ITS.busy=0;if(r&&r.ok){ITS.last=d;itSt("☁️ محفوظ")}else if(r&&r.err==="pw")itSt("⚠️ تغيّرت كلمة المرور، اخرج وادخل من جديد");else{itSt("⚠️ ما انحفظ، يعيد المحاولة");setTimeout(itSync,20000)}}).catch(function(){ITS.busy=0;itSt("⚠️ بدون نت، يحفظ إذا رجع");setTimeout(itSync,20000)})}
-if(!window.__itOn){window.__itOn=1;window.addEventListener("online",function(){setTimeout(itSync,1000)})}
+if(!window.__itOn){window.__itOn=1;window.addEventListener("online",function(){setTimeout(itSync,1000)});document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"){clearTimeout(window.__its);itSync()}})}
 function itErr(m){PTS.err=m;render()}
 function itNet(){return "ما فيه اتصال بالإنترنت، جرّب مرة ثانية"}
 function itLogin(){var em=itEm(itV("ite")),pw=itV("itp");if(!em)return itErr("اكتب إيميلك صح، مثل name@gmail.com");if(!pw)return itErr("اكتب كلمة المرور");PTS.lem=em;itErr("⏳ لحظة…");
@@ -1753,7 +1753,7 @@ function wrapDb(d){function dw(path){var x=d.doc(path);return{set:function(a,b){
   return{doc:dw,collection:function(n){var c=d.collection(n);return{add:function(a){return c.add(a).then(function(r){schedulePub();return r})},onSnapshot:function(a,b){return c.onSnapshot(a,b)},get:function(){return c.get()}}}}}
 function effTab(){if(PUBLIC)return tab;if(tab==="mn")return "pls";if(tab==="admin"&&psub.adm==="plan")return "plan";if(tab==="inp")return psub.inp;return tab}
 function render(){
-  if(!PTS.v)window.__ptS=null;if(window.ITQ){clearTimeout(window.__its);window.__its=setTimeout(itSync,1500)}diag.renders++;dpush("render",tab+" dirty="+dirty);
+  if(!PTS.v)window.__ptS=null;if(window.ITQ){clearTimeout(window.__its);window.__its=setTimeout(itSync,8000)}diag.renders++;dpush("render",tab+" dirty="+dirty);
   renderNav();
   var v=document.getElementById("view");
   if(!db){v.innerHTML='<div class="msg">افتح الصفحة بحساب مسجَّل الدخول للاطلاع على البيانات.</div>';return}
