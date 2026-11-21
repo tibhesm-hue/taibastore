@@ -765,7 +765,7 @@ function ptProg(p,td){var fr=p.from||td,W=Math.max(1,Math.round(+p.cw||4)),L=W*7
       dots+='<span title="'+DAYN[dow(d)]+' '+fmt(d)+'" style="width:18px;height:18px;border-radius:50%;display:inline-block;margin:0 2px;box-sizing:border-box;'+st+'"></span>'}
     rows+='<div style="display:flex;align-items:center;border:1px solid #e2dfd6;border-radius:10px;padding:8px 10px;margin-bottom:6px"><b style="flex:1;font-size:15px">الأسبوع '+(w+1)+'</b><span dir="rtl">'+dots+'</span></div>'}
   return h+'</div><div style="font-size:14px;color:#3C3489;margin-bottom:8px">المرحلة '+(sel+1)+': من '+fmt(s0)+' إلى '+fmt(s1)+' · أنجزت '+nd+' من '+(ns===1?"يوم واحد":ns===2?"يومين":ns>=3&&ns<=10?ns+" أيام":ns+" يوماً")+(sel===cur?' حتى اليوم':'')+'</div>'+rows+'<div class="muted" style="font-size:12px;margin-top:4px">🟢 أنجز · ⚪ فاته · 🔵 اليوم · ◯ قادم · ⬚ راحة</div></div>'}
-var ITW="https://taj-asr.yaqot-tibh.workers.dev",ITK="taj-48132d5dec65",ITS={ok:null,st:"",last:"",note:"",busy:0};
+var ITW="https://itqan.wf-almateq.workers.dev",ITK="taj-48132d5dec65",ITS={ok:null,st:"",last:"",note:"",busy:0};
 function itV(i){return (document.getElementById(i)||{}).value||""}
 function itEm(x){x=String(x||"").trim().toLowerCase();return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)?x:""}
 function itAuth(){try{return JSON.parse(localStorage.getItem("itqAuth")||"null")}catch(e){return null}}
