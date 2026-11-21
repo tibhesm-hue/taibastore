@@ -7,7 +7,8 @@ const H=async s=>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder()
 try{await DB.batch([DB.prepare("CREATE TABLE IF NOT EXISTS itq (e TEXT PRIMARY KEY, h TEXT, d TEXT, v INTEGER, at INTEGER)"),DB.prepare("CREATE TABLE IF NOT EXISTS itg (g TEXT PRIMARY KEY, t TEXT, tn TEXT, n TEXT, p TEXT, nl TEXT, at INTEGER)"),DB.prepare("CREATE TABLE IF NOT EXISTS itm (e TEXT PRIMARY KEY, g TEXT, sid TEXT, nm TEXT, s TEXT, at INTEGER)"),DB.prepare("CREATE TABLE IF NOT EXISTS itf (g TEXT PRIMARY KEY, nm TEXT, d TEXT, at INTEGER)")]);
 let o={};try{o=await req.json()}catch(x){}
 const fnOf=async g=>{const f=await DB.prepare("SELECT nm,at FROM itf WHERE g=?").bind(g).first();return f?f.nm:""};
-const grpOf=async e=>{const r=await DB.prepare("SELECT itg.g g,itg.n n,itg.p p,itg.at at,itg.tn tn FROM itm JOIN itg ON itm.g=itg.g WHERE itm.e=?").bind(e).first();if(r)r.fn=await fnOf(r.g);return r||null};
+const own=(G,sid)=>{let L=[];try{L=JSON.parse(G.nl||"[]")}catch(x){}const S=L.find(x=>x.i===sid);if(S&&S.p){G.p=S.p;G.at=S.at||G.at;G.own=1}delete G.nl;delete G.sid;return G};
+const grpOf=async e=>{const r=await DB.prepare("SELECT itg.g g,itg.n n,itg.p p,itg.at at,itg.tn tn,itg.nl nl,itm.sid sid FROM itm JOIN itg ON itm.g=itg.g WHERE itm.e=?").bind(e).first();if(!r)return null;own(r,r.sid);r.fn=await fnOf(r.g);return r};
 const gc=String(o.g||"").trim().toUpperCase().slice(0,12);
 const sid=String(o.sid||"").slice(0,20);
 const taken=async g=>((await DB.prepare("SELECT sid FROM itm WHERE g=?").bind(g).all()).results||[]).map(x=>x.sid);
@@ -20,14 +21,14 @@ if(a==="reset"){if(await H("itqadm|"+String(o.ak||""))!==ADMH)return json({ok:fa
 const hh=await H("itq|"+String(o.h||""));const d=String(o.d||"");if(d.length>1500000)return json({ok:false,err:"big"});
 const nm=String(o.nm||"").slice(0,60),sm=String(o.s||"").slice(0,4000);
 if(a==="reg"){if(row)return json({ok:false,err:"exists"});let J=null;if(gc){J=await slot(gc,e);if(J.err)return json({ok:false,err:J.err})}
- await DB.prepare("INSERT INTO itq (e,h,d,v,at) VALUES (?,?,?,1,?)").bind(e,hh,d,Date.now()).run();if(J){await DB.prepare("INSERT OR REPLACE INTO itm (e,g,sid,nm,s,at) VALUES (?,?,?,?,?,?)").bind(e,J.G.g,sid,J.S.n,sm,Date.now()).run();delete J.G.nl}return json({ok:true,v:1,grp:J?J.G:null,nm:J?J.S.n:""})}
+ await DB.prepare("INSERT INTO itq (e,h,d,v,at) VALUES (?,?,?,1,?)").bind(e,hh,d,Date.now()).run();if(J){await DB.prepare("INSERT OR REPLACE INTO itm (e,g,sid,nm,s,at) VALUES (?,?,?,?,?,?)").bind(e,J.G.g,sid,J.S.n,sm,Date.now()).run();own(J.G,sid)}return json({ok:true,v:1,grp:J?J.G:null,nm:J?J.S.n:""})}
 if(!row)return json({ok:false,err:"none"});let rs=0;if(row.h===""){if(a!=="login")return json({ok:false,err:"pw"});await DB.prepare("UPDATE itq SET h=? WHERE e=?").bind(hh,e).run();rs=1}else if(row.h!==hh)return json({ok:false,err:"pw"});
 if(a==="login")return json({ok:true,d:row.d,v:row.v,reset:rs,grp:await grpOf(e)});
 if(a==="save"){const v=(row.v||0)+1;await DB.prepare("UPDATE itq SET d=?,v=?,at=? WHERE e=?").bind(d,v,Date.now(),e).run();if(sm)await DB.prepare("UPDATE itm SET s=?,at=? WHERE e=?").bind(sm,Date.now(),e).run();return json({ok:true,v,grp:await grpOf(e)})}
 if(a==="pw"){await DB.prepare("UPDATE itq SET h=? WHERE e=?").bind(await H("itq|"+String(o.nh||"")),e).run();return json({ok:true})}
-if(a==="join"){const J=await slot(gc,e);if(J.err)return json({ok:false,err:J.err});await DB.prepare("INSERT OR REPLACE INTO itm (e,g,sid,nm,s,at) VALUES (?,?,?,?,?,?)").bind(e,J.G.g,sid,J.S.n,sm,Date.now()).run();delete J.G.nl;return json({ok:true,grp:J.G,nm:J.S.n})}
+if(a==="join"){const J=await slot(gc,e);if(J.err)return json({ok:false,err:J.err});await DB.prepare("INSERT OR REPLACE INTO itm (e,g,sid,nm,s,at) VALUES (?,?,?,?,?,?)").bind(e,J.G.g,sid,J.S.n,sm,Date.now()).run();own(J.G,sid);return json({ok:true,grp:J.G,nm:J.S.n})}
 const pp=String(o.p||"").slice(0,20000),gn=String(o.n||"").slice(0,80),tn=String(o.tn||"").slice(0,60);
-const nl=String(o.nl||"[]").slice(0,20000);
+const nl=String(o.nl||"[]").slice(0,400000);
 if(a==="tnew"){const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let g="";for(let t=0;t<8;t++){g="";const r=crypto.getRandomValues(new Uint8Array(6));for(const x of r)g+=A[x%A.length];if(!await DB.prepare("SELECT g FROM itg WHERE g=?").bind(g).first())break}
  await DB.prepare("INSERT INTO itg (g,t,tn,n,p,nl,at) VALUES (?,?,?,?,?,?,?)").bind(g,e,tn,gn,pp,nl,Date.now()).run();return json({ok:true,g})}
 if(a==="tupd"){const r=await DB.prepare("UPDATE itg SET n=?,p=?,tn=?,at=? WHERE g=? AND t=?").bind(gn,pp,tn,Date.now(),gc,e).run();return json({ok:!!(r&&r.meta&&r.meta.changes)})}
