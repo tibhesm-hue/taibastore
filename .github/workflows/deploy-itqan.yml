@@ -1,0 +1,17 @@
+name: deploy-itqan-worker
+on:
+  push:
+    branches: [main]
+    paths: ["itqan/worker.js","itqan/b.js","tools/deploy_itqan.mjs"]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/deploy_itqan.mjs
+        env:
+          CF_TOKEN: ${{ secrets.CF_TOKEN }}
