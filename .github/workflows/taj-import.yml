@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "::add-mask::${{ inputs.key }}"
+          echo "::add-mask::$KEY"
           node -e '
           const z=require("zlib");const D=JSON.parse(z.gunzipSync(Buffer.from(process.env.DATA,"base64")).toString());
           fetch("https://itqan.w-f-almateq.workers.dev/?it=tjimp&k=taj-48132d5dec65",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({key:process.env.KEY,data:D,force:process.env.FORCE==="1"})}).then(r=>r.json()).then(r=>{console.log("result:",JSON.stringify(r));if(!r.ok)process.exit(1)})'
