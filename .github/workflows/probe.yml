@@ -7,5 +7,5 @@ jobs:
       - run: |
           date -u
           curl -s -m 30 "https://itqan.w-f-almateq.workers.dev/"; echo
-          for u in itqan/ itqan/taj.html; do echo "$u gself=$(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -c 'TVW.gself') lb=$(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -o 'a.lb{' | wc -l)"; done
+          for u in itqan/ itqan/taj.html; do echo "$u gself=$(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -c 'itqSup') lb=$(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -o 'a.lb{' | wc -l)"; done
           curl -s -m 30 -X POST "https://itqan.w-f-almateq.workers.dev/?it=greq&k=taj-48132d5dec65" -d '{"e":"x@x.com","h":"x","g":"ZZZ"}'; echo
