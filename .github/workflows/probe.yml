@@ -5,7 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -m 30 -D - -o /dev/null -H 'Origin: https://tibhesm-hue.github.io' https://itqan.w-f-almateq.workers.dev/ | tr -d '\r' | grep -i -E 'HTTP|access-control|content-type|cache'
-          curl -s -m 30 -D - -o /dev/null https://tibhesm-hue.github.io/taibastore/itqan/taj.html | tr -d '\r' | grep -i -E 'HTTP|cache-control|last-modified|age:'
-          curl -s -m 30 https://tibhesm-hue.github.io/taibastore/itqan/taj.html | grep -c 'يعيد المحاولة لحاله'
-          curl -s -m 30 https://tibhesm-hue.github.io/taibastore/itqan/ | grep -c 'يعيد المحاولة لحاله'
+          curl -s -m 30 https://itqan.w-f-almateq.workers.dev/; echo
+          curl -s -m 30 -X POST -d '{}' "https://itqan.w-f-almateq.workers.dev/?it=tjgr&k=taj-48132d5dec65"; echo
+          curl -s -m 30 -X POST -d '{"v":"x"}' "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" | head -c 80; echo
+          sleep 30
+          for u in itqan/taj.html itqan/ taj/; do echo "$u $(curl -s -m 30 https://tibhesm-hue.github.io/taibastore/$u | grep -c -E 'tjgr|PKG.push\(\["tdev"|upPick')"; done
