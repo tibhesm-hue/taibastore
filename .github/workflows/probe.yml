@@ -5,14 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          sleep 60
-          npm i -s playwright@1 >/dev/null 2>&1 && npx -y playwright install --with-deps chromium >/dev/null 2>&1
-          cat > t.js <<'JS'
-          const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844}});
-          p.on('pageerror',e=>console.log('ERR',e.message));
-          await p.goto('https://tibhesm-hue.github.io/taibastore/itqan/taj.html?x='+Date.now()+'#s=s10&bk=1');await p.waitForTimeout(9000);
-          console.log('URL',p.url());console.log('BK',await p.locator('[data-tbk]').count());
-          console.log('TXT',(await p.locator('#view').innerText()).slice(0,700).replace(/\n/g,' | '));
-          await p.locator('[data-tbk]').first().click();await p.waitForTimeout(3000);console.log('BACK',p.url());await b.close()})();
-          JS
-          node t.js
+          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
+          curl -s -X POST "${U}tjst" -H 'content-type:text/plain' -d '{}' | python3 -c "import json,sys;d=json.load(sys.stdin);[print('ST',x) for x in d.get('list',[])]"
+          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "import json,sys;d=json.load(sys.stdin)['snap'];[print('SU',s['id'],s.get('name'),repr(s.get('mother')),s.get('wd')) for s in d['students']]"
