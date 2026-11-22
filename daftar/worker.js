@@ -223,6 +223,43 @@ function slDay(S, D, day) {
   const u = s.u.concat(d.u).sort((a, b) => (a.a < b.a ? -1 : a.a > b.a ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   return { s: s.tot.t, d: d.tot.t, hs: s.tot.h, hd: d.tot.h, hns: s.tot.n, hnd: d.tot.n, u, f: d.f, fn: d.fn };
 }
+// Driver delivery levels from the sale notes (owner's rules of 8 and 20 Nov): note = courier digit (1,2,3) alone or repeated (manual level 1/11/111), or courier digit + 4-digit code that carries level and fee.
+function dec4(c4, day) {
+  const c = parseInt(c4, 10);
+  if (c >= 9973) return null;
+  const P = ((((c - 1234) * 3190) % 9973) + 9973) % 9973;
+  if (P >= 6000) return null;
+  const T = P % 25, t = Math.floor(P / 25);
+  const E = Math.round(Date.parse(day + "T00:00:00Z") / 864e5);
+  if (t % 3 !== ((E % 3) + 3) % 3 && t % 3 !== (((E - 1) % 3) + 3) % 3) return null;
+  const lv = T === 0 ? 1 : T <= 2 ? 2 : 3;
+  const lh = T < 3 ? [[2, 0], [3, 1], [4, 2]][T] : [4.5 + (T - 3) / 2, 4.5 + (T - 3) / 2];
+  return [lv, lh[0], lh[1]];
+}
+function slLv(D, days) {
+  const out = {};
+  for (const d of days) out[d] = { "1": [0, 0, 0], "2": [0, 0, 0], "3": [0, 0, 0], t: 0, u: 0, md: { "1": 0, "2": 0, "3": 0 }, kd: { "1": 0, "2": 0, "3": 0 }, bl: [] };
+  const rows = D.filter(x => days.includes(String(x.date).slice(0, 10)) && num(x.grand_total) > 0)
+    .sort((a, b) => (String(a.date) < String(b.date) ? -1 : String(a.date) > String(b.date) ? 1 : Number(a.id) - Number(b.id)));
+  const seen = new Set();
+  for (const x of rows) {
+    const day = String(x.date).slice(0, 10), o = out[day], ref = String(x.reference_no);
+    const n = String(x.notes == null ? "" : x.notes).replace(/&Tab;/g, "").replace(/\s+/g, "").replace(/[٠-٩]/g, ch => String(ch.charCodeAt(0) - 1632));
+    o.t++;
+    let m = /^([123])\1{0,2}$/.exec(n);
+    if (m) { o[m[1]][n.length - 1]++; o.md[m[1]]++; continue; }
+    m = /^([123])(\d{4})$/.exec(n);
+    if (!m) { o.u++; continue; }
+    const c = m[1], code = m[2], r = dec4(code, day);
+    if (!r) { o.u++; o.bl.push([ref, c, "bad"]); seen.add(code); continue; }
+    if (seen.has(code)) { o.u++; o.bl.push([ref, c, "dup"]); continue; }
+    seen.add(code);
+    o[c][r[0] - 1]++; o.kd[c]++;
+    const ship = num(x.total_shipping), want = (num(x.grand_total) - ship) >= 20 ? r[2] : r[1];
+    if (ship < want - 0.01) o.bl.push([ref, c, "fee", r2(ship), want]);
+  }
+  return out;
+}
 async function slPull(env) {
   const t0 = Date.now(), log = { at: t0 };
   try {
@@ -243,6 +280,15 @@ async function slPull(env) {
       doc.days[day] = slDay(S, D, day);
       doc.at = Date.now(); doc.by = "server"; doc.last = last;
       await writeDoc(env, "slsales", mon, doc);
+    }
+    const lvd = slLv(D, [yday, today]);
+    for (const mon of [...new Set([yday.slice(0, 7), today.slice(0, 7)])]) {
+      const cur = await env.DB.prepare("SELECT data FROM docs WHERE col='slday' AND id=?").bind("lv-" + mon).first();
+      const doc = cur ? JSON.parse(cur.data) : { days: {} };
+      doc.days = doc.days || {};
+      for (const d of Object.keys(lvd)) if (d.slice(0, 7) === mon) doc.days[d] = lvd[d];
+      doc.at = Date.now(); doc.by = "server";
+      await writeDoc(env, "slday", "lv-" + mon, doc);
     }
     log.ok = true;
   } catch (e) { log.ok = false; log.err = String(e && e.message || e).slice(0, 300); }
