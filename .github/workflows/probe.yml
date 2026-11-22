@@ -6,7 +6,4 @@ jobs:
     steps:
       - run: |
           U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
-          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "
-          import json,sys;d=json.load(sys.stdin)['snap'];print('AT',d['at'])
-          for l in d['logs']:
-            if l['sid'] in('s03','s07') and l['date']>='2026-11-20':print('LOG',json.dumps(l,ensure_ascii=False))"
+          echo "G $(curl -s -X POST "${U}tjg" -H 'content-type:text/plain' -d '{"from":"2026-11-21","sids":["s03","s07"]}')"
