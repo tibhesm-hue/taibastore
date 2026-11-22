@@ -1386,7 +1386,7 @@ function tjAch(sid){try{return localStorage.getItem("tja|"+sid)==="0"?0:1}catch(
 
 
 /* صلاحيات الحلقة: طلب الإعادة، وإرسال الإنجاز */
-PKG.push(["rdo","طلب الإعادة: «يعيد الحفظ/المراجعة»",0,0]);
+PKG.push(["rdo","طلب الإعادة: «يعيد الحفظ/المراجعة»",0,0]);PKG.push(["tdev","الطلاب يسجّلون من جوال المعلمة بلا كود",0,0]);
 var _pGrp56=pGrp;pGrp=function(G,kp,underRoot,ro){var h=_pGrp56(G,kp,underRoot,ro),cur=String((G.perm||{}).ach||"m"),L=[["m","كالمجمع"],["1","إلزامي"],["0","لا"]],row=ro?'<b style="font-size:13px">'+((L.filter(function(o){return o[0]===cur})[0]||L[0])[1])+'</b>':pSeg("g",G.g,"ach",cur,L);return h.slice(0,-6)+pRow("إرسال الإنجاز في الواتساب",row)+'</div>'};
 /* المسابقات: نقاط أو مكافآت بالريال */
 var _cmpRun56=cmpRun;cmpRun=function(cp,D,fn){if(!cp||cp.u!=="r")return _cmpRun56(cp,D,fn);window.__cmpU="r";var sv=[cfg,students,logs,encs,results,pcyc],W=+((cp.cfg||{}).weeks)||DEF.weeks;cfg=Object.assign({},DEF,cp.cfg||{},{start:cp.start||todayStr(),trackFrom:cp.start||todayStr(),weeks:W,cycleDays:W*5,pStep:1});students=D.students;logs=D.logs;encs=[];results={};pcyc=null;var h="";
