@@ -186,7 +186,7 @@ export default {
         const email = String(pl.email).toLowerCase();
         if (await userOf(env, email)) return json({ ok: false, err: "already" }, 400);
         const f = o.f || {}, cl = x => String(x == null ? "" : x).trim().slice(0, 120);
-        const rec = { email, gname: cl(pl.name), name: cl(f.name), idno: cl(f.idno), phone: cl(f.phone), job: cl(f.job), nat: cl(f.nat), note: cl(f.note), photo: cl(pl.picture).slice(0, 500), at: Date.now(), st: "wait" };
+        const rec = { email, gname: cl(pl.name), name: cl(f.name), idno: cl(f.idno), phone: cl(f.phone), job: cl(f.job), nat: cl(f.nat), note: cl(f.note), photo: String(pl.picture || "").slice(0, 500), at: Date.now(), st: "wait" };
         if (!rec.name || !rec.idno || !rec.phone) return json({ ok: false, err: "fields" }, 400);
         await writeDoc(env, "staffreq", (await sha("r|" + email)).slice(0, 24), rec);
         return json({ ok: true });
