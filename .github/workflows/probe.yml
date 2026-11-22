@@ -6,5 +6,5 @@ jobs:
     steps:
       - run: |
           date -u
-          for u in itqan/ itqan/taj.html itqan/sw.js; do echo "$u grid=$(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -c 'grid-template-columns:minmax(0,1fr) auto 40px')"; done
+          for u in itqan/ itqan/taj.html itqan/sw.js; do echo "$u grid=$(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -c 'width:14px;height:14px')"; done
           curl -s -D - -o /dev/null "https://tibhesm-hue.github.io/taibastore/itqan/" | grep -i -E 'last-modified|age:'
