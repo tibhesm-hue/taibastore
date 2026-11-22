@@ -5,9 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
-          echo "G $(curl -s -X POST "${U}tjg" -H 'content-type:text/plain' -d '{"from":"2026-11-15","sids":["s08"]}')"
-          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "
-          import json,sys;d=json.load(sys.stdin)['snap']
-          [print('LOG',json.dumps(l,ensure_ascii=False)) for l in sorted(d['logs'],key=lambda x:x['date']) if l['sid']=='s08' and l['date']>='2026-11-14']
-          [print('ST',json.dumps({k:v for k,v in s.items() if k not in ('fk','gk')},ensure_ascii=False)) for s in d['students'] if s['id']=='s08']"
+          sleep 50
+          curl -s -X POST 'https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it=dbgt' -d '{}' | python3 -c "
+          import json,sys;d=json.load(sys.stdin)
+          [print('X',json.dumps(x,ensure_ascii=False)) for k in ('o','g','m') for x in d.get(k,[])]"
