@@ -6,5 +6,5 @@ jobs:
     steps:
       - run: |
           curl -s -m 30 https://itqan.w-f-almateq.workers.dev/; echo
-          curl -s -m 30 -X POST -d '{}' "https://itqan.w-f-almateq.workers.dev/?it=ologn&k=taj-48132d5dec65"; echo
+          curl -s -m 30 -X POST -d "{\"e\":\"w.f.almateq@gmail.com\",\"h\":\"x\"}" "https://itqan.w-f-almateq.workers.dev/?it=oall&k=taj-48132d5dec65"; echo
           curl -s -m 30 "https://taj-asr.yaqot-tibh.workers.dev/?x=1" | head -c 600; echo
