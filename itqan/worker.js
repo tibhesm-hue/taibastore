@@ -155,7 +155,7 @@ const pack=async(GS,e)=>{const out=[];for(const G of GS){const C=await ctxG(G.g)
 if(a==="tlist"){const GS=await all("SELECT * FROM itg WHERE t=? ORDER BY at",e);const M=await all("SELECT itm.e e,itm.g g,itm.sid sid,itm.nm nm,itm.s s,itm.at at,itm.nt nt,itm.mk mk,itm.hs hs FROM itm JOIN itg ON itm.g=itg.g WHERE itg.t=?",e);const F=await all("SELECT itf.g g,itf.nm nm FROM itf JOIN itg ON itf.g=itg.g WHERE itg.t=?",e);return json({ok:true,groups:await pack(GS,e),members:M,files:F,mine:await mine(e)})}
 {const _r=await B({RK,SUP,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn});if(_r)return _r}
 return json({ok:false,err:"act"})}catch(x){return json({ok:false,err:"db",m:String(x&&x.message||x).slice(0,200)})}}
-return json({ok:true,itq:!!DB,au:!!(env&&env.AU),v:11})}};
+return json({ok:true,itq:!!DB,au:!!(env&&env.AU),v:12})}};
 
 /* سجل النشاط: يسجّل ما يحدث تحت الجمعية للاطلاع فقط */
 const LOGA={tnames:1,join:1,reg:1,oclaim:1,okids:1,ope:1,operm:1,okdel:1,oren:1,tupd:1,tfree:1,cset:1,cdel:1};
@@ -184,9 +184,25 @@ async function lgRead(DB,a,o,cors){const J=(x)=>new Response(JSON.stringify(x),{
   await DB.prepare("CREATE TABLE IF NOT EXISTS itlog (id INTEGER PRIMARY KEY AUTOINCREMENT, root TEXT, at INTEGER, e TEXT, who TEXT, txt TEXT, ctx TEXT)").run();const sk="logseen|"+e+"|"+rt,sr=await lgOne(DB,"SELECT v FROM itmeta WHERE k=?",sk),seen=+(sr&&sr.v)||0;
   if(a==="ologn"){const r=await lgOne(DB,"SELECT COUNT(*) AS n FROM itlog WHERE root=? AND at>? AND e<>?",rt,seen,e);return J({ok:true,n:+(r&&r.n)||0})}
   const list=await lgAll(DB,"SELECT at,e,who,txt,ctx FROM itlog WHERE root=? ORDER BY at DESC LIMIT 200",rt);await DB.prepare("INSERT OR REPLACE INTO itmeta (k,v) VALUES (?,?)").bind(sk,String(Date.now())).run();return J({ok:true,seen,list:list.map(x=>({at:x.at,who:x.e===e?"أنت":x.who,txt:x.txt,ctx:x.ctx,me:x.e===e?1:0}))})}
-export default{async fetch(req,env){const u=new URL(req.url),a=u.searchParams.get("it");if(req.method!=="POST"||!a||!(LOGA[a]||a==="olog"||a==="ologn"))return W0.fetch(req,env);
+export default{async fetch(req,env){const u=new URL(req.url),a=u.searchParams.get("it");if(req.method!=="POST"||!a||!(LOGA[a]||a==="olog"||a==="ologn"||a==="oall"||a==="oallseen"))return W0.fetch(req,env);
   const DB=lgDB(env);let o={};try{o=JSON.parse(await req.clone().text())}catch(x){}
+  if(a==="oall"||a==="oallseen"){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};if(u.searchParams.get("k")!==KEY&&req.headers.get("X-Taj-Key")!==KEY)return new Response(JSON.stringify({error:"key"}),{status:403,headers:cors});try{return await oaRead(DB,a,o,cors)}catch(x){return new Response(JSON.stringify({ok:false,err:"db",m:String(x&&x.message||x).slice(0,200)}),{headers:cors})}}
   if(a==="olog"||a==="ologn"){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};if(u.searchParams.get("k")!==KEY&&req.headers.get("X-Taj-Key")!==KEY)return new Response(JSON.stringify({error:"key"}),{status:403,headers:cors});if(!DB)return new Response(JSON.stringify({ok:false}),{headers:cors});try{return await lgRead(DB,a,o,cors)}catch(x){return new Response(JSON.stringify({ok:false,err:"db"}),{headers:cors})}}
   let pre=null;if(DB)pre=await lgPre(DB,a,o);const res=await W0.fetch(req,env);
   try{if(DB&&res.status===200){const j=await res.clone().json();if(j&&j.ok)await lgWrite(DB,a,o,j,pre)}}catch(x){}
   return res}};
+
+/* لوحة مالك البرنامج: كل الجمعيات والمجمعات والحلقات والطلاب المستقلين */
+async function oaRead(DB,a,o,cors){const J=x=>new Response(JSON.stringify(x),{headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});const e=String(o.e||"").trim().toLowerCase();if(!SUP.includes(e))return J({ok:false,err:"perm"});const row=await lgOne(DB,"SELECT h FROM itq WHERE e=?",e);const hb=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("itq|"+String(o.h||""))),hh=[...new Uint8Array(hb)].map(x=>x.toString(16).padStart(2,"0")).join("");if(!row||!row.h||row.h!==hh)return J({ok:false,err:"pw"});
+  await DB.prepare("CREATE TABLE IF NOT EXISTS itfirst (k TEXT PRIMARY KEY, at INTEGER)").run();const now=Date.now();
+  if(a==="oallseen"){const c=String(o.c||"");if(["a","c","g","s"].includes(c))await DB.prepare("INSERT OR REPLACE INTO itmeta (k,v) VALUES (?,?)").bind("oallseen|"+e+"|"+c,String(now)).run();return J({ok:true})}
+  const roots=await lgAll(DB,"SELECT o,k,n,own,onm,at FROM ito WHERE par IS NULL OR par='' ORDER BY at DESC LIMIT 500");
+  const out={a:[],c:[],g:[],s:[]};
+  for(const r of roots){const kids=await lgAll(DB,"SELECT o FROM ito WHERE par=?",r.o),ps=[r.o].concat(kids.map(x=>x.o)),q=ps.map(()=>"?").join(","),gs=await lgAll(DB,"SELECT g,nl FROM itg WHERE par IN ("+q+")",...ps);let nl=0;for(const G of gs){try{nl+=JSON.parse(G.nl||"[]").length}catch(z){}}const mm=gs.length?await lgOne(DB,"SELECT COUNT(*) AS n FROM itm WHERE g IN ("+gs.map(()=>"?").join(",")+")",...gs.map(x=>x.g)):{n:0};
+    out[r.k==="a"?"a":"c"].push({id:r.o,n:r.n,own:r.onm||"",pe:r.own||"",at:r.at,kids:kids.length,gs:gs.length,nl,m:+(mm&&mm.n)||0})}
+  for(const G of await lgAll(DB,"SELECT g,n,tn,t,at,nl FROM itg WHERE par IS NULL OR par='' ORDER BY at DESC LIMIT 500")){let nl=0,nm=[];try{const L=JSON.parse(G.nl||"[]");nl=L.length;nm=L.map(x=>String(x&&x.n||"")).filter(Boolean).slice(0,80)}catch(z){}const reg=(await lgAll(DB,"SELECT nm FROM itm WHERE g=?",G.g)).map(x=>x.nm);out.g.push({id:G.g,n:G.n,own:G.tn||"",pe:G.t||"",at:G.at,nl,m:reg.length,nm,reg})}
+  const inG=new Set((await lgAll(DB,"SELECT DISTINCT e FROM itm")).map(x=>x.e));
+  for(const U of await lgAll(DB,"SELECT e,d,at FROM itq ORDER BY at DESC LIMIT 800")){if(inG.has(U.e))continue;let p=null;try{p=JSON.parse(U.d||"{}").p}catch(z){}if(!p||!p.name||!Array.isArray(p.courses)||!p.courses.length)continue;const c=p.courses.filter(x=>x.cid===p.cur)[0]||p.courses[0];if(c&&c.ph)continue;out.s.push({id:U.e,n:String(p.name).slice(0,60),pe:U.e,at:U.at,cn:String(c&&(c.cn||c.name)||"").slice(0,60),nc:p.courses.length})}
+  const first=async(k)=>{const r=await lgOne(DB,"SELECT at FROM itfirst WHERE k=?",k);if(r)return r.at;await DB.prepare("INSERT OR IGNORE INTO itfirst (k,at) VALUES (?,?)").bind(k,now).run();return now};
+  const res={ok:true};for(const c of ["a","c","g","s"]){const sr=await lgOne(DB,"SELECT v FROM itmeta WHERE k=?","oallseen|"+e+"|"+c);let seen=+(sr&&sr.v)||0;if(!seen){seen=now+1;await DB.prepare("INSERT OR REPLACE INTO itmeta (k,v) VALUES (?,?)").bind("oallseen|"+e+"|"+c,String(seen)).run()}let nw=0;for(const x of out[c]){x.f=await first(c+":"+x.id);x.nw=x.f>seen?1:0;nw+=x.nw}out[c].sort((p,q)=>q.f-p.f);res[c]={n:out[c].length,nw,list:out[c]}}
+  return J(res)}
