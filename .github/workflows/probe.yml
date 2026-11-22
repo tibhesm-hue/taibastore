@@ -5,5 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for u in itqan/audio/021-073-078.mp3 taj/audio/021-073-078.mp3 audio/021-073-078.mp3; do echo "$u $(curl -s -o /dev/null -w '%{http_code}' https://tibhesm-hue.github.io/taibastore/$u)"; done
-          curl -s https://tibhesm-hue.github.io/taibastore/itqan/taj.html | grep -o 'audio/[^"]\{0,40\}' | head -3
+          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" -d '{"v":""}' > tjall.json; ls -l tjall.json
+      - uses: actions/upload-artifact@v4
+        with: {name: tjall, path: tjall.json}
