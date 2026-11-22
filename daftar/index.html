@@ -1,0 +1,15 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>دفتر أسواق طيبة</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0e5a3c"><link rel="icon" href="/i192.png"><link rel="apple-touch-icon" href="/i192.png">
+<style>body{margin:0;font-family:Tahoma,system-ui,sans-serif;background:#f4f6f5;color:#1b2b24;text-align:center}main{max-width:420px;margin:0 auto;padding:40px 20px}img{width:120px;height:120px;border-radius:26px}h1{font-size:22px;margin:16px 0 6px}p{color:#56665e;font-size:15px;line-height:1.8}button{display:block;width:100%;margin:18px 0 8px;padding:16px;border:0;border-radius:14px;background:#0e5a3c;color:#fff;font-size:18px;font-family:inherit}#how{display:none;background:#fff;border:1px solid #dfe5e2;border-radius:14px;padding:12px;font-size:15px;line-height:1.9;text-align:right}#ok{display:none;color:#0e5a3c;font-weight:700}</style></head>
+<body><main><img src="/i512.png" alt=""><h1>دفتر أسواق طيبة</h1><p>الخادم الجديد للدفتر</p>
+<button id="ins" type="button">تثبيت على الشاشة الرئيسية</button>
+<div id="ok">الدفتر مثبّت على جوالك</div>
+<div id="how">من قائمة كروم (النقاط الثلاث فوق) اختر <b>«إضافة إلى الشاشة الرئيسية»</b> أو <b>«تثبيت التطبيق»</b>.<br>في الآيفون: زر المشاركة ثم <b>«إضافة إلى الشاشة الرئيسية»</b>.</div>
+<p style="font-size:13px">شاشة الدفتر هنا قيد التجهيز، وتنفتح من نفس الأيقونة بعد الانتقال.</p></main>
+<script>
+var dp=null,b=document.getElementById('ins');
+if(window.matchMedia&&matchMedia('(display-mode: standalone)').matches){b.style.display='none';document.getElementById('ok').style.display='block'}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e});
+window.addEventListener('appinstalled',function(){b.style.display='none';document.getElementById('how').style.display='none';document.getElementById('ok').style.display='block'});
+b.onclick=function(){if(dp){dp.prompt();dp.userChoice.then(function(){dp=null})}else document.getElementById('how').style.display='block'};
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});
+</script></body></html>
