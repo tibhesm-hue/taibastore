@@ -5,8 +5,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
-          echo "G $(curl -s -X POST "${U}tjg" -H 'content-type:text/plain' -d '{"from":"2026-11-22","sids":["s03","s07"]}')"
-          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "
-          import json,sys;d=json.load(sys.stdin)['snap']
-          [print('LOG',json.dumps(l,ensure_ascii=False)) for l in d['logs'] if l['sid'] in('s03','s07') and l['date']=='2026-11-22']"
+          npm i -s playwright@1 >/dev/null 2>&1 && npx -y playwright install --with-deps chromium >/dev/null 2>&1
+          cat > t.js <<'JS'
+          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const c=await b.newContext({...devices['Pixel 7']});const p=await c.newPage();
+          p.on('pageerror',e=>console.log('ERR',e.message));
+          for(let i=0;i<3;i++){const t=Date.now();await p.goto('https://tibhesm-hue.github.io/taibastore/itqan/',{timeout:30000}).catch(e=>console.log('FAIL',e.message.slice(0,90)));console.log('LOAD'+i,Date.now()-t,'sw',await p.evaluate(()=>!!navigator.serviceWorker.controller));await p.waitForTimeout(3000);console.log('TXT'+i,(await p.locator('#view').innerText()).slice(0,120).replace(/\n/g,' | '))}
+          await p.evaluate(()=>{localStorage.setItem('itqAuth',JSON.stringify({e:'e442552@gmail.com',h:'0'.repeat(64)}));sessionStorage.setItem('itqView',JSON.stringify({e:'e442552@gmail.com',v:'tgrp',g:'SPGTC2',ttb:'mn',tjop:'s03'}))});
+          const t=Date.now();await p.reload({timeout:30000}).catch(e=>console.log('FAIL',e.message.slice(0,90)));console.log('LOADR',Date.now()-t);await p.waitForTimeout(6000);console.log('TXTR',(await p.locator('#view').innerText()).slice(0,200).replace(/\n/g,' | '));
+          await b.close()})();
+          JS
+          node t.js
