@@ -1,5 +1,6 @@
 name: probe
 on: workflow_dispatch
+permissions: {contents: write}
 jobs:
   p:
     runs-on: ubuntu-latest
@@ -7,5 +8,4 @@ jobs:
       - run: |
           U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
           curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' > snap.json; ls -la snap.json
-      - uses: actions/upload-artifact@v4
-        with: {name: snap, path: snap.json}
+          git init -q t && cd t && cp ../snap.json . && git add snap.json && git -c user.name=p -c user.email=p@p commit -qm s && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/tmp-snap
