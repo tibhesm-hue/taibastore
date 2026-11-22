@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -m 30 -w "\nroot %{http_code} %{time_total}\n" https://itqan.w-f-almateq.workers.dev/ | tail -c 200
-          curl -s -m 60 -o /tmp/a.json -w "tjall %{http_code} %{time_total} %{size_download}\n" -X POST -H 'content-type: application/json' -d '{"v":"x"}' "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65"
-          head -c 300 /tmp/a.json; echo
-          curl -s -m 30 -o /tmp/t.html -w "taj %{http_code} %{time_total} %{size_download}\n" https://tibhesm-hue.github.io/taibastore/itqan/taj.html
+          curl -s -m 30 -D - -o /dev/null -H 'Origin: https://tibhesm-hue.github.io' https://itqan.w-f-almateq.workers.dev/ | tr -d '\r' | grep -i -E 'HTTP|access-control|content-type|cache'
+          curl -s -m 30 -D - -o /dev/null https://tibhesm-hue.github.io/taibastore/itqan/taj.html | tr -d '\r' | grep -i -E 'HTTP|cache-control|last-modified|age:'
+          curl -s -m 30 https://tibhesm-hue.github.io/taibastore/itqan/taj.html | grep -c 'يعيد المحاولة لحاله'
+          curl -s -m 30 https://tibhesm-hue.github.io/taibastore/itqan/ | grep -c 'يعيد المحاولة لحاله'
