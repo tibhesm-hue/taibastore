@@ -5,6 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
-          curl -s -X POST "${U}tjg" -d '{"from":"2026-11-30"}' >/dev/null
-          echo "ST $(curl -s -X POST "${U}tjst" -d '{}')"
+          sleep 45
+          echo "T $(curl -s -X POST 'https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it=dbgt' -d '{}')"
