@@ -5,5 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for u in itqan/audio/021-073-078.mp3 itqan/audio/004-176-176_003-001-006.mp3; do echo "A $u $(curl -s -o /dev/null -w '%{http_code}' https://tibhesm-hue.github.io/taibastore/$u)"; done
-          for u in itqan/ ; do echo "P $u $(curl -s https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM | grep -c "setInterval(gPlace")"; curl -sI https://tibhesm-hue.github.io/taibastore/itqan/ | grep -i -E "age:|cache-control"; done
+          sleep 60
+          npm i -s playwright@1 >/dev/null 2>&1 && npx -y playwright install --with-deps chromium >/dev/null 2>&1
+          cat > t.js <<'JS'
+          const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844}});
+          p.on('pageerror',e=>console.log('ERR',e.message));
+          await p.goto('https://tibhesm-hue.github.io/taibastore/itqan/taj.html?x='+Date.now()+'#s=s10&bk=1');await p.waitForTimeout(9000);
+          console.log('URL',p.url());console.log('BK',await p.locator('[data-tbk]').count());
+          console.log('TXT',(await p.locator('#view').innerText()).slice(0,700).replace(/\n/g,' | '));
+          await p.locator('[data-tbk]').first().click();await p.waitForTimeout(3000);console.log('BACK',p.url());await b.close()})();
+          JS
+          node t.js
