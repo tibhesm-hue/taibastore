@@ -2563,6 +2563,7 @@ function render(){
   var u=null;try{if(typeof claude!=="undefined")u=await claude.use("user")}catch(e){}
   var io=null,ce=null;if(u){try{io=u.isOwner?await u.isOwner():null}catch(e2){}try{ce=await u.canEdit()}catch(e3){}}
   if(!rdb||!(io===true||ce===true)){db={};render();return}
+  if(window.__EMB&&window.__TSID){db={};render();return}/* owner 22 Nov: inside the Itqan student card show the student flow, not the admin entry */
   EDITOR=true;PUBLIC=false;TABS=ETABS;tab="inp";loadUi();loaded=false;
   try{artCap=await claude.use("artifact")}catch(e){artCap=null}
   db=wrapDb(rdb);setTimeout(function(){if(students.length&&logs.length)schedulePub()},20000);
