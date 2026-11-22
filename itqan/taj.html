@@ -755,19 +755,18 @@ function noteBox(s,td){var L=logs.filter(function(l){return l.sid===s.id&&l.nt&&
 function missedDay(s,t0){try{var lv=lvOf(s);if(!lv||!(+lv.parts>0))return null;var st=cfg.trackFrom||cfg.start;if(s.lvFrom&&s.lvFrom>st)st=s.lvFrom;for(var d=st,g=0;d<t0&&g<400;d=addDays(d,1),g++){if(isRest(d))continue;if(!activeOn(s,d))continue;if(logs.some(function(l){return l.sid===s.id&&l.date===d}))continue;if(lget(pdkey(s.id,d))&&lget("qws|"+s.id+"|"+d))continue;return d}}catch(e){}return null}
 function lessonBox(s,T,td){var RVm=null;try{RVm=reviewFor(s,td)}catch(e){}return '<div style="background:#fff;border-radius:8px;padding:8px 10px;font-size:15px;line-height:1.9;margin-bottom:6px">'+(RVm&&RVm.txt?'<div>📚 <b>المراجعة:</b> '+esc(RVm.txt)+'</div>':'')+'<div>📖 <b>الدرس:</b> '+esc(dayText(T.old,T.nw))+'</div><div class="muted" style="font-size:14px">الجديد: '+esc(lessonText(T.nw))+(T.old?'، القديم: '+esc(lessonText(T.old)):'')+'</div>'+'</div>'}
 var VDSEL={};
-function lessonCard(s,td){try{if(s.pt||!s.id)return lessonCard0(s,td);var t=td;if(isRest(t))t=nextRead(t,1);var lo=cfg.trackFrom||cfg.start||"",cur=VDSEL[s.id]||"";if(!cur||cur>t)cur=t;
-var cy=cycOf(t),cs=cycStart(cy),ce=cycEnd(cy),W=[],k=0;
-for(var d=cs;d<=ce;d=addDays(d,1)){if(isRest(d))continue;var w=weekOf(cs,d);if(!W[w])W[w]=[];k++;W[w].push([d,k])}
-function dn(x){return !!(lget(pdkey(s.id,x))||logs.some(function(l){return l.sid===s.id&&l.date===x}))}
-var rows="",capN=0,capD=cur;
-W.forEach(function(R,wi){if(!R)return;var cs2=R.map(function(p){var x=p[0],n=p[1],ok=x<=t&&x>=lo&&activeOn(s,x),isc=x===t,sel=x===cur,d1=ok&&dn(x),st='width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex:none;text-decoration:none;box-sizing:border-box;';if(sel)capN=n;
-if(!ok)return '<div style="'+st+'background:#eceae3;color:#c0beb5">'+n+'</div>';
-var sty=d1?'background:#1d7a4a;color:#fff;':(isc?'background:#fff;border:3px solid #1d7a4a;color:#1d7a4a;box-shadow:0 0 0 4px #E1F5EE;':'background:#f1efe8;color:#2c2c2a;');if(sel&&!isc)sty+='box-shadow:0 0 0 3px #fff,0 0 0 6px #3C3489;';else if(sel&&isc&&d1)sty+='box-shadow:0 0 0 3px #fff,0 0 0 6px #3C3489;';
-return '<a href="#" data-vd="'+esc(s.id)+'|'+x+'" style="'+st+sty+'">'+n+'</a>'}).join("");
-rows+='<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><span style="width:70px;white-space:nowrap;font-size:11px;color:#5F5E5A;flex:none">الأسبوع '+(ORD[wi]||(wi+1))+'</span><div style="display:flex;gap:4px;flex:1;justify-content:space-between">'+cs2+'</div></div>'});
-var cap=capN?'<div style="text-align:center;font-size:14px;font-weight:700;color:#3C3489;margin-top:6px;background:#EEEDFE;border-radius:10px;padding:6px">الدرس '+capN+' · '+DAYN[dow(cur)]+' '+fmt(cur)+'</div>':'';
-var st='<div style="background:#fff;border-radius:14px;padding:8px 10px;margin:6px 0">'+rows+cap+'</div>';
-return st+lessonCard0(s,cur)}catch(e){return lessonCard0(s,td)}}
+function lessonCard(s,td){try{if(s.pt||!s.id)return lessonCard0(s,td);var t=td;if(isRest(t))t=nextRead(t,1);var cur=VDSEL[s.id]||"";if(!cur||cur>t)cur=t;
+var DD={};logs.forEach(function(l){if(l.sid===s.id&&l.date<=t&&(!s.lvFrom||l.date>=s.lvFrom))DD[l.date]=1});var D=Object.keys(DD).sort(),m=D.length,curN=doneBefore(s,t)+1;if(DD[t])curN=D.indexOf(t)+1;
+var cy=cycOf(t),k=0;for(var d=cycStart(cy),ce=cycEnd(cy);d<=ce;d=addDays(d,1))if(!isRest(d))k++;
+var PER=5,T=Math.max(k,curN,m),rows="",capN=0;
+for(var w=0;w*PER<T;w++){var cs2="";for(var i=0;i<PER;i++){var n=w*PER+i+1;if(n>T){cs2+='<div></div>';continue}
+var dt=n<=m?D[n-1]:(n===curN&&!DD[t]?t:""),isc=dt===t,sel=dt&&dt===cur,sty='width:100%;max-width:30px;aspect-ratio:1/1;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;box-sizing:border-box;text-decoration:none;';if(sel)capN=n;
+if(!dt){cs2+='<div style="'+sty+'background:#eceae3;color:#c0beb5">'+n+'</div>';continue}
+var dn=n<=m;sty+=dn?"background:#1d7a4a;color:#fff;":"background:#fff;border:2px solid #1d7a4a;color:#1d7a4a;';if(isc&&!dn)sty+='box-shadow:0 0 0 4px #E1F5EE;';if(sel)sty+='box-shadow:0 0 0 3px #fff,0 0 0 6px #3C3489;';
+cs2+='<a href="#" data-vd="'+esc(s.id)+'|'+dt+'" style="'+sty+'">'+n+'</a>'}
+rows+='<div style="font-size:12px;color:#5F5E5A;margin:8px 2px 4px">الأسبوع '+(ORD[w]||(w+1))+'</div><div style="display:grid;grid-template-columns:repeat('+PER+',1fr);gap:6px">'+cs2+'</div>'}
+var cap=capN?'<div style="text-align:center;font-size:14px;font-weight:700;color:#3C3489;margin-top:10px;background:#EEEDFE;border-radius:10px;padding:6px">الدرس '+capN+' · '+DAYN[dow(cur)]+' '+fmt(cur)+'</div>':'';
+return '<div style="background:#fff;border-radius:14px;padding:4px 10px 10px;margin:6px 0">'+rows+cap+'</div>'+lessonCard0(s,cur)}catch(e){return lessonCard0(s,td)}}
 document.addEventListener("click",function(e){var b=e.target&&e.target.closest&&e.target.closest("[data-vd]");if(!b)return;e.preventDefault();var a=b.getAttribute("data-vd").split("|");VDSEL[a[0]]=a[1];render()});
 function lessonCard0(s,td){var h='',t00=td;if(isRest(td))td=nextRead(td,1);
     var TL=todayLesson(s,td);
