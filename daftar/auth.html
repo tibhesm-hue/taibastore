@@ -1,0 +1,6 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>دفتر أسواق طيبة</title></head>
+<body style="font-family:Tahoma,sans-serif;text-align:center;padding:60px 20px;color:#1b2b24">لحظة…
+<script>
+var G="https://tibhesm-hue.github.io/taibastore/daftar/g.html",m=location.hash.match(/t=([^&]+)/);history.replaceState(null,'',location.pathname);
+if(!m)location.replace(G);else fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({t:decodeURIComponent(m[1])})}).then(function(r){return r.json()}).then(function(j){if(j.ok)location.replace('/');else location.replace(G+'#e='+encodeURIComponent(j.err||'x'))}).catch(function(){location.replace(G+'#e=net')});
+</script></body></html>
