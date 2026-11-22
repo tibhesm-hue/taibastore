@@ -1386,7 +1386,7 @@ function tjAch(sid){try{return localStorage.getItem("tja|"+sid)==="0"?0:1}catch(
 
 
 /* صلاحيات الحلقة: طلب الإعادة، وإرسال الإنجاز */
-PKG.push(["rdo","طلب الإعادة: «يعيد الحفظ/المراجعة»",0,0]);PKG.push(["tdev","الطلاب يسجّلون من جوال المعلمة بلا كود",0,0]);
+PKG.push(["rdo","طلب الإعادة: «يعيد الحفظ/المراجعة»",0,0]);PKG.push(["tdev","الطلاب يسجّلون من جوال المعلمة بلا كود",0,1]);
 var _pGrp56=pGrp;pGrp=function(G,kp,underRoot,ro){var h=_pGrp56(G,kp,underRoot,ro),cur=String((G.perm||{}).ach||"m"),L=[["m","كالمجمع"],["1","إلزامي"],["0","لا"]],row=ro?'<b style="font-size:13px">'+((L.filter(function(o){return o[0]===cur})[0]||L[0])[1])+'</b>':pSeg("g",G.g,"ach",cur,L);return h.slice(0,-6)+pRow("إرسال الإنجاز في الواتساب",row)+'</div>'};
 /* المسابقات: نقاط أو مكافآت بالريال */
 var _cmpRun56=cmpRun;cmpRun=function(cp,D,fn){if(!cp||cp.u!=="r")return _cmpRun56(cp,D,fn);window.__cmpU="r";var sv=[cfg,students,logs,encs,results,pcyc],W=+((cp.cfg||{}).weeks)||DEF.weeks;cfg=Object.assign({},DEF,cp.cfg||{},{start:cp.start||todayStr(),trackFrom:cp.start||todayStr(),weeks:W,cycleDays:W*5,pStep:1});students=D.students;logs=D.logs;encs=[];results={};pcyc=null;var h="";
@@ -2512,19 +2512,25 @@ function render(){
   db.collection("wd").onSnapshot(function(q){wds={};q.docs.forEach(function(d){wds[d.id]=d.data()});ready()},function(){ready()});
   db.collection("results").onSnapshot(function(q){results={};q.docs.forEach(function(d){results[d.id]=d.data()});ready()},function(){ready()});
 })();
-if(window.ITQ){(function(){var POP=0,IGN=0,LAST="";
-function nkey(){if(tab!=="family"||!PTS.v)return "";var v=PTS.v;return v==="form"?"form:"+(PTS.mode||""):v}function isRoot(k){return k==="day"||k==="list"||k==="tdash"||k==="odash"||k==="acc"}
-function snap(){var s={};["v","id","mode","f","o","err","lid","g","tg","gj","sg","sk","tsid","ssid","oc","kc","kf","opx","opl","ocl","twf","of","wz","addp","snx","ope","pr","cvt","cvs","cx","ci","ce","cvd","otb","ocs","orw","ttb","ind"].forEach(function(k){if(PTS[k]!==undefined)s[k]=PTS[k]});try{return JSON.parse(JSON.stringify(s))}catch(e){return {v:PTS.v,id:PTS.id}}}
-function rep(k,p){var s=snap(),j=k+"|"+p+"|"+JSON.stringify(s);if(j===LAST)return;LAST=j;try{history.replaceState({itq:1,k:k,p:p,s:s},"")}catch(e){}}
-function nav(){if(IGN)return;var k=nkey();if(!k)return;var st=history.state,cur=st&&st.itq?st.k:null;
+if(window.ITQ||window.TAJW){(function(){var POP=0,IGN=0,LAST="",XB=0,RK=null,FL=["v","id","mode","f","o","err","lid","g","tg","gj","sg","sk","tsid","ssid","oc","kc","kf","opx","opl","ocl","twf","of","wz","addp","snx","ope","pr","cvt","cvs","cx","ci","ce","cvd","otb","ocs","orw","ttb","ind"];
+function nkey(){if(window.ITQ){if(tab!=="family"||!PTS.v)return "";var v=PTS.v;return (v==="form"?"form:"+(PTS.mode||""):v)+"#"+(PTS.otb||"")+"#"+(PTS.ttb||"")+"#"+(PTS.ocs||"")}try{return "tj#"+tab+"#"+(openSid||"")+"#"+JSON.stringify(psub||{})+"#"+((window.LSN&&LSN.open)||"")+"#"+(typeof sub!=="undefined"?sub:"")}catch(e){return ""}}
+function isRoot(k){if(window.ITQ){var p=k.split("#"),b=p[0];return (b==="day"||b==="list"||b==="tdash"||b==="odash"||b==="acc")&&!p[1]&&!p[2]&&!p[3]}var q=k.split("#");return RK!==null&&q[1]===RK[0]&&!q[2]&&!q[4]&&q[5]===RK[1]}
+function snap(){if(!window.ITQ){try{return {t:tab,o:openSid||null,ps:JSON.parse(JSON.stringify(psub||{})),lo:(window.LSN&&LSN.open)||0,sb:typeof sub!=="undefined"?sub:null}}catch(e){return {t:tab}}}var s={};FL.forEach(function(k){if(PTS[k]!==undefined)s[k]=PTS[k]});try{return JSON.parse(JSON.stringify(s))}catch(e){return {v:PTS.v,id:PTS.id}}}
+function apply(s){if(!window.ITQ){if(s.t!==undefined)tab=s.t;openSid=s.o||null;if(s.ps)psub=s.ps;if(window.LSN)LSN.open=s.lo||0;if(s.sb!=null)sub=s.sb;return}FL.forEach(function(k){if(k in s)PTS[k]=s[k];else if(k==="otb"||k==="ttb"||k==="ocs")PTS[k]=undefined})}
+function rep(k,p){var st=history.state,g=st&&st.itq&&st.g?1:0,s=snap(),j=k+"|"+p+"|"+g+"|"+JSON.stringify(s);if(j===LAST)return;LAST=j;try{history.replaceState({itq:1,k:k,p:p,s:s,g:g},"")}catch(e){}}
+function guard(k){var st=history.state;if(XB<0||!st||!st.itq||st.g)return;try{history.pushState({itq:1,k:k,p:null,s:snap(),g:1},"");LAST=""}catch(e){}}
+function toast(){var d=document.getElementById("bktoast");if(!d){d=document.createElement("div");d.id="bktoast";d.style.cssText="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#2C2C2A;color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;z-index:9999;white-space:nowrap";document.body.appendChild(d)}d.textContent="اضغط رجوع مرة ثانية للخروج";d.style.display="block";clearTimeout(window.__bkt);window.__bkt=setTimeout(function(){d.style.display="none"},2000)}
+function nav(){if(IGN||XB<0)return;var k=nkey();if(!k)return;if(!window.ITQ){if(typeof loaded!=="undefined"&&!loaded)return;if(RK===null){var q0=k.split("#");RK=[q0[1],q0[5]]}}var st=history.state,cur=st&&st.itq?st.k:null;
  if(POP){POP=0;rep(k,cur?st.p:null);return}
- if(!cur){rep(k,null);return}
- if(k===cur){rep(k,st.p);return}
+ if(!cur){rep(k,null);if(isRoot(k))guard(k);return}
+ if(k===cur){rep(k,st.p);if(isRoot(k)&&!st.p)guard(k);return}
  if(st.p&&st.p===k){IGN=1;history.back();return}
- if(isRoot(k)){if(st.p){IGN=1;history.back();return}rep(k,null);return}
- var s=snap();LAST=k+"|"+cur+"|"+JSON.stringify(s);try{history.pushState({itq:1,k:k,p:cur,s:s},"")}catch(e){}}
-var R0=render;render=function(){var r=R0.apply(this,arguments);try{nav()}catch(e){}try{lbApply()}catch(e){}return r};
-window.addEventListener("popstate",function(e){var st=e.state;if(IGN){IGN=0;if(st&&st.itq){LAST="";rep(nkey()||st.k,st.p)}return}if(!st||!st.itq)return;var s=st.s||{};["v","id","mode","f","o","err","lid","g","tg","gj","sg","sk","tsid","ssid","oc","kc","kf","opx","opl","ocl","twf","of","wz","addp","snx","ope","pr","cvt","cvs","cx","ci","ce","cvd","otb","ocs","orw","ttb","ind"].forEach(function(k){if(k in s)PTS[k]=s[k]});POP=1;LAST="";render()});
+ if(isRoot(k)){if(st.p){IGN=1;history.back();return}rep(k,null);guard(k);return}
+ var s=snap();LAST="";try{history.pushState({itq:1,k:k,p:cur,s:s,g:0},"")}catch(e){}}
+var R0=render;render=function(){var r=R0.apply(this,arguments);try{nav()}catch(e){}try{if(window.lbApply)lbApply()}catch(e){}return r};
+window.addEventListener("popstate",function(e){var st=e.state;if(IGN){IGN=0;if(st&&st.itq){LAST="";rep(nkey()||st.k,st.p)}return}if(!st||!st.itq)return;
+ if(!st.g&&!st.p&&isRoot(st.k)){if(XB>0&&Date.now()-XB<2000){XB=-1;history.back();return}XB=Date.now();toast();apply(st.s||{});POP=1;LAST="";render();try{history.pushState({itq:1,k:st.k,p:null,s:st.s,g:1},"")}catch(x){}return}
+ apply(st.s||{});POP=1;LAST="";render()});
 window.addEventListener("pageshow",function(e){if(e.persisted)render()});
 document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest('a[target="_blank"]');if(a&&/\/taibastore\/taj\//.test(a.href||"")){a.removeAttribute("target");if(!/[#&]fx=1/.test(a.href))a.href=a.href+(a.href.indexOf("#")>=0?"&":"#")+"fx=1"}},true);
 })()}
