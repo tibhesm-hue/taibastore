@@ -6,4 +6,4 @@ jobs:
     steps:
       - run: |
           for u in itqan/audio/021-073-078.mp3 itqan/audio/004-176-176_003-001-006.mp3; do echo "A $u $(curl -s -o /dev/null -w '%{http_code}' https://tibhesm-hue.github.io/taibastore/$u)"; done
-          for u in itqan/ itqan/taj.html; do echo "P $u $(curl -s https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM | grep -c '"rs","ra","re"')"; done
+          for u in itqan/ ; do echo "P $u $(curl -s https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM | grep -c "setInterval(gPlace")"; curl -sI https://tibhesm-hue.github.io/taibastore/itqan/ | grep -i -E "age:|cache-control"; done
