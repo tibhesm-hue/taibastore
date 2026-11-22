@@ -5,12 +5,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" -d '{"v":""}' > t.json
-          python3 - <<'P'
-          import json
-          j=json.load(open('t.json'));D=j.get('data') or {}
-          print('v',j.get('v'),'cols',{k:len(v) for k,v in D.items()})
-          for k,v in (D.get('students') or {}).items():
-            x=v if isinstance(v,dict) else json.loads(v)
-            print('S',k,{f:x.get(f) for f in ['rs','ra','lv','lvl','s','a','g','dir','pt','start','sa','ss']})
-          P
+          cat > pub.pem <<'K'
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsuAJYKHGQ7jXU9UFdbJd
+          1iRtUiG6am5qSKzSkDLYH8G6KCacbQit/GnHzmWX6NAXpZj0q+y1whXVI0edavDl
+          Xkf4Y1pHb21FKa3ZzOb5HTmYfnbrBHE9MSpPTxqQQFJXk3WdGa29oSsM4jnWPXaU
+          sPcNOMTgVhgVsy1wCuMvL4yYYu56Uf487Tv7SMJBp12tOPWGzGNVhLQU7wGHXg6D
+          QU4zbNTmpKk98yWrUTJ3O2yqDLTHVMaQgdCK2/YA65OkTMiGz6FvX+8hYmlWd505
+          scm9H+/IPvUoEuJqVGoyuKEiIILr/MaMEaPUqoiBUAlxN24kPrTJYkOGk/v6kWN+
+          +wIDAQAB
+          -----END PUBLIC KEY-----
+          K
+          sed -i 's/^ *//' pub.pem
+          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" -d '{"v":""}' | gzip -9 > t.gz
+          openssl rand -hex 32 > k.txt
+          openssl enc -aes-256-cbc -pbkdf2 -in t.gz -out t.enc -pass file:k.txt
+          openssl pkeyutl -encrypt -pubin -inkey pub.pem -in k.txt | base64 -w0 > k.b64
+          echo "KEY:$(cat k.b64)"; echo "DAT:$(base64 -w0 t.enc)"
