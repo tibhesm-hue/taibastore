@@ -166,7 +166,7 @@ async function appPage(env) {
 
 // ---------- Smart Life sales pull: runs on this server by cron, no Claude involved ----------
 // Writes the same documents the old ledger's pull tasks wrote: slday/inv-<day> (invoice list for the closing) and slsales/<YYYY-MM> (daily, hourly and per-user sales).
-// The two Smart Life API tokens live in the private `meta` table (sl_shop, sl_del), never in the code.
+// The two Smart Life API tokens live in the private meta table (sl_shop, sl_del), never in the code.
 const SL_API = "https://smarterp.top/api/v3";
 const SL_NAMES = {
   s: { "10": "مالك", "13": "أحمد", "11": "المدير", "12": "عاصف", "9": "فوزي", "8": "كاشير 3", "1": "المحاسب العام", "14": "المحاسب العام" },
