@@ -6,5 +6,6 @@ jobs:
     steps:
       - run: |
           U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
-          curl -s -X POST "${U}tjst" -H 'content-type:text/plain' -d '{}' | python3 -c "import json,sys;d=json.load(sys.stdin);[print('ST',x) for x in d.get('list',[])]"
-          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "import json,sys;d=json.load(sys.stdin)['snap'];[print('SU',s['id'],s.get('name'),repr(s.get('mother')),s.get('wd')) for s in d['students']]"
+          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' > snap.json; ls -la snap.json
+      - uses: actions/upload-artifact@v4
+        with: {name: snap, path: snap.json}
