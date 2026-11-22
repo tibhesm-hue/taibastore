@@ -706,7 +706,7 @@ else if(!TL.ok&&reviewFor(s,td)&&!lget(rkey(s.id,K))){
         }
         if(!xk){
         if(TL.ok||lget(pdkey(s.id,td)))h+=advBlock(s,td);
-        if(TL.ok)h+='<div class="ok" style="margin-top:6px">أنهيت درس اليوم، ودرسك القادم يظهر غداً</div>';
+        if(TL.ok)h+='<div class="ok" style="margin-top:6px">✓ أنهيت درس اليوم</div>';
         else{var PR=pendingRedo(s,td);
           if(PR&&0)h+='<div class="lost" style="margin-top:10px;font-size:16px">'+(PR.today?'عليك إعادة درس اليوم ':'عليك مع درس اليوم إعادة درس '+(PR.d===addDays(td,-1)?'أمس':DAYN[dow(PR.d)]+' '+fmt(PR.d))+' ')+timesW(PR.rc)+': '+esc(lessonText(PR.les))+'</div>';}
       }
