@@ -765,7 +765,7 @@ var PER=5,T=Math.max(k,curN,m),rows="",capN=0;
 for(var w=0;w*PER<T;w++){var cs2="";for(var i=0;i<PER;i++){var n=w*PER+i+1;if(n>T){cs2+='<div></div>';continue}
 var dt=n<=m?D[n-1]:(n===curN&&!DD[t]?t:""),isc=dt===t,sel=dt&&dt===cur,sty='width:100%;max-width:30px;aspect-ratio:1/1;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;box-sizing:border-box;text-decoration:none;';if(sel)capN=n;
 if(!dt){cs2+='<div style="'+sty+'background:#eceae3;color:#c0beb5">'+n+'</div>';continue}
-var dn=n<=m;sty+=dn?"background:#1d7a4a;color:#fff;":"background:#fff;border:2px solid #1d7a4a;color:#1d7a4a;';if(isc&&!dn)sty+='box-shadow:0 0 0 4px #E1F5EE;';if(sel)sty+='box-shadow:0 0 0 3px #fff,0 0 0 6px #3C3489;';
+var dn=n<=m;sty+=dn?"background:#1d7a4a;color:#fff;":"background:#fff;border:2px solid #1d7a4a;color:#1d7a4a;";if(isc&&!dn)sty+='box-shadow:0 0 0 4px #E1F5EE;';if(sel)sty+='box-shadow:0 0 0 3px #fff,0 0 0 6px #3C3489;';
 cs2+='<a href="#" data-vd="'+esc(s.id)+'|'+dt+'" style="'+sty+'">'+n+'</a>'}
 rows+='<div style="font-size:12px;color:#5F5E5A;margin:8px 2px 4px">الأسبوع '+(ORD[w]||(w+1))+'</div><div style="display:grid;grid-template-columns:repeat('+PER+',1fr);gap:6px">'+cs2+'</div>'}
 var cap=capN?'<div style="text-align:center;font-size:14px;font-weight:700;color:#3C3489;margin-top:10px;background:#EEEDFE;border-radius:10px;padding:6px">الدرس '+capN+' · '+DAYN[dow(cur)]+' '+fmt(cur)+'</div>':'';
