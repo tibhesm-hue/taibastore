@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: bash tools/audbuild.sh
+      - run: python3 tools/audbuild.py
       - run: |
           git config user.name "audbuild"; git config user.email "audbuild@users.noreply.github.com"
           git add itqan/audio && git commit -qm "itqan: listening audio files (Ghamadi)" && git pull -q --rebase && git push -q
