@@ -2792,5 +2792,6 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 tab="family";if(!PTS.v)PTS.v=location.hash==="#admin"?"adm":"list";itProbe();render();
 })();
 </script>
+<script>/* owner 22 Nov: أي تسجيل لم يصل يُعاد إرساله تلقائياً في الخلفية عند فتح البرنامج حتى يصل */(function(){function go(){try{if(navigator.onLine===false||document.getElementById("tjpendF"))return;var L=JSON.parse(localStorage.getItem("tjpend")||"[]").filter(function(x){return x&&x.h&&Date.now()-(+x.at||0)<13*864e5});localStorage.setItem("tjpend",JSON.stringify(L));if(!L.length)return;var x=L[0],f=document.createElement("iframe");f.id="tjpendF";f.setAttribute("aria-hidden","true");f.style.cssText="position:absolute;width:1px;height:1px;left:-9999px;top:0;border:0;opacity:0";f.src="https://tibhesm-hue.github.io/taibastore/taj/?v="+Date.now()+"#"+x.h+"&autoup=1";document.body.appendChild(f);setTimeout(function(){try{f.remove()}catch(e){}},150000)}catch(e){}}setTimeout(go,4000);setInterval(go,180000);window.addEventListener("online",function(){setTimeout(go,2000)})})();</script>
 </body>
 </html>
