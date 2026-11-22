@@ -1,9 +1,0 @@
-name: tjst
-on: workflow_dispatch
-jobs:
-  p:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          K=$(curl -s https://tibhesm-hue.github.io/taibastore/itqan/index.html | grep -o 'ITK="[^"]*"' | head -1 | cut -d'"' -f2)
-          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjst&k=$K" -H 'Content-Type: text/plain' -d '{}' ; echo
