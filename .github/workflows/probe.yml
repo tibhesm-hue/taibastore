@@ -5,22 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjsnap&k=taj-48132d5dec65" -d '{}' > s.json
-          python3 -c "import wave;w=wave.open('t.wav','wb');w.setnchannels(1);w.setsampwidth(2);w.setframerate(16000);w.writeframes(b'\0\0'*16000);w.close()"
-          python3 - <<'PY'
-          import json,subprocess,time
-          d=json.load(open('s.json'))['snap']
-          seen=set()
-          for s in d['students']:
-            for f in ('gk','fk'):
-              k=(s.get(f) or '').strip()
-              if not k: continue
-              if not k.startswith('gsk_'): k=k[::-1]
-              if k in seen: continue
-              seen.add(k)
-              for m in ('whisper-large-v3','whisper-large-v3-turbo'):
-                t=time.time()
-                o=subprocess.run(['curl','-s','-D','-','-o','/dev/null','-w','%{http_code}','https://api.groq.com/openai/v1/audio/transcriptions','-H','Authorization: Bearer '+k,'-F','file=@t.wav','-F','model='+m,'-F','language=ar'],capture_output=True,text=True).stdout
-                h=[l.strip() for l in o.splitlines() if 'ratelimit' in l.lower() or 'retry-after' in l.lower()]
-                print('TR',s['name'],f,s.get('mother'),m,o.splitlines()[-1],round(time.time()-t,1),' ; '.join(h))
-          PY
+          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
+          echo "G $(curl -s -X POST "${U}tjg" -H 'content-type:text/plain' -d '{"from":"2026-11-22"}')"
+          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "
+          import json,sys;d=json.load(sys.stdin)['snap']
+          [print('LOG',json.dumps(l,ensure_ascii=False)) for l in d['logs'] if l['date']=='2026-11-22']"
