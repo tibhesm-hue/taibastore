@@ -1,6 +1,6 @@
 import {B} from "./b.js";
 const KEY="taj-48132d5dec65",ADMH="e8cdf946bf1d0637d6c0e55cf9ee4700a8f9d4b4906f9fcb42ec44f0ed4e41d0",RK={a:3,c:2,t:1},SUP=["amalmateq1@gmail.com","w.f.almateq@gmail.com"];
-export default{async fetch(req,env){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};const json=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
+const W0={async fetch(req,env){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};const json=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const vals=Object.values(env||{});if(req.method==="OPTIONS")return new Response(null,{headers:cors});const DB=vals.find(v=>v&&typeof v.prepare==="function"&&typeof v.batch==="function");
 const qi=new URL(req.url).searchParams,a=qi.get("it");
 if(a==="tjaud"&&req.method==="GET"){const AU=env&&env.AU;if(!AU||!DB)return new Response("no",{status:404,headers:cors});const sid=qi.get("s")||"",d=qi.get("d")||"",kd=qi.get("kd")||"",i=+qi.get("i"),x=+qi.get("x"),g=qi.get("g")||"";if(!(x>Date.now()))return new Response("exp",{status:403,headers:cors});
@@ -155,4 +155,38 @@ const pack=async(GS,e)=>{const out=[];for(const G of GS){const C=await ctxG(G.g)
 if(a==="tlist"){const GS=await all("SELECT * FROM itg WHERE t=? ORDER BY at",e);const M=await all("SELECT itm.e e,itm.g g,itm.sid sid,itm.nm nm,itm.s s,itm.at at,itm.nt nt,itm.mk mk,itm.hs hs FROM itm JOIN itg ON itm.g=itg.g WHERE itg.t=?",e);const F=await all("SELECT itf.g g,itf.nm nm FROM itf JOIN itg ON itf.g=itg.g WHERE itg.t=?",e);return json({ok:true,groups:await pack(GS,e),members:M,files:F,mine:await mine(e)})}
 {const _r=await B({RK,SUP,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn});if(_r)return _r}
 return json({ok:false,err:"act"})}catch(x){return json({ok:false,err:"db",m:String(x&&x.message||x).slice(0,200)})}}
-return json({ok:true,itq:!!DB,au:!!(env&&env.AU),v:10})}};
+return json({ok:true,itq:!!DB,au:!!(env&&env.AU),v:11})}};
+
+/* سجل النشاط: يسجّل ما يحدث تحت الجمعية للاطلاع فقط */
+const LOGA={tnames:1,join:1,reg:1,oclaim:1,okids:1,ope:1,operm:1,okdel:1,oren:1,tupd:1,tfree:1,cset:1,cdel:1};
+const lgDB=env=>Object.values(env||{}).find(v=>v&&typeof v.prepare==="function"&&typeof v.batch==="function");
+const lgOne=(DB,q,...b)=>DB.prepare(q).bind(...b).first();
+const lgAll=async(DB,q,...b)=>(await DB.prepare(q).bind(...b).all()).results||[];
+const lgPj=x=>{try{return JSON.parse(x||"{}")||{}}catch(e){return {}}};
+async function lgRootO(DB,o){let id=o,n=0,chain=[];while(id&&n<5){const r=await lgOne(DB,"SELECT o,n,par FROM ito WHERE o=?",id);if(!r)break;chain.push(r);if(!r.par)return {root:r.o,chain};id=r.par;n++}return null}
+async function lgRootG(DB,g){const G=await lgOne(DB,"SELECT g,n,par FROM itg WHERE g=?",g);if(!G||!G.par)return null;const R=await lgRootO(DB,G.par);return R?{root:R.root,G,chain:R.chain}:null}
+async function lgWho(DB,e,pn){if(pn)return String(pn).slice(0,40);try{const a1=await lgOne(DB,"SELECT onm FROM ito WHERE own=? AND onm<>'' LIMIT 1",e);if(a1&&a1.onm)return a1.onm;const a2=await lgOne(DB,"SELECT tn FROM itg WHERE t=? AND tn<>'' LIMIT 1",e);if(a2&&a2.tn)return a2.tn;const r=await lgOne(DB,"SELECT d FROM itq WHERE e=?",e);const d=lgPj(r&&r.d);return String(d.pn||d.name||"").slice(0,40)||e.split("@")[0]}catch(x){return e.split("@")[0]}}
+async function lgPre(DB,a,o){try{const c=String(o.c||"").toUpperCase(),g=String(o.g||"").toUpperCase();if(a==="tnames"||a==="tupd"||a==="tfree")return await lgOne(DB,"SELECT n,nl,p FROM itg WHERE g=?",g);if(["okdel","oren","ope","operm"].includes(a))return o.ck==="o"?await lgOne(DB,"SELECT n FROM ito WHERE o=?",c):await lgOne(DB,"SELECT n FROM itg WHERE g=?",c);if(a==="cdel")return await lgOne(DB,"SELECT sc,d FROM itc WHERE c=?",c)}catch(x){}return null}
+async function lgWrite(DB,a,o,j,pre){const e=String(o.e||"").trim().toLowerCase();if(!e)return;let R=null,txt="",ctx="";const c=String(o.c||"").toUpperCase(),g=String(o.g||"").toUpperCase(),oo=String(o.o||"").toUpperCase();
+  const nm=x=>{try{return JSON.parse(x||"[]").map(y=>y&&(y.n||y.name)||"").filter(Boolean)}catch(z){return []}};
+  if(a==="tnames"||a==="tupd"||a==="tfree"){R=await lgRootG(DB,g);if(!R)return;ctx=R.G.n;if(a==="tnames"){const A=nm(pre&&pre.nl),B=nm(o.nl),ad=B.filter(x=>!A.includes(x)),rm=A.filter(x=>!B.includes(x));if(!ad.length&&!rm.length)return;txt=(ad.length?"أضاف "+(ad.length>1?"طلاباً":"طالباً")+": "+ad.slice(0,8).join("، "):"")+(ad.length&&rm.length?" · ":"")+(rm.length?"حذف: "+rm.slice(0,8).join("، "):"")}else if(a==="tupd"){if(pre&&pre.p===String(o.p||pre.p))return;txt="عدّل منهج الحلقة"}else txt="فكّ اسم طالب ليختاره من جديد"}
+  else if(a==="join"||(a==="reg"&&g)){R=await lgRootG(DB,g);if(!R)return;ctx=R.G.n;txt="سجّل الطالب «"+String(j.nm||"")+"» بإيميله"}
+  else if(a==="oclaim"||(a==="reg"&&o.cl)){const cl=String(o.cl||"").toUpperCase();if(o.ck==="o"){R=await lgRootO(DB,cl);if(!R)return;ctx=R.chain[0].n;txt="سجّل مسؤولاً على «"+R.chain[0].n+"»"}else{R=await lgRootG(DB,cl);if(!R)return;ctx=R.G.n;txt="سجّل معلماً على «"+R.G.n+"»"}}
+  else if(["okids","ope","operm","okdel","oren"].includes(a)){R=await lgRootO(DB,oo);if(!R)return;ctx=R.chain[0].n;const pn=pre&&pre.n||"";
+    if(a==="okids"){let L=[];try{L=JSON.parse(String(o.names||"[]"))}catch(z){}if(!L.length)return;txt="أضاف: "+L.slice(0,8).join("، ")}
+    else if(a==="ope")txt=(o.pe?"وضع إيميل المسؤول لـ«"+pn+"»: "+String(o.pe):"أزال إيميل المسؤول من «"+pn+"»");
+    else if(a==="operm")txt="غيّر صلاحيات «"+pn+"»";else if(a==="okdel")txt="حذف «"+pn+"»";else txt="غيّر اسم «"+pn+"» إلى «"+String(o.n||"")+"»"}
+  else if(a==="cset"||a==="cdel"){const sc=a==="cset"?String(o.sc||""):String(pre&&pre.sc||"");if(!/^o:/.test(sc))return;R=await lgRootO(DB,sc.slice(2));if(!R)return;ctx=R.chain[0].n;const dn=a==="cset"?String((o.d&&o.d.n)||""):String(lgPj(pre&&pre.d).n||"");txt=(a==="cset"?"حفظ مسابقة":"حذف مسابقة")+(dn?" «"+dn+"»":"")}
+  if(!R||!txt)return;await DB.prepare("CREATE TABLE IF NOT EXISTS itlog (id INTEGER PRIMARY KEY AUTOINCREMENT, root TEXT, at INTEGER, e TEXT, who TEXT, txt TEXT, ctx TEXT)").run();
+  await DB.prepare("INSERT INTO itlog (root,at,e,who,txt,ctx) VALUES (?,?,?,?,?,?)").bind(R.root,Date.now(),e,await lgWho(DB,e,o.pn),txt.slice(0,300),String(ctx||"").slice(0,80)).run()}
+async function lgRead(DB,a,o,cors){const J=(x)=>new Response(JSON.stringify(x),{headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});const e=String(o.e||"").trim().toLowerCase(),row=await lgOne(DB,"SELECT h FROM itq WHERE e=?",e);const hb=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("itq|"+String(o.h||""))),hh=[...new Uint8Array(hb)].map(x=>x.toString(16).padStart(2,"0")).join("");if(!row||!row.h||row.h!==hh)return J({ok:false,err:"pw"});
+  const roots=(await lgAll(DB,"SELECT o FROM ito WHERE own=? AND (par IS NULL OR par='')",e)).map(x=>x.o);const rt=String(o.o||"").toUpperCase();if(!roots.includes(rt))return J({ok:true,n:0,list:[]});
+  await DB.prepare("CREATE TABLE IF NOT EXISTS itlog (id INTEGER PRIMARY KEY AUTOINCREMENT, root TEXT, at INTEGER, e TEXT, who TEXT, txt TEXT, ctx TEXT)").run();const sk="logseen|"+e+"|"+rt,sr=await lgOne(DB,"SELECT v FROM itmeta WHERE k=?",sk),seen=+(sr&&sr.v)||0;
+  if(a==="ologn"){const r=await lgOne(DB,"SELECT COUNT(*) AS n FROM itlog WHERE root=? AND at>? AND e<>?",rt,seen,e);return J({ok:true,n:+(r&&r.n)||0})}
+  const list=await lgAll(DB,"SELECT at,e,who,txt,ctx FROM itlog WHERE root=? ORDER BY at DESC LIMIT 200",rt);await DB.prepare("INSERT OR REPLACE INTO itmeta (k,v) VALUES (?,?)").bind(sk,String(Date.now())).run();return J({ok:true,seen,list:list.map(x=>({at:x.at,who:x.e===e?"أنت":x.who,txt:x.txt,ctx:x.ctx,me:x.e===e?1:0}))})}
+export default{async fetch(req,env){const u=new URL(req.url),a=u.searchParams.get("it");if(req.method!=="POST"||!a||!(LOGA[a]||a==="olog"||a==="ologn"))return W0.fetch(req,env);
+  const DB=lgDB(env);let o={};try{o=JSON.parse(await req.clone().text())}catch(x){}
+  if(a==="olog"||a==="ologn"){const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Taj-Key"};if(u.searchParams.get("k")!==KEY&&req.headers.get("X-Taj-Key")!==KEY)return new Response(JSON.stringify({error:"key"}),{status:403,headers:cors});if(!DB)return new Response(JSON.stringify({ok:false}),{headers:cors});try{return await lgRead(DB,a,o,cors)}catch(x){return new Response(JSON.stringify({ok:false,err:"db"}),{headers:cors})}}
+  let pre=null;if(DB)pre=await lgPre(DB,a,o);const res=await W0.fetch(req,env);
+  try{if(DB&&res.status===200){const j=await res.clone().json();if(j&&j.ok)await lgWrite(DB,a,o,j,pre)}}catch(x){}
+  return res}};
