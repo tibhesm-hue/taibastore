@@ -8,10 +8,12 @@ jobs:
           npm i -s playwright@1 >/dev/null 2>&1 && npx -y playwright install --with-deps chromium >/dev/null 2>&1
           cat > t.js <<'JS'
           const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const c=await b.newContext({...devices['Pixel 7']});const p=await c.newPage();
-          p.on('pageerror',e=>console.log('ERR',e.message));
-          for(let i=0;i<3;i++){const t=Date.now();await p.goto('https://tibhesm-hue.github.io/taibastore/itqan/',{timeout:30000}).catch(e=>console.log('FAIL',e.message.slice(0,90)));console.log('LOAD'+i,Date.now()-t,'sw',await p.evaluate(()=>!!navigator.serviceWorker.controller));await p.waitForTimeout(3000);console.log('TXT'+i,(await p.locator('#view').innerText()).slice(0,120).replace(/\n/g,' | '))}
-          await p.evaluate(()=>{localStorage.setItem('itqAuth',JSON.stringify({e:'e442552@gmail.com',h:'0'.repeat(64)}));sessionStorage.setItem('itqView',JSON.stringify({e:'e442552@gmail.com',v:'tgrp',g:'SPGTC2',ttb:'mn',tjop:'s03'}))});
-          const t=Date.now();await p.reload({timeout:30000}).catch(e=>console.log('FAIL',e.message.slice(0,90)));console.log('LOADR',Date.now()-t);await p.waitForTimeout(6000);console.log('TXTR',(await p.locator('#view').innerText()).slice(0,200).replace(/\n/g,' | '));
+          const cdp=await c.newCDPSession(p);await cdp.send('Network.enable');await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:1.6*1024*1024/8,uploadThroughput:750*1024/8});
+          await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+          const sz={};p.on('response',async r=>{try{const u=r.url().replace(/\?.*/,'');const l=(await r.body()).length;sz[u.slice(-60)]=(sz[u.slice(-60)]||0)+l}catch(e){}});
+          for(let k=0;k<2;k++){const t=Date.now();await p.goto('https://tibhesm-hue.github.io/taibastore/itqan/taj.html?x='+Date.now()+'#s=s03&emb=1',{timeout:60000});const tl=Date.now()-t;
+          let ok=0;for(let i=0;i<120;i++){ok=await p.evaluate(()=>!!document.querySelector('#view [data-open]'));if(ok)break;await p.waitForTimeout(250)}console.log('RUN'+k,'load',tl,'ready',Date.now()-t,ok)}
+          Object.entries(sz).sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(x=>console.log('SZ',x[1],x[0]));
           await b.close()})();
           JS
           node t.js
