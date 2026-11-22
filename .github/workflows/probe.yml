@@ -1,0 +1,11 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -m 30 -w "\nroot %{http_code} %{time_total}\n" https://itqan.w-f-almateq.workers.dev/ | tail -c 200
+          curl -s -m 60 -o /tmp/a.json -w "tjall %{http_code} %{time_total} %{size_download}\n" -X POST -H 'content-type: application/json' -d '{"v":"x"}' "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65"
+          head -c 300 /tmp/a.json; echo
+          curl -s -m 30 -o /tmp/t.html -w "taj %{http_code} %{time_total} %{size_download}\n" https://tibhesm-hue.github.io/taibastore/itqan/taj.html
