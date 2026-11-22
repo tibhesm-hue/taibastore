@@ -117,4 +117,4 @@ const pack=async(GS,e)=>{const out=[];for(const G of GS){const C=await ctxG(G.g)
 if(a==="tlist"){const GS=await all("SELECT * FROM itg WHERE t=? ORDER BY at",e);const M=await all("SELECT itm.e e,itm.g g,itm.sid sid,itm.nm nm,itm.s s,itm.at at,itm.nt nt,itm.mk mk,itm.hs hs FROM itm JOIN itg ON itm.g=itg.g WHERE itg.t=?",e);const F=await all("SELECT itf.g g,itf.nm nm FROM itf JOIN itg ON itf.g=itg.g WHERE itg.t=?",e);return json({ok:true,groups:await pack(GS,e),members:M,files:F,mine:await mine(e)})}
 {const _r=await B({RK,SUP,a,all,canG,ck,code,cpOf,ctxG,ctxO,dH,db,e,fixP,gn,json,mine,nl,nm,no,o,oc,one,pack,pj,pj2,pn,pp,rankG,rankO,run,sid,tn});if(_r)return _r}
 return json({ok:false,err:"act"})}catch(x){return json({ok:false,err:"db",m:String(x&&x.message||x).slice(0,200)})}}
-return json({ok:true,itq:!!DB,v:8})}};
+return json({ok:true,itq:!!DB,au:!!(env&&env.AU),v:8})}};

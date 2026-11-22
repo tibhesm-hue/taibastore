@@ -11,6 +11,7 @@ console.log("account:",acc.name);
 const st=await j("/accounts/"+acc.id+"/workers/scripts/"+NAME+"/settings");
 console.log("bindings:",(st.bindings||[]).map(b=>b.type+":"+b.name).join(", "));
 const meta={main_module:"worker.js",compatibility_date:st.compatibility_date||"2024-09-01",compatibility_flags:st.compatibility_flags||[],keep_bindings:["d1","secret_text","secret_key","plain_text","kv_namespace","r2_bucket","durable_object_namespace","service","queue","analytics_engine","ai","vectorize","hyperdrive","browser","version_metadata","json","wasm_module","text_blob","data_blob","mtls_certificate","dispatch_namespace","workflow","assets","send_email","pipelines","secrets_store_secret"]};
+if(!(st.bindings||[]).some(b=>b.type==="r2_bucket"&&b.name==="AU"))meta.bindings=[{type:"r2_bucket",name:"AU",bucket_name:"itqan-audio"}];
 const fd=new FormData();
 fd.append("metadata",new Blob([JSON.stringify(meta)],{type:"application/json"}));
 for(const f of ["worker.js","b.js"])fd.append(f,new Blob([fs.readFileSync("itqan/"+f,"utf8")],{type:"application/javascript+module"}),f);
