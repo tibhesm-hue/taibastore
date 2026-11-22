@@ -5,6 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -m 30 https://itqan.w-f-almateq.workers.dev/; echo
-          curl -s -m 30 -X POST -d "{\"e\":\"w.f.almateq@gmail.com\",\"h\":\"x\"}" "https://itqan.w-f-almateq.workers.dev/?it=oall&k=taj-48132d5dec65"; echo
-          curl -s -m 30 "https://taj-asr.yaqot-tibh.workers.dev/?x=1" | head -c 600; echo
+          sleep 40
+          for u in itqan/ itqan/taj.html itqan/sw.js; do echo "$u $(curl -s -m 30 "https://tibhesm-hue.github.io/taibastore/$u?x=$RANDOM" | grep -c -E 'oaPanel|jLog|no-store')"; done
