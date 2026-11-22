@@ -360,7 +360,7 @@ async function jPost(env, m, fl) {
             if (it.addTried && it.addTried[k]) { const f = await tailHas(tok, it.code); if (f) { e[k] = "exists"; continue; } }
             await patchDoc(env, "slq", r.id, x => ({ ...x, items: (x.items || []).map(y => (y.code === it.code ? { ...y, addTried: { ...(y.addTried || {}), [k]: 1 } } : y)) }));
             const a = await addAcct(tok, it, price, cost, name);
-            e[k] = a.r;
+            e[k] = a.r; if (a.id) e[k === "shop" ? "sid" : "did"] = a.id;
           }
         } else {
           const want = { price, cost, name };
@@ -399,7 +399,7 @@ async function jPost(env, m, fl) {
     const allAlready = allOk && !anyOk && R.some(e => e.shop === "already" || e.del === "already");
     const bads = R.filter(e => !(good(e.shop) && good(e.del))).map(e => e.code + ": " + (good(e.shop) ? e.del : e.shop));
     const result = (allAlready ? "✅ مطبّق من قبل — " : "") + "نُفّذ " + nOk + " من " + R.length + (bads.length ? "؛ لم يُنفّذ: " + bads.slice(0, 5).join(" | ") : "");
-    await patchDoc(env, "slq", r.id, x => { const y = { ...x, status, doneAt: Date.now(), result, res: R.map(e => ({ code: e.code, shop: e.shop, del: e.del })), page: "pending" }; if (allAlready) y.already = true; delete y.runAt; return y; });
+    await patchDoc(env, "slq", r.id, x => { const y = { ...x, status, doneAt: Date.now(), result, res: R.map(e => ({ code: e.code, shop: e.shop, del: e.del, sid: e.sid, did: e.did })), page: "pending" }; if (allAlready) y.already = true; delete y.runAt; return y; });
     await alertAdd(env, "💲 " + (d0.cashier || "") + ": " + nOk + " من " + R.length + " صنف نُفّذ في سمارت لايف" + (d0.sup ? " (فاتورة " + d0.sup + ")" : "") + (bads.length ? " — فشل: " + bads.slice(0, 3).join(" | ") : ""));
   }
   if (applied.length) {
@@ -424,13 +424,152 @@ async function jPost(env, m, fl) {
   return res;
 }
 
+// ---- hourly gate: a job runs at most once per N minutes ----
+async function due(env, key, mins) {
+  const r = await env.DB.prepare("SELECT v FROM meta WHERE k=?").bind("due_" + key).first();
+  if (r && Date.now() - num(r.v) < mins * 60e3) return false;
+  await metaSet(env, "due_" + key, String(Date.now()));
+  return true;
+}
+const normAr = s => String(s == null ? "" : s).replace(/[ً-ْـ\s]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+
+// ---- last cost/price the shop itself entered per barcode (costhist/main), built from slq; internal only ----
+async function jCost(env) {
+  if (!(await due(env, "cost", 55))) return "wait";
+  const c = await getDoc(env, "costhist", "main"); if (!c) return "no costhist";
+  const since = num(c.d.at), items = { ...(c.d.items || {}) };
+  const rows = ((await env.DB.prepare("SELECT data FROM docs WHERE col='slq' AND at>? ORDER BY at LIMIT 400").bind(since).all()).results || []).map(r => JSON.parse(r.data));
+  let maxAt = since, n = 0;
+  for (const d of rows.sort((a, b) => num(a.at) - num(b.at))) {
+    if (d.status !== "done" && d.status !== "pending") continue;
+    if (num(d.at) > maxAt) maxAt = num(d.at);
+    const bad = new Set(); for (const e of (d.res || [])) if (e && e.code != null && /^(invalid|stale)/.test(String(e.shop) + "|" + String(e.del))) bad.add(String(e.code));
+    for (const it of (d.items || [])) {
+      const code = String(it.code == null ? "" : it.code).trim();
+      if (!code || /^تالف/.test(code) || it.photoOnly || it.offerOnly || bad.has(code)) continue;
+      const old = items[code] || [null, null, 0];
+      const nc = it.newCost != null ? num(it.newCost) : old[0], np = it.newPrice != null ? num(it.newPrice) : old[1];
+      if (nc == null && np == null) continue;
+      items[code] = [nc, np, Math.floor(num(d.at) / 1000)]; n++;
+    }
+  }
+  if (!n && maxAt === since) return "same";
+  const ok = await patchDoc(env, "costhist", "main", x => ({ ...x, items, at: maxAt }));
+  return ok ? "updated " + n : "conflict";
+}
+
+// ---- carton sold -> pieces: keeps the carton base/current quantities in stockq/car ----
+async function jCar(env, m) {
+  if (!(await due(env, "car", 55))) return "wait";
+  const c = await getDoc(env, "stockq", "car"); if (!c || !Array.isArray(c.d.pairs) || !c.d.pairs.length) return "no pairs";
+  const st = await getDoc(env, "stock", "main"); const sitems = (st && st.d.items) || {};
+  const q = { ...(c.d.q || {}) }, pairs = c.d.pairs;
+  const pos = num((await metaGet(env, ["carpos"])).carpos);
+  let ch = 0, seen = 0;
+  for (let k = 0; k < pairs.length && left() > 8 && seen < 14; k++) {
+    const p = pairs[(pos + k) % pairs.length]; seen++;
+    try {
+      const pr = await smProd(m.sl_shop, p.sid), cur = num(pr.quantity), now = Date.now();
+      const e = q[p.pc], cnt = sitems[p.pc] ? num(sitems[p.pc].at) : 0;
+      const nv = (!e || cnt > num(e[1])) ? [cur, now, cur, now] : [e[0], e[1], cur, now];
+      if (!e || e[2] !== cur || nv[0] !== e[0]) ch++;
+      q[p.pc] = nv;
+    } catch (err) { /* skip this pair */ }
+  }
+  await metaSet(env, "carpos", String((pos + seen) % pairs.length));
+  if (!ch) return "same (" + seen + ")";
+  const ok = await patchDoc(env, "stockq", "car", x => ({ ...x, q: { ...(x.q || {}), ...q }, at: Date.now() }));
+  return ok ? "updated " + ch : "conflict";
+}
+
+// ---- tax method «شامل» (tax_method 0) for items added in the last 36h; writes to Smart Life, so only when post_on = 1 ----
+async function jTax(env, m, fl) {
+  if (fl.post_on !== "1") return "off";
+  if (!(await due(env, "tax", 55))) return "wait";
+  const doneRaw = (await metaGet(env, ["taxdone"])).taxdone; const done = new Set(doneRaw ? JSON.parse(doneRaw) : []);
+  const rows = ((await env.DB.prepare("SELECT id,data FROM docs WHERE col='slq' AND at>? ORDER BY at").bind(Date.now() - 36 * 3600e3).all()).results || []).map(r => JSON.parse(r.data));
+  let fixed = 0, checked = 0;
+  for (const d of rows) {
+    if (d.status !== "done") continue;
+    for (const it of (d.items || [])) {
+      if (!it.add) continue;
+      const ids = [];
+      for (const e of (d.res || [])) if (e && String(e.code) === String(it.code)) { if (e.sid) ids.push(["shop", String(e.sid)]); if (e.did) ids.push(["del", String(e.did)]); }
+      for (const [k, id] of ids) {
+        const key = k + ":" + id; if (done.has(key) || left() < 8) continue;
+        const tok = k === "shop" ? m.sl_shop : m.sl_del;
+        try {
+          const p = await smProd(tok, id); checked++;
+          if (String(p.tax_method) === "1") {
+            await smPost(tok, "/products/update/" + id, { name: p.name, code: p.code, price: p.price, cost: p.cost, tax_method: 0 });
+            const v = await smProd(tok, id);
+            if (String(v.tax_method) !== "0" || v.name !== p.name || String(v.code) !== String(p.code) || num(v.price) !== num(p.price) || num(v.cost) !== num(p.cost)) {
+              await smPost(tok, "/products/update/" + id, { name: p.name, code: p.code, price: p.price, cost: p.cost, tax_method: num(p.tax_method) });
+              await alertAdd(env, "⚠️ ضبط الضريبة: تغيّر " + (it.name || it.code) + " — راجعه");
+            } else fixed++;
+          }
+          done.add(key);
+        } catch (err) { /* retry next hour */ }
+      }
+    }
+  }
+  await metaSet(env, "taxdone", JSON.stringify([...done].slice(-400)));
+  return "checked " + checked + " fixed " + fixed;
+}
+
+// ---- customer credit settlements (custpay) -> Smart Life catch receipt. Writes money documents: only when bond_on = 1 (dry run with bond_dry = 1) ----
+async function jBond(env, m) {
+  const f = await metaGet(env, ["bond_on", "bond_dry", "bond_lock"]);
+  const dry = f.bond_dry === "1";
+  if (!dry && f.bond_on !== "1") return "off";
+  if (num(f.bond_lock) > Date.now()) return "locked";
+  const rows = ((await env.DB.prepare("SELECT id,data FROM docs WHERE col='custpay'").all()).results || []).map(r => ({ id: r.id, d: JSON.parse(r.data) }));
+  // deleted settlements that already have a bond: alert once, never touch Smart Life
+  if (!dry) for (const r of rows) { const d = r.d; if (d.deleted && d.slBond && !d.slBondDelNotified) { await alertAdd(env, "⚠️ دفتر طيبة: سداد " + (d.cust || "") + " " + num(d.amount) + " ريال انحذف من الدفتر وله سند قبض رقم " + d.slBond.bond_number + " في سمارت لايف — عدّله أو احذفه هناك بنفسك."); await patchDoc(env, "custpay", r.id, x => ({ ...x, slBondDelNotified: Date.now() })); } }
+  const todo = rows.filter(r => !r.d.deleted && !r.d.slBond && !r.d.slBondErr && num(r.d.amount) > 0 && String(r.d.cust || "").trim());
+  if (!todo.length) { if (dry) { await metaSet(env, "bonddry", JSON.stringify({ at: Date.now(), n: 0 })); await metaDel(env, "bond_dry"); } return "none"; }
+  if (left() < 8) return "budget";
+  if (!dry) await metaSet(env, "bond_lock", String(Date.now() + 8 * 60e3));
+  const out = [];
+  try {
+    const cm = await getDoc(env, "settings", "slcustmap"), cb = await getDoc(env, "settings", "custbal");
+    const map = (cm && cm.d.map) || {}, alias = {}; for (const x of ((cb && cb.d.list) || [])) for (const a of (x.aliases || [])) alias[normAr(a)] = x.name;
+    const cl = (await smGet(m.sl_shop, "/clients/clients_list?limit=500")).data || [];
+    const ac = (await smGet(m.sl_shop, "/accounting/accounts?limit=1000")).data || [];
+    const cash = ac.find(a => String(a.account_number) === "1030301");
+    for (const r of todo) {
+      if (left() < 4) break;
+      const d = r.d, want = normAr(map[d.cust] || d.cust);
+      const hits = cl.filter(c => String(c.id) !== "5" && (normAr(c.name) === want || normAr(c.name) === normAr(alias[normAr(d.cust)] || "\u0000")));
+      const err = msg => patchDoc(env, "custpay", r.id, x => ({ ...x, slBondErr: { msg, at: Date.now() } }));
+      if (hits.length !== 1) { out.push([r.id, "name", hits.length]); if (!dry) await err(hits.length ? "الاسم «" + d.cust + "» يطابق أكثر من عميل في سمارت لايف" : "الاسم «" + d.cust + "» غير موجود في سمارت لايف"); continue; }
+      const acct = ac.find(a => String(a.account_number) === String(hits[0].account_num));
+      if (!acct || !cash) { out.push([r.id, "noacct"]); if (!dry) await err("لم يوجد حساب العميل أو الصندوق في سمارت لايف"); continue; }
+      const tm = new Date(num(d.at) + 3 * 3600e3).toISOString(), dt = String(d.date) + " " + tm.slice(11, 19);
+      const body = { type: "catch_receipt", date: dt, due_date: String(d.date), branch_id: 1, from_account: acct.id, to_account: cash.id, payment_method: 1, amount: num(d.amount), sub_amount: num(d.amount), currency: "SAR", currency_rate: 1, reference: "دفتر طيبة R-" + r.id.slice(0, 6).toUpperCase(), recipient_name: hits[0].name, notes: "سند قبض نقدي من العميل " + hits[0].name + " — من دفتر طيبة (" + (d.cashier || "") + ")", sub_statement: "سداد آجل " + hits[0].name, cost_center: 0, operation_type: "manual", pay_all_bills: 1, pay_all_bills_type: "oldest_to_newest", completed_invoices_only: 0, exclude_fully_returned: 1 };
+      if (dry) { out.push([r.id, "would", hits[0].name, num(d.amount), acct.id, cash.id]); continue; }
+      const again = await getDoc(env, "custpay", r.id); if (!again || again.d.slBond || again.d.deleted) continue;
+      try {
+        const j = await smPost(m.sl_shop, "/accounting/add_bond?type=catch_receipt", body);
+        const dd = j.data || {}; if (!dd.id) throw new Error("no bond id");
+        const sb = { id: dd.id, bond_number: dd.bond_number, number: String(dd.number), entry: dd.main_daily_id, method: "نقدي", at: Date.now(), by: "daftar-server" };
+        await patchDoc(env, "custpay", r.id, x => ({ ...x, slBond: sb }));
+        const rp = String(d.receipt || "").split("/"); if (rp.length > 2) { const rid = rp.pop(); await patchDoc(env, rp.join("/"), rid, x => ({ ...x, slBond: sb })); }
+        out.push([r.id, "ok", dd.bond_number]);
+      } catch (e) { await err("فشل الإرسال: " + String(e && e.message || e).slice(0, 80)); out.push([r.id, "fail"]); }
+    }
+  } finally { if (!dry) await metaSet(env, "bond_lock", "0"); }
+  if (dry) { await metaSet(env, "bonddry", JSON.stringify({ at: Date.now(), out }).slice(0, 5000)); await metaDel(env, "bond_dry"); }
+  return out.length ? out.length + " handled" : "none";
+}
+
 async function run(env) {
   B.n = 0;
   const t0 = Date.now(), log = { at: t0 };
   const m = await metaGet(env, ["sl_shop", "sl_del"]);
   if (!m.sl_shop || !m.sl_del) { await metaSet(env, "jobslog", JSON.stringify({ at: t0, err: "tokens missing" })); return; }
   const fl = await metaGet(env, ["post_on", "post_dry", "cat_force"]);
-  for (const [k, f] of [["post", jPost], ["recent", jRecent], ["bal", jBal], ["stock", jStock], ["cat", jCat]]) {
+  for (const [k, f] of [["post", jPost], ["bond", jBond], ["tax", jTax], ["recent", jRecent], ["bal", jBal], ["stock", jStock], ["car", jCar], ["cost", jCost], ["cat", jCat]]) {
     try { log[k] = await f(env, m, fl); } catch (e) { log[k] = "ERR " + String(e && e.message || e).slice(0, 160); }
   }
   log.ms = Date.now() - t0; log.calls = B.n;
