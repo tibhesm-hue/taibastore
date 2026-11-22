@@ -5,13 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          npm i -s playwright@1 >/dev/null 2>&1 && npx -y playwright install --with-deps chromium >/dev/null 2>&1
-          cat > t.js <<'JS'
-          const {chromium,devices}=require('playwright');(async()=>{const b=await chromium.launch();const c=await b.newContext({...devices['Pixel 7']});const p=await c.newPage();
-          p.on('pageerror',e=>console.log('ERR',e.message));p.on('console',m=>console.log('CON',m.type(),m.text().slice(0,200)));
-          await p.goto('https://tibhesm-hue.github.io/taibastore/itqan/?x='+Date.now());await p.waitForTimeout(5000);
-          await p.evaluate(()=>{var b=document.createElement('button');b.setAttribute('data-tjrec','s03');document.body.appendChild(b);b.click()});
-          for(let i=1;i<=6;i++){await p.waitForTimeout(3000);const f=p.frames().find(x=>/taj\.html/.test(x.url()));let t='';try{t=f?(await f.locator('body').innerText()).replace(/\n/g,' | ').slice(0,300):'NOFRAME'}catch(e){t='E '+e.message}console.log('T'+i*3,f&&f.url(),t)}
-          await b.close()})();
-          JS
-          node t.js
+          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
+          curl -s -X POST "${U}tjsnap" -H 'content-type:text/plain' -d '{}' | python3 -c "
+          import json,sys;d=json.load(sys.stdin)['snap'];print('AT',d['at'])
+          for l in d['logs']:
+            if l['sid'] in('s03','s07') and l['date']>='2026-11-20':print('LOG',json.dumps(l,ensure_ascii=False))"
