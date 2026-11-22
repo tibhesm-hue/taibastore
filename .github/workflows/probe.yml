@@ -5,6 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" -d '{"v":""}' > tjall.json; ls -l tjall.json
-      - uses: actions/upload-artifact@v4
-        with: {name: tjall, path: tjall.json}
+          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" -d '{"v":""}' > t.json
+          python3 - <<'P'
+          import json
+          j=json.load(open('t.json'));D=j.get('data') or {}
+          print('v',j.get('v'),'cols',{k:len(v) for k,v in D.items()})
+          for k,v in (D.get('students') or {}).items():
+            x=v if isinstance(v,dict) else json.loads(v)
+            print('S',k,{f:x.get(f) for f in ['rs','ra','lv','lvl','s','a','g','dir','pt','start','sa','ss']})
+          P
