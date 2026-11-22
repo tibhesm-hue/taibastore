@@ -1528,7 +1528,7 @@ function vPT(){window.__ptS=null;if(window.ITQ&&ITS.ok&&window.ITG&&!itT()&&!PTS
     var n=0;try{n=doneBefore(fs,td)}catch(e){}
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:19px;font-weight:700">'+esc(p.name)+' <span class="muted" style="font-size:14px;font-weight:400">· الدرس '+(n+1)+'</span></div><span>'+accLink()+'<a href="#" data-pt="out" class="lbs muted">خروج</a></span></div>'+ptHead(p,td0);
     if(TL&&TL.nw)h+='<div style="background:#F7F6FE;border-radius:10px;padding:10px;margin-bottom:10px;line-height:1.9"><div>📖 <b>الدرس:</b> '+esc(dayText(TL.old,TL.nw))+'</div><div class="muted" style="font-size:14px">الجديد: '+esc(lessonText(TL.nw))+(TL.old?'، القديم: '+esc(lessonText(TL.old)):'')+'</div>'+(RV&&RV.txt?'<div>📚 <b>المراجعة:</b> '+esc(RV.txt)+'</div>':'')+'</div>';
-    if(window.ITQ){var RDX=ptRedo(p,fs,td);if(RDX)body=RDX+'<div class="muted" style="text-align:center;margin:4px 0 10px">ما يُفتح درس اليوم حتى تُتمّ الإعادة</div>'}body=ptAdvWrap(fs,td0,td,TL,body);h+=body+ptProg(p,td)+ptPdfBtns(p)+'<a href="#" class="lb" data-pt="edit" style="display:block;text-align:center;margin-top:16px">'+(p.grp&&window.ITQ?'⚙️ حسابي':'⚙️ عدّل الدورة')+'</a>'}
+    if(window.ITQ){var RDX=ptRedo(p,fs,td);if(RDX)body=RDX+'<div class="muted" style="text-align:center;margin:4px 0 10px">ما يُفتح درس اليوم حتى تُتمّ الإعادة</div>'}body=ptNoCode(body,td0);body=ptAdvWrap(fs,td0,td,TL,body);h+=body+ptProg(p,td)+ptPdfBtns(p)+'<a href="#" class="lb" data-pt="edit" style="display:block;text-align:center;margin-top:16px">'+(p.grp&&window.ITQ?'⚙️ حسابي':'⚙️ عدّل الدورة')+'</a>'}
   return h+'</div>'}
 function ptAct(a){var p=a.split("|");if(window.ITQ&&(TACT[p[0]]||OACT[p[0]])){(TACT[p[0]]||OACT[p[0]])(p);return}
   if(p[0]==="open"){PTS.v="list";PTS.err=""}
@@ -2688,6 +2688,11 @@ function ptAdvWrap(fs,td0,td,TL,body){var adv=td!==td0,top="",bot="";
   return top+body+bot}
 OACT.advgo=function(p){PTS.advId=p[1];PTS.advD=todayStr();PTS.advK=p[2];PTS.err="";render();try{window.scrollTo(0,0)}catch(e){}};
 OACT.advback=function(){PTS.advK="";PTS.err="";render();try{window.scrollTo(0,0)}catch(e){}};
+</script><script>
+function ptNoCode(body,td0){if(!window.ITQ||td0<"2026-11-23")return body;try{var d=document.createElement("div");d.innerHTML=body;
+  Array.prototype.forEach.call(d.querySelectorAll("[data-rcin]"),function(x){var b=x.closest('div[style*="dashed"]');if(b&&b.parentNode)b.parentNode.removeChild(b)});
+  Array.prototype.forEach.call(d.querySelectorAll("details"),function(x){var sm=x.querySelector("summary");if(sm&&/كود|الرمز/.test(sm.textContent)&&x.parentNode)x.parentNode.removeChild(x)});
+  return d.innerHTML}catch(e){return body}}
 </script><script>
 (function(){var dp=null;
 window.ITQins=function(){var sa=false;try{sa=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){}if(sa)return "";
