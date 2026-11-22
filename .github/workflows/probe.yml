@@ -5,5 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          sleep 45
-          echo "T $(curl -s -X POST 'https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it=dbgt' -d '{}')"
+          U='https://itqan.w-f-almateq.workers.dev/?k=taj-48132d5dec65&it='
+          echo "G $(curl -s -X POST "${U}tjg" -d '{"from":"2026-11-22"}' | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get("ln"))')"
