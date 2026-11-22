@@ -2708,13 +2708,23 @@ function cycDays(s,td){var c=cycOf(td),E=cycEnd(c),cnt=0,d=td;while(d<=E){if(!is
   var lv=lvOf(s);if(!lv||!(+lv.parts>0))return {E:E,L:[]};var n0=doneBefore(s,td),n=n0,out=[],g=0;d=isRest(td)?nextRead(td,1):td;
   while(d<=E&&g<200){g++;if(!isRest(d)){var L=nthLesson(s,lv,n);if(!L)break;var RV=null;try{RV=withPlus(n-n0,function(){return reviewFor(s,td)})}catch(e){}out.push({d:d,l:L,o:nthLesson(s,lv,n-1),rv:RV});n++}d=addDays(d,1)}
   return {E:E,L:out}}
-function drawCyc(s){var td=todayStr(),R=cycDays(s,td),L=R.L,lv=lvOf(s),W=1080,rh=96,top=250,H=top+Math.max(1,L.length)*rh+110,cv=document.createElement("canvas");cv.width=W;cv.height=H;var c=cv.getContext("2d");
-  c.fillStyle="#F6F5F1";c.fillRect(0,0,W,H);c.fillStyle="#0F6E56";c.fillRect(0,0,W,190);c.direction="rtl";c.textAlign="center";c.fillStyle="#fff";c.font="bold 54px sans-serif";c.fillText("منهجية "+(s.name||""),W/2,85);
-  c.font="32px sans-serif";c.fillText((lv?lvName(lv.k)+" · ":"")+"من "+fmt(L.length?L[0].d:td)+" إلى "+fmt(R.E),W/2,145);
-  c.textAlign="right";L.forEach(function(o,i){var y=top+i*rh;c.fillStyle=i%2?"#FFFFFF":"#EFEDE6";c.fillRect(30,y-62,W-60,rh-6);c.fillStyle="#2C2C2A";c.font="bold 30px sans-serif";c.fillText(DAYN[dow(o.d)]+" "+fmt(o.d),W-50,y-22);
-    c.fillStyle="#3C3489";c.font="30px sans-serif";c.fillText(dayText(o.o,o.l),W-330,y-22);if(o.rv){c.fillStyle="#5F5E5A";c.font="24px sans-serif";c.fillText("المراجعة: "+o.rv.txt,W-330,y+12)}});
-  c.textAlign="center";c.fillStyle="#888780";c.font="24px sans-serif";c.fillText("إذا أتمّ كل يوم درسه في وقته · رابط الإتقان",W/2,H-40);return cv}
-window.tjMnTab=function(G){var fam=G?String(G.n||"").replace(/^(حلقة|أسرة) /,""):"";var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return '<div class="card muted" style="text-align:center">تعذّر تحميل بيانات تاج الوقار</div>';
+var CAIRO=0;function cairoLoad(){if(CAIRO||!window.FontFace)return;CAIRO=1;var B="https://tibhesm-hue.github.io/taibastore/lib/fonts/cairo-arabic-";[[400,"400"],[700,"700"],[800,"800"]].forEach(function(w){try{new FontFace("Cairo","url("+B+w[1]+"-normal.woff2)",{weight:String(w[0])}).load().then(function(f){document.fonts.add(f)}).catch(function(){})}catch(e){}})}
+function drawCyc(s){cairoLoad();var td=todayStr(),R=cycDays(s,td),L=R.L,lv=lvOf(s),W=1080,F="Cairo, sans-serif",hd=150,th=64,rh=92,wh=46;
+  var wk=[],prev=-1;L.forEach(function(o,i){var d=dow(o.d);if(i===0||d<=prev)wk.push(i);prev=d});
+  var H=hd+th+L.length*rh+wk.length*wh+20,cv=document.createElement("canvas");cv.width=W;cv.height=H;var c=cv.getContext("2d");c.direction="rtl";
+  var cD=190,cC=Math.floor((W-cD)/3),xD=W,xR=W-cD,xT=W-cD-cC,xL=W-cD-2*cC,cR=cC,cT=cC,cL=W-cD-2*cC;
+  c.fillStyle="#fff";c.fillRect(0,0,W,H);c.fillStyle="#0F6E56";c.fillRect(0,0,W,hd);c.textAlign="center";c.fillStyle="#fff";c.font="800 44px "+F;c.fillText("منهجية "+(s.name||""),W/2,68);
+  c.font="700 26px "+F;c.fillStyle="#E1F5EE";c.fillText((lv?lvName(lv.k)+" · ":"")+"من "+fmt(L.length?L[0].d:td)+" إلى "+fmt(R.E),W/2,118);
+  var y=hd;c.fillStyle="#04342C";c.fillRect(0,y,W,th);c.fillStyle="#fff";c.font="800 28px "+F;[["اليوم",xD,cD],["المراجعة",xR,cR],["التثبيت",xT,cT],["الدرس",xL,cL]].forEach(function(z){c.fillText(z[0],z[1]-z[2]/2,y+42)});y+=th;
+  var wrap=function(t,w){c.font=c.font;var ws=String(t).split(" "),ln=[],cur="";ws.forEach(function(x){var tt=cur?cur+" "+x:x;if(c.measureText(tt).width>w&&cur){ln.push(cur);cur=x}else cur=tt});if(cur)ln.push(cur);return ln.slice(0,2)};
+  var line=function(x1,y1,x2,y2){c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()};c.strokeStyle="#D9D6CC";c.lineWidth=2;
+  var wn=0;L.forEach(function(o,i){if(wk.indexOf(i)>=0){wn++;c.fillStyle="#E1F5EE";c.fillRect(0,y,W,wh);c.fillStyle="#04342C";c.font="800 24px "+F;c.textAlign="center";c.fillText("الأسبوع "+wn,W/2,y+32);line(0,y+wh,W,y+wh);y+=wh}
+    c.fillStyle="#F6F5F1";c.fillRect(xD-cD,y,cD,rh);c.textAlign="center";c.fillStyle="#1d1d1b";c.font="800 28px "+F;c.fillText(DAYN[dow(o.d)],xD-cD/2,y+40);c.fillStyle="#5F5E5A";c.font="700 22px "+F;c.fillText(fmt(o.d),xD-cD/2,y+72);
+    var cell=function(t,x,w,col,fw){c.fillStyle=col;c.font=fw+" 26px "+F;var ln=wrap(t,w-30);var y0=y+rh/2+10-(ln.length-1)*17;ln.forEach(function(q,k){c.fillText(q,x-w/2,y0+k*34)})};
+    cell(o.rv?o.rv.txt:"—",xR,cR,"#085041","700");cell(o.o?lessonText(o.o):"—",xT,cT,"#854F0B","700");cell(lessonText(o.l),xL,cL,"#26215C","800");
+    line(0,y+rh,W,y+rh);line(xR,y,xR,y+rh);line(xT,y,xT,y+rh);line(xL,y,xL,y+rh);y+=rh});
+  return cv}
+window.tjMnTab=function(G){try{cairoLoad()}catch(e){}var fam=G?String(G.n||"").replace(/^(حلقة|أسرة) /,""):"";var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return '<div class="card muted" style="text-align:center">تعذّر تحميل بيانات تاج الوقار</div>';
   var sc=PTS.tjsc||"m",h='<div class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">من تاج الوقار مباشرة</div>'+cmpChips([["m","المتنافسون"],["f","المتنافسات"]],sc,"tjsc")+'<div style="margin-top:10px"></div>';
   h+=tjRun(D,function(){var td=todayStr(),o="",L=students.filter(function(x){return secOf(x)===sc&&activeOn(x,td)});if(fam&&students.some(function(x){return x.mother===fam}))L=L.filter(function(x){return x.mother===fam});
     L.forEach(function(x){var lv=lvOf(x),op=PTS.tjop===x.id,l=logs.filter(function(y){return y.sid===x.id&&y.date===td})[0];
