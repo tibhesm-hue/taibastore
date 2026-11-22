@@ -5,9 +5,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for i in 1 2 3; do
-          curl -s -o /dev/null -w "PAGE %{http_code} %{time_total} %{size_download}\n" "https://tibhesm-hue.github.io/taibastore/itqan/?x=$RANDOM"
-          curl -s -o /dev/null -w "WORKER %{http_code} %{time_total}\n" "https://itqan.w-f-almateq.workers.dev/"
-          curl -s -o /dev/null -w "TJALL %{http_code} %{time_total} %{size_download}\n" -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjall&k=taj-48132d5dec65" -d '{}'
-          curl -s -o /dev/null -w "SNAP %{http_code} %{time_total} %{size_download}\n" -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjsnap&k=taj-48132d5dec65" -d '{}'
-          done
+          curl -s -X POST "https://itqan.w-f-almateq.workers.dev/?it=tjsnap&k=taj-48132d5dec65" -d '{}' > s.json
+          python3 - <<'PY'
+          import json,urllib.request,time
+          d=json.load(open('s.json'))['snap']
+          ks={}
+          for s in d['students']:
+            for f in ('gk','fk'):
+              k=(s.get(f) or '').strip()
+              if not k: continue
+              if not k.startswith('gsk_'): k=k[::-1]
+              ks.setdefault(k,[]).append(s['name']+':'+f+':'+s.get('mother',''))
+          for i,(k,who) in enumerate(ks.items()):
+            req=urllib.request.Request('https://api.groq.com/openai/v1/models',headers={'Authorization':'Bearer '+k,'User-Agent':'x'})
+            t=time.time()
+            try:
+              r=urllib.request.urlopen(req,timeout=20);st=r.status;h=dict(r.headers)
+            except Exception as e:
+              st=getattr(e,'code',str(e));h=dict(getattr(e,'headers',{}) or {})
+            lim={x:h[x] for x in h if 'ratelimit' in x.lower() or 'retry' in x.lower()}
+            print('KEY',i,'prefix_ok',k.startswith('gsk_'),'status',st,round(time.time()-t,2),who,lim)
+          PY
