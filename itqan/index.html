@@ -1406,7 +1406,7 @@ if(!window.__tjpOn){window.__tjpOn=1;setInterval(function(){tjPush()},60000);set
 var _vpl57=vPubLs;vPubLs=function(){var h=_vpl57();if(window.ITQ||!EDITOR)return h;var A=itAuth(),st=window.__tjpOk;return '<a href="#" '+(A&&st!==-1?'':'data-supo="1" data-supl="1" ')+'class="card" style="display:block;text-decoration:none;margin:0 0 10px;font-size:14px;'+(A&&st!==-1?'background:#E1F5EE;border:1px solid #5DCAA5;color:#085041':'background:#FAEEDA;border:1px solid #EF9F27;color:#633806')+'">🔗 الإتقان: '+(A?(st===-1?'الإيميل <span dir="ltr">'+esc(A.e)+'</span> ليس مسؤولاً في جمعية تاج الوقار، فادخل بإيميل الجمعية أو المجمع':'مربوط بـ <span dir="ltr">'+esc(A.e)+'</span>، وكل حفظ هنا يظهر في الإتقان فوراً'):'غير مربوط. اضغط هنا وادخل بإيميلك مرة واحدة')+'</a>'+(A&&st!==-1?'':'<div id="supanc"></div>')+h};
 function tjOrg(){return !!(window.ITQ&&OD&&OD.org&&/تاج/.test((OD.org.n||"")+" "+(OD.org.pn||"")))}
 function tjSnapGet(){var S=window.__tjS;if(S&&Date.now()-S.t<60000)return S.d;if(!window.__tjSl){window.__tjSl=1;itCall("tjsnap",{}).then(function(r){window.__tjSl=0;window.__tjS={t:Date.now(),d:r&&r.snap&&r.snap.students?r.snap:null};render()}).catch(function(){window.__tjSl=0;window.__tjS={t:Date.now(),d:null};render()})}return S?S.d:undefined}
-function tjRun(D,fn){var sv=[cfg,students,logs,encs,results,wds,pcyc];cfg=Object.assign({},DEF,D.cfg||{});students=(D.students||[]).slice().sort(function(x,y){return (x.name||"").localeCompare(y.name||"","ar")});logs=D.logs||[];encs=D.encs||[];results=D.results||{};wds=D.wd||{};pcyc=null;var h="";try{h=fn()}catch(e){h='<div class="card muted">تعذّر العرض</div>'}cfg=sv[0];students=sv[1];logs=sv[2];encs=sv[3];results=sv[4];wds=sv[5];pcyc=sv[6];return h}
+function tjRun(D,fn){window.__tjD=D;try{window.__shareOK=!!(itO()||itT())}catch(e){window.__shareOK=0}var sv=[cfg,students,logs,encs,results,wds,pcyc];cfg=Object.assign({},DEF,D.cfg||{});students=(D.students||[]).slice().sort(function(x,y){return (x.name||"").localeCompare(y.name||"","ar")});logs=D.logs||[];encs=D.encs||[];results=D.results||{};wds=D.wd||{};pcyc=null;var h="";try{h=fn()}catch(e){h='<div class="card muted">تعذّر العرض</div>'}cfg=sv[0];students=sv[1];logs=sv[2];encs=sv[3];results=sv[4];wds=sv[5];pcyc=sv[6];return h}
 var _oCmp57=oCmpTab;oCmpTab=function(T){if(!tjOrg())return _oCmp57.apply(this,arguments);var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return _oCmp57.apply(this,arguments);
   var sc=PTS.tjsc||"m",h='<div class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">من تاج الوقار مباشرة'+(D.at?' · آخر تحديث '+esc(D.at):'')+'</div>'+cmpChips([["m","المتنافسون"],["f","المتنافسات"]],sc,"tjsc")+'<div style="margin-top:10px"></div>';
   h+=tjRun(D,function(){return T==="rw"?vPubRw(sc):vPubSec(sc)});return h+'<a href="#" data-pt="cl|o" style="display:block;text-align:center;margin:14px 0;font-size:14px">مسابقات الإتقان الأخرى ›</a>'};
@@ -2062,10 +2062,10 @@ function vPubSec(sec){
     var c=logs.filter(function(y){return y.sid===x.id&&cycOf(y.date)===cyc}).reduce(function(a,y){return a+ptsDay(y)},0);return{x:x,w:w,c:c}});
   R.sort(function(a,b){return b.w-a.w||b.c-a.c||(a.x.name||"").localeCompare(b.x.name||"","ar")});
   var h='<div class="hero" style="margin-top:0;background:#3C3489;color:#EEEDFE"><b style="font-size:18px">'+(F?"نقاط المتنافسات":"نقاط المتنافسين")+'</b><small style="display:block;color:#CECBF6">الأسبوع '+(ORD[wn]||wn+1)+' من الدورة '+(cyc+1)+'، '+(wn===cw?DAYN[dow(td)]+' '+fmt(td):'من '+fmt(ws)+' إلى '+fmt(addDays(ws,4)))+'</small></div>';
-  h+='<div style="display:flex;font-size:13px;color:#888;padding:10px 12px 4px"><span style="flex:1"></span>'+["س","ح","ن","ث","ر"].map(function(k){return '<span style="width:24px;text-align:center">'+k+'</span>'}).join("")+'<span class="pts" style="color:#888;font-weight:400">من 20</span></div>';
+  h+='<div style="display:flex;font-size:13px;color:#888;padding:10px 12px 4px"><span style="flex:1"></span>'+["س","ح","ن","ث","ر"].map(function(k){return '<span style="width:28px;flex:none;text-align:center">'+k+'</span>'}).join("")+'<span class="pts" style="color:#888;font-weight:400">من 20</span></div>';
   if(!R.length)h+='<p class="muted">لا توجد أسماء.</p>';
   R.forEach(function(o){
-    h+='<div class="wk" data-open="'+esc(o.x.id)+'"><span class="nm">'+esc(o.x.name)+streakTag(o.x.id)+'</span>'+D.map(function(d){return '<span class="dt d-'+dotCls(o.x.id,d,td)+'"></span>'}).join("")+'<span class="pts">'+o.w+'</span></div>';
+    h+='<div class="wk" data-open="'+esc(o.x.id)+'"><span class="nm" style="min-width:0">'+esc(o.x.name)+(streakTag(o.x.id)?'<br>'+streakTag(o.x.id):'')+'</span>'+D.map(function(d){return '<span style="width:28px;flex:none;display:inline-flex;justify-content:center"><span class="dt d-'+dotCls(o.x.id,d,td)+'" style="margin:0"></span></span>'}).join("")+'<span class="pts">'+o.w+'</span></div>';
     if(openSid===o.x.id){
       h+='<div class="card" style="margin-top:-4px">'+lessonCard(o.x,td)+'<div class="row" style="margin-top:10px"><span>مجموع نقاط الدورة</span><b>'+o.c+'</b></div>';
       if(o.x.mode!=="mom"&&stat(o.x,cyc).lostFull)h+='<div class="lost">'+(F?'لم تعد تنافس':'لم يعد ينافس')+' على الجائزة الكاملة، '+(F?'ويبقى لها':'ويبقى له')+' التنافس على المراكز.</div>';
@@ -2073,7 +2073,7 @@ function vPubSec(sec){
     }
   });
   h+='<div class="lgd"><span><i class="d-ok"></i>سليمة</span><span><i class="d-late"></i>متأخر</span><span><i class="d-redo"></i>عليه إعادة</span><span><i class="d-rdn"></i>أعاد</span>'+(PUBLIC?'':'<span><i class="d-mk"></i>عُوِّض</span>')+'<span><i class="d-no"></i>لم يُرسل</span></div>';
-  if(!PUBLIC&&R.length){var IC={ok:"✅",late:"🟠",redo:"🔵",rdn:"🔷",mk:"🟣",no:"⚪",fut:"▫️"},T=["*🏆 "+(F?"نقاط المتنافسات":"نقاط المتنافسين")+"*","*الأسبوع "+(ORD[wn]||wn+1)+" من الدورة "+(cyc+1)+"*","من "+fmt(ws)+" إلى "+fmt(addDays(ws,4)),""];
+  if((!PUBLIC||EDITOR||window.__shareOK||(window.TCH&&TCH.length))&&R.length){var IC={ok:"✅",late:"🟠",redo:"🔵",rdn:"🔷",mk:"🟣",no:"⚪",fut:"▫️"},T=["*🏆 "+(F?"نقاط المتنافسات":"نقاط المتنافسين")+"*","*الأسبوع "+(ORD[wn]||wn+1)+" من الدورة "+(cyc+1)+"*","من "+fmt(ws)+" إلى "+fmt(addDays(ws,4)),""];
     R.forEach(function(o,i){T.push((i+1)+". *"+o.x.name+"*: "+o.w+" من 20");T.push("    "+D.map(function(d){return IC[dotCls(o.x.id,d,td)]||"▫️"}).join(" "))});
     T.push("");T.push("✅ سليمة  🟠 متأخر  🔵 عليه إعادة  🔷 أعاد  ⚪ لم يُرسل");
     h+='<button type="button" class="btn" data-gimg="'+sec+'|'+ws+'" style="margin-top:12px;background:#3C3489;font-size:17px;padding:13px">🖼️ اعرض درجات الأسبوع '+(ORD[wn]||wn+1)+' للتصوير</button><div id="gprev"></div><a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(T.join("\n"))+'" style="margin-top:8px;font-size:15px">📤 أو أرسلها نصاً في الواتساب</a>'}
@@ -2597,6 +2597,8 @@ function gPlace(){try{var ids=["ite","supe"];ids.forEach(function(id){var el=doc
 function gvLine(A){if(GV[A.e]===undefined){GV[A.e]=null;itCall("gvf",{e:A.e,h:A.h}).then(function(r){GV[A.e]=r&&r.ok?!!r.v:null;if(r&&r.ok)render()}).catch(function(){})}if(GV[A.e])return '<div style="font-size:13px;color:#0F6E56;margin-bottom:10px">✓ إيميلك مؤكَّد</div>';if(GV[A.e]===false)return '<div id="gverify"></div>';return ''}
 (function(){var C0=itCall;itCall=function(a,o){return C0(a,o).then(function(r){if(r&&r.err==="verify")setTimeout(function(){itErr("لازم تأكيد إيميلك أولاً: اضغط «المتابعة باستخدام Google» بنفس الإيميل")},0);return r})}})();
 
+</script><script>
+document.addEventListener("click",function(ev){if(!window.ITQ||!window.__tjD)return;var b=ev.target.closest&&ev.target.closest("[data-gimg]");if(!b)return;ev.stopImmediatePropagation();ev.preventDefault();var a=b.getAttribute("data-gimg").split("|"),cv=null;tjRun(window.__tjD,function(){cv=drawWeekly(a[0],a[1]);return ""});if(cv)showOv(cv)},true);
 </script>
 <script>
 (function(){var dp=null;
