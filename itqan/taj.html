@@ -2595,7 +2595,7 @@ function render(){
   db.collection("wd").onSnapshot(function(q){wds={};q.docs.forEach(function(d){wds[d.id]=d.data()});ready()},function(){ready()});
   db.collection("results").onSnapshot(function(q){results={};q.docs.forEach(function(d){results[d.id]=d.data()});ready()},function(){ready()});
 })();
-if(window.ITQ||window.TAJW){(function(){var POP=0,IGN=0,LAST="",XB=0,RK=null,FL=["v","id","mode","f","o","err","lid","g","tg","gj","sg","sk","tsid","ssid","oc","kc","kf","opx","opl","ocl","twf","of","wz","addp","snx","ope","pr","cvt","cvs","cx","ci","ce","cvd","otb","ocs","orw","ttb","ind"];
+if((window.ITQ||window.TAJW)&&!window.__EMB){(function(){var POP=0,IGN=0,LAST="",XB=0,RK=null,FL=["v","id","mode","f","o","err","lid","g","tg","gj","sg","sk","tsid","ssid","oc","kc","kf","opx","opl","ocl","twf","of","wz","addp","snx","ope","pr","cvt","cvs","cx","ci","ce","cvd","otb","ocs","orw","ttb","ind"];
 function nkey(){if(window.ITQ){if(tab!=="family"||!PTS.v)return "";var v=PTS.v;return (v==="form"?"form:"+(PTS.mode||""):v)+"#"+(PTS.otb||"")+"#"+(PTS.ttb||"")+"#"+(PTS.ocs||"")}try{return "tj#"+tab+"#"+(openSid||"")+"#"+JSON.stringify(psub||{})+"#"+((window.LSN&&LSN.open)||"")+"#"+(typeof sub!=="undefined"?sub:"")}catch(e){return ""}}
 function isRoot(k){if(window.ITQ){var p=k.split("#"),b=p[0];return (b==="day"||b==="list"||b==="tdash"||b==="odash"||b==="acc")&&!p[1]&&!p[2]&&!p[3]}var q=k.split("#");return RK!==null&&q[1]===RK[0]&&!q[2]&&!q[4]&&q[5]===RK[1]}
 function snap(){if(!window.ITQ){try{return {t:tab,o:openSid||null,ps:JSON.parse(JSON.stringify(psub||{})),lo:(window.LSN&&LSN.open)||0,sb:typeof sub!=="undefined"?sub:null}}catch(e){return {t:tab}}}var s={};FL.forEach(function(k){if(PTS[k]!==undefined)s[k]=PTS[k]});try{return JSON.parse(JSON.stringify(s))}catch(e){return {v:PTS.v,id:PTS.id}}}
@@ -2647,7 +2647,7 @@ var _ri65=redoItems;redoItems=function(s,td){var o=_ri65(s,td);o.forEach(functio
 
 /* الدخول بحساب Google: يؤكد الإيميل */
 var GCID="602073315832-ohi4d153hc72bt3hgc1lafmfggh4ugrn.apps.googleusercontent.com",GSI=0,GV={};
-function gsiLoad(cb){if(window.google&&google.accounts&&google.accounts.id){if(GSI!==2){google.accounts.id.initialize({client_id:GCID,callback:gCb,ux_mode:"popup",auto_select:false,cancel_on_tap_outside:true});GSI=2}cb();return}if(GSI===1){setTimeout(function(){gsiLoad(cb)},300);return}GSI=1;var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=function(){GSI=0;gsiLoad(cb)};s.onerror=function(){GSI=0};document.head.appendChild(s)}
+function gsiLoad(cb){if(window.__EMB)return;if(window.google&&google.accounts&&google.accounts.id){if(GSI!==2){google.accounts.id.initialize({client_id:GCID,callback:gCb,ux_mode:"popup",auto_select:false,cancel_on_tap_outside:true});GSI=2}cb();return}if(GSI===1){setTimeout(function(){gsiLoad(cb)},300);return}GSI=1;var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=function(){GSI=0;gsiLoad(cb)};s.onerror=function(){GSI=0};document.head.appendChild(s)}
 function gMsg(m){if(window.TAJW&&!window.ITQ&&typeof supErr==="function")supErr(m);else itErr(m)}
 function gCb(resp){var cred=resp&&resp.credential;if(!cred)return;gMsg("⏳ لحظة…");itCall("glogin",{cred:cred}).then(function(r){if(!r||!r.ok)return gMsg("تعذّر الدخول بحساب Google، أعد المحاولة");var A=itAuth();
   if(A&&A.e!==r.e)return gMsg("حساب Google هذا ("+r.e+") غير إيميلك المسجّل ("+A.e+"). اختر الحساب نفسه");
