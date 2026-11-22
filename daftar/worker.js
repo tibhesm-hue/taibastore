@@ -164,7 +164,95 @@ async function appPage(env) {
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 
+// ---------- Smart Life sales pull: runs on this server by cron, no Claude involved ----------
+// Writes the same documents the old ledger's pull tasks wrote: slday/inv-<day> (invoice list for the closing) and slsales/<YYYY-MM> (daily, hourly and per-user sales).
+// The two Smart Life API tokens live in the private `meta` table (sl_shop, sl_del), never in the code.
+const SL_API = "https://smarterp.top/api/v3";
+const SL_NAMES = {
+  s: { "10": "مالك", "13": "أحمد", "11": "المدير", "12": "عاصف", "9": "فوزي", "8": "كاشير 3", "1": "المحاسب العام", "14": "المحاسب العام" },
+  d: { "3": "أحمد", "2": "عاصف", "1": "المدير" }
+};
+const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
+const num = x => { const n = parseFloat(x); return isFinite(n) ? n : 0; };
+const rday = off => new Date(Date.now() + 3 * 3600e3 + off * 864e5).toISOString().slice(0, 10); // Riyadh calendar day
+const slName = (acct, x) => SL_NAMES[acct][String(x.created_by)] || ("مستخدم " + x.created_by);
+
+async function slFetchAll(token, acct, minDay) {
+  const seen = new Map(); let off = 0, pages = 0;
+  while (pages < 8) {
+    const url = SL_API + "/sales/sales_list?sort_by=id&sort_type=desc&limit=300&offset=" + off + (acct === "s" ? "&warehouse_id=1" : "");
+    const r = await fetch(url, { headers: { Authorization: token, "User-Agent": "curl/8.5.0" } });
+    if (!r.ok) throw new Error(acct + " http " + r.status);
+    const j = await r.json();
+    if (!j || j.success !== true || !Array.isArray(j.data)) throw new Error(acct + " bad response");
+    const L = j.data; if (!L.length) break;
+    let oldest = "9999";
+    for (const x of L) {
+      const d = String(x.date || ""); if (d < oldest) oldest = d;
+      if (acct === "s" && String(x.warehouse_id) !== "1") continue;
+      if (!seen.has(x.id)) seen.set(x.id, x);
+    }
+    off += L.length; pages++;
+    if (oldest.slice(0, 10) < minDay) break;
+  }
+  return [...seen.values()];
+}
+function invList(rows, day, acct) {
+  return rows.filter(x => String(x.date).slice(0, 10) === day)
+    .map(x => [String(x.date).slice(11, 19), Number(x.id), String(x.reference_no), r2(num(x.grand_total)), r2(num(x.paid)), slName(acct, x)])
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]));
+}
+function slAgg(rows, day, acct) {
+  const A = () => ({ t: [0, 0, 0, 0], h: Array(24).fill(0), n: Array(24).fill(0) });
+  const tot = A(), users = {}; let f = 0, fn = 0;
+  for (const x of rows) {
+    if (String(x.date).slice(0, 10) !== day) continue;
+    const g = num(x.grand_total), paid = num(x.paid), hr = parseInt(String(x.date).slice(11, 13), 10) || 0, nm = slName(acct, x);
+    const u = users[nm] || (users[nm] = A());
+    for (const a of [tot, u]) {
+      a.h[hr] += g;
+      if (g > 0) { a.t[0] += g; a.t[2] += g - paid; a.t[3] += 1; a.n[hr] += 1; } else if (g < 0) a.t[1] += g;
+    }
+    if (acct === "d" && g > 0) { const sh = num(x.total_shipping); f += sh; if (sh > 0) fn++; }
+  }
+  const fin = a => ({ t: a.t.map(r2), h: a.h.map(r2), n: a.n });
+  return { tot: fin(tot), u: Object.keys(users).map(nm => ({ a: acct, name: nm, ...fin(users[nm]) })), f: r2(f), fn };
+}
+function slDay(S, D, day) {
+  const s = slAgg(S, day, "s"), d = slAgg(D, day, "d");
+  const u = s.u.concat(d.u).sort((a, b) => (a.a < b.a ? -1 : a.a > b.a ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  return { s: s.tot.t, d: d.tot.t, hs: s.tot.h, hd: d.tot.h, hns: s.tot.n, hnd: d.tot.n, u, f: d.f, fn: d.fn };
+}
+async function slPull(env) {
+  const t0 = Date.now(), log = { at: t0 };
+  try {
+    const m = {};
+    for (const x of ((await env.DB.prepare("SELECT k,v FROM meta WHERE k IN ('sl_shop','sl_del')").all()).results || [])) m[x.k] = x.v;
+    if (!m.sl_shop || !m.sl_del) throw new Error("tokens missing");
+    const today = rday(0), yday = rday(-1);
+    const [S, D] = await Promise.all([slFetchAll(m.sl_shop, "s", yday), slFetchAll(m.sl_del, "d", yday)]);
+    const lastOf = L => L.reduce((a, x) => (String(x.date) > a ? String(x.date) : a), "");
+    const last = { s: lastOf(S), d: lastOf(D) };
+    log.n = [S.length, D.length];
+    for (const day of [yday, today]) {
+      await writeDoc(env, "slday", "inv-" + day, { s: invList(S, day, "s"), d: invList(D, day, "d"), at: Date.now(), last });
+      const mon = day.slice(0, 7);
+      const cur = await env.DB.prepare("SELECT data FROM docs WHERE col='slsales' AND id=?").bind(mon).first();
+      const doc = cur ? JSON.parse(cur.data) : { days: {} };
+      doc.days = doc.days || {};
+      doc.days[day] = slDay(S, D, day);
+      doc.at = Date.now(); doc.by = "server"; doc.last = last;
+      await writeDoc(env, "slsales", mon, doc);
+    }
+    log.ok = true;
+  } catch (e) { log.ok = false; log.err = String(e && e.message || e).slice(0, 300); }
+  log.ms = Date.now() - t0;
+  try { await env.DB.prepare("INSERT OR REPLACE INTO meta (k,v) VALUES ('slpull',?)").bind(JSON.stringify(log)).run(); } catch (e) { }
+  return log;
+}
+
 export default {
+  async scheduled(ev, env, ctx) { await init(env); ctx.waitUntil(slPull(env)); },
   async fetch(req, env) {
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     const u = new URL(req.url), p = u.pathname, q = u.searchParams;
@@ -203,6 +291,7 @@ export default {
       if (!me) return json({ ok: false, err: "login" }, 401);
 
       if (p === "/api/me") return json({ ok: true, email: me.email, owner: me.owner, uid: me.uid, name: me.name });
+      if (p === "/api/slpull" && req.method === "POST") { if (!me.owner) return json({ ok: false }, 403); return json({ ok: true, r: await slPull(env) }); }
       if (p === "/api/users") {
         if (!me.owner) return json({ ok: false }, 403);
         if (req.method === "POST") {
