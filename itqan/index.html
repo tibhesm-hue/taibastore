@@ -2689,7 +2689,7 @@ function ptAdvWrap(fs,td0,td,TL,body){var adv=td!==td0,top="",bot="";
 OACT.advgo=function(p){PTS.advId=p[1];PTS.advD=todayStr();PTS.advK=p[2];PTS.err="";render();try{window.scrollTo(0,0)}catch(e){}};
 OACT.advback=function(){PTS.advK="";PTS.err="";render();try{window.scrollTo(0,0)}catch(e){}};
 </script><script>
-function ptNoCode(body,td0){if(!window.ITQ||td0<"2026-11-23")return body;try{var d=document.createElement("div");d.innerHTML=body;
+function ptNoCode(body,td0){if(!window.ITQ)return body;try{var d=document.createElement("div");d.innerHTML=body;
   Array.prototype.forEach.call(d.querySelectorAll("[data-rcin]"),function(x){var b=x.closest('div[style*="dashed"]');if(b&&b.parentNode)b.parentNode.removeChild(b)});
   Array.prototype.forEach.call(d.querySelectorAll("details"),function(x){var sm=x.querySelector("summary");if(sm&&/كود|الرمز/.test(sm.textContent)&&x.parentNode)x.parentNode.removeChild(x)});
   return d.innerHTML}catch(e){return body}}
