@@ -137,7 +137,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 6</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 7</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -155,7 +155,11 @@ function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";
 let AC=null;function acOn(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){}}
 ["keydown","pointerdown","touchstart"].forEach(ev=>document.addEventListener(ev,acOn,true));
 function tone(f,t0,d,type,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,AC.currentTime+t0);g.gain.setValueAtTime(0,AC.currentTime+t0+d);o.connect(g);g.connect(AC.destination);o.start(AC.currentTime+t0);o.stop(AC.currentTime+t0+d+.02)}
-function beep(ok){try{acOn();if(!AC)return;if(ok)tone(1050,0,.12,"square",.35);else{tone(380,0,.22,"sawtooth",.9);tone(380,.3,.22,"sawtooth",.9);tone(260,.6,.5,"sawtooth",.9)}}catch(e){}}
+/* second path for the sound: a small WAV played by an audio element, in case the Web Audio path is silent on this computer */
+function mkWav(parts){const sr=22050;let n=0;parts.forEach(p=>n+=Math.round(p[1]*sr));const b=new DataView(new ArrayBuffer(44+n*2));const w=(o,s)=>{for(let i=0;i<s.length;i++)b.setUint8(o+i,s.charCodeAt(i))};w(0,"RIFF");b.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");b.setUint32(16,16,true);b.setUint16(20,1,true);b.setUint16(22,1,true);b.setUint32(24,sr,true);b.setUint32(28,sr*2,true);b.setUint16(32,2,true);b.setUint16(34,16,true);w(36,"data");b.setUint32(40,n*2,true);let k=0;parts.forEach(([f,d])=>{const m=Math.round(d*sr);for(let i=0;i<m;i++){const v=f?(Math.sin(2*Math.PI*f*i/sr)>0?1:-1)*0.8:0;b.setInt16(44+2*k++,v*32767,true)}});return URL.createObjectURL(new Blob([b],{type:"audio/wav"}))}
+const SND={ok:mkWav([[1050,.12]]),bad:mkWav([[380,.22],[0,.08],[380,.22],[0,.08],[260,.5]])};
+function playWav(ok){try{const a=new Audio(ok?SND.ok:SND.bad);a.volume=1;a.play().catch(()=>{})}catch(e){}}
+function beep(ok){playWav(ok);return;try{acOn();if(!AC)return;if(ok)tone(1050,0,.12,"square",.35);else{tone(380,0,.22,"sawtooth",.9);tone(380,.3,.22,"sawtooth",.9);tone(260,.6,.5,"sawtooth",.9)}}catch(e){}}
 
 async function loadCat(){
  const key="poscat_"+ME.br;let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
