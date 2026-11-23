@@ -136,7 +136,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 4</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 5</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -154,7 +154,7 @@ function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";
 let AC=null;function acOn(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){}}
 ["keydown","pointerdown","touchstart"].forEach(ev=>document.addEventListener(ev,acOn,true));
 function tone(f,t0,d,type,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,AC.currentTime+t0);g.gain.setValueAtTime(0,AC.currentTime+t0+d);o.connect(g);g.connect(AC.destination);o.start(AC.currentTime+t0);o.stop(AC.currentTime+t0+d+.02)}
-function beep(ok){try{acOn();if(!AC)return;if(ok)tone(1050,0,.12,"square",.35);else{tone(330,0,.25,"square",.6);tone(250,.32,.35,"square",.6)}}catch(e){}}
+function beep(ok){try{acOn();if(!AC)return;if(ok)tone(1050,0,.12,"square",.35);else{tone(380,0,.22,"sawtooth",.9);tone(380,.3,.22,"sawtooth",.9);tone(260,.6,.5,"sawtooth",.9)}}catch(e){}}
 
 async function loadCat(){
  const key="poscat_"+ME.br;let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
@@ -179,7 +179,7 @@ let kT=[],dropT=null,scanT=null;
 $("q").addEventListener("keydown",e=>{if(e.key.length===1){const n=performance.now();if(!$("q").value)kT=[];kT.push(n)}},true);
 function fast(){if(kT.length<4)return false;for(let i=1;i<kT.length;i++)if(kT[i]-kT[i-1]>45)return false;return true}
 $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("drop").classList.remove("show");
- scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){const x=BY.get(t);if(x){add(x);kT=[];return}if(/^\d{6,}$/.test(t)){beep(false);toast("الصنف غير موجود: "+t,2500);$("q").value="";kT=[];return}}
+ scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){const x=BY.get(t);if(x){add(x);kT=[];return}if(t.length>=4){beep(false);toast("الصنف غير موجود: "+t,2500);$("q").value="";kT=[];return}}
   showDrop()},90)});
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
