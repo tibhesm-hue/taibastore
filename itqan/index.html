@@ -2810,15 +2810,16 @@ function drawCyc(s){cairoLoad();var td=todayStr(),R=cycDays(s,td),L=R.L,lv=lvOf(
 var LV={rows:null,at:0,busy:0,skew:0};
 function lvLoad(f){var A=itAuth();if(!A||LV.busy)return;if(!f&&LV.rows&&Date.now()-LV.at<15000)return;LV.busy=1;itCall("tjlv",{e:A.e,h:A.h}).then(function(r){LV.busy=0;LV.at=Date.now();if(r&&r.ok){var had=JSON.stringify(LV.rows);LV.rows=r.rows||[];LV.skew=(+r.now||Date.now())-Date.now();if(had!==JSON.stringify(LV.rows)&&!ilPlaying()){try{render()}catch(e){}}}}).catch(function(){LV.busy=0})}
 setInterval(function(){if(!document.hidden&&window.__lvWant&&Date.now()-window.__lvWant<60000)lvLoad(true)},20000);
+function lvT0(R){if(!R.t0)return "";try{var p=new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"Asia/Riyadh"}).format(new Date(R.t0)).split(":"),h=+p[0];return " بدأ "+(((h+11)%12)+1)+":"+p[1]+(h>=12?"م":"ص")}catch(e){return ""}}
 function lvDur(ms){var m=Math.round(ms/60000);if(m<1)return "لحظات";if(m<60)return m===1?"دقيقة":m===2?"دقيقتين":m<=10?m+" دقائق":m+" دقيقة";var h=Math.round(m/60);return h===1?"ساعة":h===2?"ساعتين":h+" ساعات"}
 function lvAgo(ms){var m=Math.round(ms/60000);return m<1?"قبل لحظات":m<60?"قبل "+m+"د":"قبل "+Math.round(m/60)+"س"}
 function lvSt(sid,l){if(!LV.rows)return null;var R=LV.rows.filter(function(x){return x.s===sid&&x.st!=="done"&&!(l&&l.rep&&(!x.d||x.d===todayStr()))}).sort(function(a,b){return b.at-a.at})[0];if(!R)return null;var age=Date.now()+LV.skew-R.at;if(age<=90000)return {k:R.st==="lis"?"lis":"rec",R:R,age:age};if(age<3*3600000)return {k:"stop",R:R,age:age};return null}
 function lvCol(sid,l){var S=lvSt(sid,l);return S?{rec:"#C0392B",lis:"#185FA5",stop:"#E0A800"}[S.k]:(l&&l.rep?"#0F6E56":"")}
 function lvClk(ms){var s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
 function lvChip(sid,l){var S=lvSt(sid,l);if(!S)return "";var R=S.R,pt=(R.t==="r"?"مراجعة ":"درس ")+(R.d&&R.d!==todayStr()?DAYN[dow(R.d)]:"اليوم"),cn=R.n?" "+R.n+(R.N?"/"+R.N:""):"",bs="display:inline-block;white-space:nowrap;padding:0;font-size:14px;font-weight:700;line-height:1.7;";
-  if(S.k==="rec")return '<span style="color:#A32D2D;'+bs+'">🔴 '+pt+cn+(R.rs?' <span data-lvrs="'+R.rs+'" dir="ltr">'+lvClk(Date.now()+LV.skew-R.rs)+'</span>':'')+'</span>';
-  if(S.k==="lis")return '<span style="color:#0C447C;'+bs+'">🎧 يستمع'+cn+'</span>';
-  return '<span style="color:#854F0B;'+bs+'">⏸ من '+lvDur(S.age)+' '+pt+cn+'</span>'}
+  if(S.k==="rec")return '<span style="color:#A32D2D;'+bs+'">🔴 '+pt+cn+lvT0(R)+(R.rs?' <span data-lvrs="'+R.rs+'" dir="ltr">'+lvClk(Date.now()+LV.skew-R.rs)+'</span>':'')+'</span>';
+  if(S.k==="lis")return '<span style="color:#0C447C;'+bs+'">🎧 يستمع'+cn+lvT0(R)+'</span>';
+  return '<span style="color:#854F0B;'+bs+'">⏸ من '+lvDur(S.age)+' '+pt+cn+lvT0(R)+'</span>'}
 setInterval(function(){try{document.querySelectorAll("[data-lvrs]").forEach(function(e){e.textContent=lvClk(Date.now()+LV.skew-(+e.getAttribute("data-lvrs")))})}catch(x){}},1000);
 window.tjMnTab=function(G){try{cairoLoad()}catch(e){}window.__lvWant=Date.now();try{lvLoad()}catch(e){}var fam=G?String(G.n||"").replace(/^(حلقة|أسرة) /,""):"";var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return '<div class="card muted" style="text-align:center">تعذّر تحميل بيانات تاج الوقار</div>';
   var sc=PTS.tjsc||"m",h='<div class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">من تاج الوقار مباشرة</div>'+cmpChips([["m","المتنافسون"],["f","المتنافسات"]],sc,"tjsc")+'<div style="margin-top:10px"></div>';
