@@ -2814,10 +2814,10 @@ function lvAgo(ms){var m=Math.round(ms/60000);return m<1?"أقل من دقيقة
 function lvSt(sid,l){if(!LV.rows)return null;var R=LV.rows.filter(function(x){return x.s===sid&&x.st!=="done"&&!(l&&l.rep&&(!x.d||x.d===todayStr()))}).sort(function(a,b){return b.at-a.at})[0];if(!R)return null;var age=Date.now()+LV.skew-R.at;if(age<=90000)return {k:R.st==="lis"?"lis":"rec",R:R,age:age};if(age<3*3600000)return {k:"stop",R:R,age:age};return null}
 function lvCol(sid,l){var S=lvSt(sid,l);return S?{rec:"#C0392B",lis:"#185FA5",stop:"#E0A800"}[S.k]:(l&&l.rep?"#0F6E56":"")}
 function lvClk(ms){var s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
-function lvChip(sid,l){var S=lvSt(sid,l);if(!S)return "";var R=S.R,pt=(R.t==="r"?"مراجعة ":"درس ")+(R.d&&R.d!==todayStr()?DAYN[dow(R.d)]:"اليوم"),cn=R.n?" · "+R.n+(R.N?"/"+R.N:""):"",bs="display:inline-block;white-space:nowrap;padding:0;font-size:14px;font-weight:700;line-height:1.7;";
-  if(S.k==="rec")return '<span style="color:#A32D2D;'+bs+'">🔴 يسجّل '+pt+cn+(R.rs?' · <span data-lvrs="'+R.rs+'" dir="ltr">'+lvClk(Date.now()+LV.skew-R.rs)+'</span>':'')+'</span>';
+function lvChip(sid,l){var S=lvSt(sid,l);if(!S)return "";var R=S.R,pt=(R.t==="r"?"مراجعة ":"درس ")+(R.d&&R.d!==todayStr()?DAYN[dow(R.d)]:"اليوم"),cn=R.n?" "+R.n+(R.N?"/"+R.N:""):"",bs="display:inline-block;white-space:nowrap;padding:0;font-size:14px;font-weight:700;line-height:1.7;";
+  if(S.k==="rec")return '<span style="color:#A32D2D;'+bs+'">🔴 يسجّل '+pt+cn+(R.rs?' <span data-lvrs="'+R.rs+'" dir="ltr">'+lvClk(Date.now()+LV.skew-R.rs)+'</span>':'')+'</span>';
   if(S.k==="lis")return '<span style="color:#0C447C;'+bs+'">🎧 يستمع'+cn+'</span>';
-  return '<span style="color:#854F0B;'+bs+'">⏸ متوقف '+lvAgo(S.age).replace("قبل ","")+' · '+pt+cn+'</span>'}
+  return '<span style="color:#854F0B;'+bs+'">⏸ متوقف '+lvAgo(S.age).replace("قبل ","")+' '+pt+cn+'</span>'}
 setInterval(function(){try{document.querySelectorAll("[data-lvrs]").forEach(function(e){e.textContent=lvClk(Date.now()+LV.skew-(+e.getAttribute("data-lvrs")))})}catch(x){}},1000);
 window.tjMnTab=function(G){try{cairoLoad()}catch(e){}window.__lvWant=Date.now();try{lvLoad()}catch(e){}var fam=G?String(G.n||"").replace(/^(حلقة|أسرة) /,""):"";var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return '<div class="card muted" style="text-align:center">تعذّر تحميل بيانات تاج الوقار</div>';
   var sc=PTS.tjsc||"m",h='<div class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">من تاج الوقار مباشرة</div>'+cmpChips([["m","المتنافسون"],["f","المتنافسات"]],sc,"tjsc")+'<div style="margin-top:10px"></div>';
