@@ -1,0 +1,15 @@
+name: cf-sub
+on:
+  workflow_dispatch:
+    inputs:
+      mode: {description: "read or set", default: "read"}
+      newsub: {description: "new workers.dev subdomain", default: ""}
+jobs:
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: node tools/cf_sub.mjs
+        env: {CF_TOKEN: "${{ secrets.CF_TOKEN }}", MODE: "${{ inputs.mode }}", NEWSUB: "${{ inputs.newsub }}"}
