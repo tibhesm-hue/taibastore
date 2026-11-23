@@ -2163,7 +2163,7 @@ function saveSum(){var V=visibleStudents(),c={s:0,n:0,late:0,redo:0,rlate:0,rred
   return '<b>تأكيد حفظ '+(esec==="f"?"المتنافسات":"المتنافسين")+'</b><div class="muted">'+DAYN[dow(entDate)]+' '+fmt(entDate)+'</div>'+L.map(function(o){return '<div class="row"><span>'+o[0]+'</span><b>'+o[1]+'</b></div>'}).join("")}
 
 
-function ptsDay(l){if(!l||lapsed(l))return 0;var G=dayGr({id:l.sid},l.date);if(!G)return 0;var p=G.pt||{};return (+p.p||0)+(+p.r||0)}
+function ptsDay(l){if(!l||lapsed(l))return 0;var G=dayGr({id:l.sid},l.date);if(!G)return 0;var p=G.pt||{},dl=G.old?0:(l.time===false?1:0),dr=G.old?0:((l.rtime===false&&!l.rno)?1:0);if(p.p==null&&p.r==null){var T0=G.tot;return (T0&&T0.n>0&&!T0.p&&!T0.z)?Math.max(0,Math.round(T0.s/(T0.n*3)*6)-dl-dr):0}return Math.max(0,(+p.p||0)-dl)+Math.max(0,(+p.r||0)-dr)}
 function dotCls(sid,d,upto){var lg=logs.filter(function(y){return y.sid===sid&&y.date===d})[0];if(lapsed(lg)&&d<=upto)return "no";var k0=dotCls0(sid,d,upto);return k0==="redo"&&redoDone(sid,d)?"rdn":k0}
 function dotCls0(sid,d,upto){if(d>upto)return "fut";var l=logs.filter(function(y){return y.sid===sid&&y.date===d})[0];if(!l)return (d===upto||(cfg.trackFrom&&d<cfg.trackFrom))?"fut":"no";if(l.mk)return "mk";return lPts(l)===4?"ok":(!lT(l)?"late":"redo")}
 function vPubCyc(sec){
