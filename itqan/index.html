@@ -2818,7 +2818,7 @@ function lvClk(ms){var s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)
 function lvChip(sid,l){var S=lvSt(sid,l);if(!S)return "";var R=S.R,pt=(R.t==="r"?"مراجعة ":"درس ")+(R.d&&R.d!==todayStr()?DAYN[dow(R.d)]:"اليوم"),cn=R.n?" "+R.n+(R.N?"/"+R.N:""):"",bs="display:inline-block;white-space:nowrap;padding:0;font-size:14px;font-weight:700;line-height:1.7;";
   if(S.k==="rec")return '<span style="color:#A32D2D;'+bs+'">🔴 '+pt+cn+(R.rs?' <span data-lvrs="'+R.rs+'" dir="ltr">'+lvClk(Date.now()+LV.skew-R.rs)+'</span>':'')+'</span>';
   if(S.k==="lis")return '<span style="color:#0C447C;'+bs+'">🎧 يستمع'+cn+'</span>';
-  return '<span style="color:#854F0B;'+bs+'">⏸ من '+lvDur(S.age)+'</span>'}
+  return '<span style="color:#854F0B;'+bs+'">⏸ من '+lvDur(S.age)+' '+pt+(R.n?" "+R.n:"")+'</span>'}
 setInterval(function(){try{document.querySelectorAll("[data-lvrs]").forEach(function(e){e.textContent=lvClk(Date.now()+LV.skew-(+e.getAttribute("data-lvrs")))})}catch(x){}},1000);
 window.tjMnTab=function(G){try{cairoLoad()}catch(e){}window.__lvWant=Date.now();try{lvLoad()}catch(e){}var fam=G?String(G.n||"").replace(/^(حلقة|أسرة) /,""):"";var D=tjSnapGet();if(D===undefined)return '<div class="card" style="text-align:center">⏳ لحظة…</div>';if(!D)return '<div class="card muted" style="text-align:center">تعذّر تحميل بيانات تاج الوقار</div>';
   var sc=PTS.tjsc||"m",h='<div class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">من تاج الوقار مباشرة</div>'+cmpChips([["m","المتنافسون"],["f","المتنافسات"]],sc,"tjsc")+'<div style="margin-top:10px"></div>';
