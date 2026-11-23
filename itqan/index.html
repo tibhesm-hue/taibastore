@@ -1369,6 +1369,7 @@ function ilAyat(sid,d,part,ms,k2,mk){var RG=ilRanges(sid,d)[part==="r"?"r":"p"]|
 function ilG(n){return n<=1?3:n===2?2:n===3?1:0}
 function ilPc(R,p){var A=(R.P&&R.P[p]&&R.P[p].pcs)||(R.it||[]).filter(function(q){return q.p===p}).map(function(q){return q.pc});A=A.filter(function(x){return x!=null&&isFinite(+x)});if(!A.length)return null;var t=0;A.forEach(function(x){t+=+x});return Math.round(t/A.length)}
 function ilAvg(L){L=L.filter(function(x){return x!=null});if(!L.length)return null;var t=0;L.forEach(function(x){t+=+x});return Math.round(t/L.length*10)/10}
+function ilTm(ms){try{var p=new Date(ms+3*3600e3),h=p.getUTCHours(),m=p.getUTCMinutes();return (h%12||12)+":"+(m<10?"0":"")+m+" "+(h<12?"ص":"م")}catch(e){return ""}}
 function ilBox(name,dt){if(!ILS.rows){ilLoad();return '<div style="font-size:13px;color:#888780;margin-top:6px">🎧 لحظة…</div>'}ilLoad();var nm=ilNm(name),f=nm.split(" ")[0],R0=ILS.rows.filter(function(R){return R.kd!=="tst"&&ilNm(R.nm)===nm});if(!R0.length)R0=ILS.rows.filter(function(R){return R.kd!=="tst"&&ilNm(R.nm).split(" ")[0]===f});
   if(dt)R0=R0.filter(function(R){return R.d===dt});
   if(!R0.length)return '<div style="margin-top:6px;font-size:13px;color:#888780">🎧 '+(dt?'لا تسجيلات في هذا اليوم':'لا تسجيلات بعد')+'</div>';
@@ -1384,7 +1385,7 @@ function ilBox(name,dt){if(!ILS.rows){ilLoad();return '<div style="font-size:13p
       else if(!q0.u)h+='<div class="muted" style="font-size:13px">المقطع غير متاح</div>';
       else{var okx=!!ILH[k0];h+='<audio data-ilp="'+esc(k0)+'" data-du="'+(+q0.du||0)+'" preload="none" controls controlsList="nodownload noplaybackrate" src="https://itqan.w-f-almateq.workers.dev/'+esc(q0.u)+'" style="width:100%;height:36px;margin-top:6px"></audio><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'+[[3,"✓ صُحّح","#0F6E56"],[0,"يعيد العلاج","#A32D2D"]].map(function(x){return '<button class="btn sec" data-ilg="'+esc(k0)+'|'+x[0]+'"'+(okx?'':' disabled')+' style="margin:0;padding:9px 4px;font-size:15px;color:'+x[2]+';'+(okx?'':'opacity:.45')+'">'+x[1]+'</button>'}).join('')+'</div>'+(okx?'':'<div class="muted" style="font-size:12px;margin-top:4px">الأزرار تُفتح بعد سماع المقطع إلى آخره</div>')}
       h+='</div>';return}
-    h+='<div style="font-weight:700;font-size:15px;margin:12px 0 2px;color:#26215C">'+FD(R.d)+(R.kd!=="day"?' · إعادة':'')+'</div>';
+    h+='<div style="font-weight:700;font-size:15px;margin:12px 0 2px;color:#26215C">'+FD(R.d)+(R.kd!=="day"?' · إعادة':'')+(R.at?' · <span style="font-weight:400;font-size:13px;color:#5F5E5A">أُرسلت '+ilTm(R.at)+'</span>':'')+'</div>';
     ["r","p","x"].forEach(function(P){var IX=[];(R.it||[]).forEach(function(q,i){if((R.kd!=="day"?"x":q.p)===P)IX.push(i)});if(!IX.length)return;var pp=P==="x"?(/r$/i.test(R.kd)?"r":"p"):P,c=ilPc(R,P),av=ilAvg(IX.map(function(i){return R.it[i].g}));
       h+='<div style="border:1px solid #AFA9EC;border-radius:10px;padding:8px;margin-top:8px;background:#fff"><div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#3C3489"><span>'+PL(P)+(av!=null?' · '+av+'/3':'')+'</span>'+(c!=null?'<span style="color:'+(c>=90?'#0F6E56':c>=70?'#BA7517':'#A32D2D')+'">المطابقة '+c+'%</span>':'')+'</div>';
       IX.forEach(function(i){var q=R.it[i],k2=key+"|"+i,lab='المرة '+q.n+(q.pc!=null?' · '+q.pc+'%':'');
