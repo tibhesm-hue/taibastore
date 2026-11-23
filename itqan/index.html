@@ -727,7 +727,7 @@ function tjNm(x){return String(x||"").replace(/\s+/g," ").trim()}
 function tjTkFor(s){try{var A=itAuth();if(!s||!TJMY.l||!TJMY.l.length||!A||TJMY.e!==A.e)return null;var nm=tjNm(s.name);if(!nm)return null;
   var inTaj=!!(+s.tj)||(typeof tjOrg==="function"&&tjOrg())||(window.ITG&&typeof tjIs==="function"&&tjIs(window.ITG));
   var ok=function(T){return T.own||inTaj||(s.mother&&tjNm(s.mother)===T.mo)};
-  var L=TJMY.l.filter(ok),X=L.filter(function(T){return tjNm(T.n)===nm});if(X.length===1)return X[0];
+  var L=TJMY.l.filter(function(T){return !T.tst&&ok(T)}),X=L.filter(function(T){return tjNm(T.n)===nm});if(X.length===1)return X[0];
   var f=nm.split(" ")[0];X=L.filter(function(T){return tjNm(T.n).split(" ")[0]===f});if(X.length===1)return X[0];
   var O=TJMY.l.filter(function(T){return T.own});return O.length===1&&!inTaj&&tjNm(O[0].n).split(" ")[0]===f?O[0]:null}catch(e){return null}}
 (function(){var R3=render;render=function(){var r=R3.apply(this,arguments);setTimeout(tjMyLoad,0);return r}})();
