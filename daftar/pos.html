@@ -171,7 +171,13 @@ function showDrop(){const d=$("drop");const t=$("q").value.trim();if(!t){d.class
  d.innerHTML=hits.length?hits.map((x,i)=>`<div data-i="${i}" class="${i===sel?"h":""}"><span>${esc(x.n)} <span class="c">${esc(x.c)}</span></span><b>${f2(x.p)}</b></div>`).join(""):`<div class="e">لا يوجد صنف بهذا الباركود أو الاسم</div>`;
  d.classList.add("show")}
 function hl(){[...$("drop").children].forEach((e,i)=>e.classList.toggle("h",i===sel))}
-$("q").addEventListener("input",showDrop);
+/* scanner: a hand scanner types the whole code in a few ms; then the item goes straight into the cart with no list and no Enter */
+let kT=[],dropT=null,scanT=null;
+$("q").addEventListener("keydown",e=>{if(e.key.length===1){const n=performance.now();if(!$("q").value)kT=[];kT.push(n)}},true);
+function fast(){if(kT.length<4)return false;for(let i=1;i<kT.length;i++)if(kT[i]-kT[i-1]>45)return false;return true}
+$("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("drop").classList.remove("show");
+ scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){const x=BY.get(t);if(x){add(x);kT=[];return}if(/^\d{6,}$/.test(t)){beep(false);toast("الصنف غير موجود: "+t,2500);$("q").value="";kT=[];return}}
+  showDrop()},90)});
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
  else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
