@@ -73,6 +73,8 @@ tr.last td{background:#f0fdf4}
 .ur .bb{display:flex;gap:6px}
 .ur .bb button{padding:7px 10px;border-radius:8px;border:1px solid #cfd8df;font-size:13px}
 .ur .bb button.on{background:#16a34a;border-color:#16a34a;color:#fff}
+.uin{width:100%;height:44px;border:1px solid #cfd8df;border-radius:10px;padding:0 12px;font-size:15px;margin-bottom:8px;outline:none}.small2{font-size:12px;color:#6b7884;margin-bottom:8px}.usave{flex:1;height:44px;border-radius:10px;background:#14532d;color:#fff;font-weight:600}.ucan{height:44px;padding:0 16px;border-radius:10px;border:1px solid #cfd8df}.ur .ed{color:#16a34a;font-size:13px;border:1px solid #16a34a;border-radius:8px;padding:6px 10px}
+.tb{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px;font-size:14px}
 .foot{background:#fff;border-top:1px solid #dfe5ea;display:flex;flex-wrap:wrap;align-items:center;padding:8px 20px;gap:6px 22px;font-size:13px;color:#6b7884}
 .dot{width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;margin-inline-end:6px}
 .dot.off{background:#dc2626}
@@ -85,6 +87,7 @@ tr.last td{background:#f0fdf4}
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
+ <div style="display:flex;gap:8px"><a href="/app/" class="tb">الدفتر</a><a href="/logout" class="tb">تسجيل خروج</a></div>
 </div>
 <div class="main">
  <div class="left">
@@ -120,7 +123,17 @@ tr.last td{background:#f0fdf4}
    <div class="sumg" id="sumg"></div>
   </div>
   <div class="card"><div class="ttl"><span id="lastTtl">آخر فواتيري</span></div><div id="last"><div class="inv">لا توجد فواتير اليوم</div></div></div>
-  <div class="card" id="brCard" style="display:none"><div class="ttl"><span>فرع كل عامل</span></div><div id="brList"></div></div>
+  <div class="card" id="brCard" style="display:none"><div class="ttl"><span>حسابات نقاط البيع</span></div><div id="brList"></div>
+   <div id="uf" style="margin-top:12px;border-top:1px dashed #cfd8df;padding-top:12px">
+    <div style="font-weight:600;margin-bottom:8px" id="ufT">إضافة مستخدم</div>
+    <input class="uin" id="ufName" placeholder="الاسم">
+    <input class="uin" id="ufUser" placeholder="اسم المستخدم (حروف إنجليزية أو أرقام)" dir="ltr" autocapitalize="off">
+    <input class="uin" id="ufPw" placeholder="الرقم السري" dir="ltr" autocapitalize="off">
+    <div class="small2">الرقم السري: من 6 إلى 20، فيه 4 أرقام وحرف إنجليزي كبير وحرف صغير. اتركه فاضي إذا ما تبي تغيّره.</div>
+    <div class="ur" style="border:none"><span>الفرع</span><span class="bb"><button data-fb="shop" class="on">المبيعات</button><button data-fb="del">التوصيل</button></span></div>
+    <div style="display:flex;gap:8px"><button class="usave" id="ufSave">إضافة</button><button class="ucan" id="ufCan" style="display:none">إلغاء</button></div>
+    <div class="err" id="ufErr"></div>
+   </div></div>
  </div>
 </div>
 <div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
@@ -238,10 +251,17 @@ async function loadDay(){try{const j=await api("/api/pos/day");if(!j.ok)return;
  $("last").innerHTML=j.inv.length?j.inv.slice(0,ME.owner?12:6).map(d=>`<div class="inv"><span>${d.no} · ${d.mode==="cash"?"نقدي":d.mode==="card"?"شبكة":"نقدي + شبكة"}${ME.owner?" · "+esc(d.u)+" · "+(BRN[d.br]||""):""} · ${d.t.slice(0,5)}</span><span>${f2(d.total)}</span></div>`).join(""):`<div class="inv">لا توجد فواتير اليوم</div>`;
  if(ME.owner){$("ownDay").textContent=j.day.split("-").reverse().join("/");$("sumg").innerHTML=Object.keys(BRN).map(k=>{const s=j.sum[k]||{n:0,total:0,cash:0,card:0};return`<div class="sb"><div class="k">${BRN[k]}</div><div class="v">${f2(s.total)}</div><div class="s">${s.n} فاتورة · نقدي ${f2(s.cash)} · شبكة ${f2(s.card)}</div></div>`}).join("")}
 }catch(e){}}
-async function loadBr(){const j=await api("/api/pos/branches");if(!j.ok)return;const us=[{email:j.owner,name:"صاحب المحل"}].concat(j.users.filter(u=>u.email!==j.owner));
- $("brList").innerHTML=us.map(u=>{const b=j.map[u.email]||"shop";return`<div class="ur"><span>${esc(u.name||u.email)}<span class="code">${esc(u.email)}</span></span><span class="bb"><button data-e="${esc(u.email)}" data-b="shop" class="${b==="shop"?"on":""}">المبيعات</button><button data-e="${esc(u.email)}" data-b="del" class="${b==="del"?"on":""}">التوصيل</button></span></div>`}).join("")}
-$("brList").addEventListener("click",async e=>{const b=e.target.closest("button[data-b]");if(!b)return;const j=await api("/api/pos/branches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:b.dataset.e,br:b.dataset.b})});if(j.ok){toast("تم");loadBr();if(b.dataset.e===ME.email)location.reload()}});
-
+let UF={email:"",br:"shop"};const UERR={un:"اسم المستخدم: من 3 إلى 20 حرفاً إنجليزياً أو رقماً",taken:"اسم المستخدم مستخدم لعامل آخر",name:"اكتب الاسم",pw:"اكتب الرقم السري",rule:"الرقم السري لازم من 6 إلى 20، فيه 4 أرقام وحرف كبير وحرف صغير",nouser:"المستخدم غير موجود",br:"اختر الفرع"};
+function ufReset(){UF={email:"",br:"shop"};$("ufName").value="";$("ufUser").value="";$("ufPw").value="";$("ufT").textContent="إضافة مستخدم";$("ufSave").textContent="إضافة";$("ufCan").style.display="none";$("ufErr").textContent="";ufBr()}
+function ufBr(){document.querySelectorAll("[data-fb]").forEach(b=>b.classList.toggle("on",b.dataset.fb===UF.br))}
+document.querySelectorAll("[data-fb]").forEach(b=>b.onclick=()=>{UF.br=b.dataset.fb;ufBr()});
+let USERS=[];
+async function loadBr(){const j=await api("/api/pos/users");if(!j.ok)return;USERS=j.users;
+ $("brList").innerHTML=USERS.map((u,i)=>`<div class="ur"><span>${esc(u.name||u.email)}<span class="code">${u.username?"اسم المستخدم: "+esc(u.username):"بدون اسم مستخدم"} · ${BRN[u.br]}</span></span><button class="ed" data-ue="${i}">تعديل</button></div>`).join("")}
+$("brList").addEventListener("click",e=>{const b=e.target.closest("[data-ue]");if(!b)return;const u=USERS[+b.dataset.ue];UF={email:u.email,br:u.br};$("ufName").value=u.name||"";$("ufUser").value=u.username||"";$("ufPw").value="";$("ufT").textContent="تعديل: "+(u.name||u.email);$("ufSave").textContent="حفظ";$("ufCan").style.display="block";$("ufErr").textContent="";ufBr();$("ufUser").focus()});
+$("ufCan").onclick=ufReset;
+$("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/pos/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:UF.email,name:$("ufName").value,username:$("ufUser").value,pw:$("ufPw").value,br:UF.br})});
+ if(j.ok){toast("تم الحفظ");const self=UF.email===ME.email;ufReset();loadBr();if(self)setTimeout(()=>location.reload(),800)}else $("ufErr").textContent=UERR[j.err]||("لم يُحفظ: "+j.err)};
 (async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
  $("brName").textContent=ME.brName;$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
