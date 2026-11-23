@@ -96,6 +96,7 @@ tr.last td{background:#f0fdf4}
    <button class="cam" id="camBtn"><i class="ti ti-camera"></i><span>قراءة بالكاميرا</span></button>
    <div class="drop" id="drop"></div>
   </div>
+  <div id="warn" style="display:none;background:#b91c1c;color:#fff;border-radius:12px;padding:14px 18px;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-size:20px;font-weight:600">الصنف لم يُضف</div><div style="font-size:15px;margin-top:2px">الباركود <b id="warnCode" dir="ltr"></b> غير مسجّل في البرنامج</div></div><button id="warnOk" style="border:1px solid rgba(255,255,255,.7);border-radius:9px;padding:8px 18px;font-size:16px;color:#fff">حسناً</button></div>
   <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
   <div class="cart" id="cart"></div>
  </div>
@@ -136,7 +137,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 5</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 6</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -179,18 +180,21 @@ let kT=[],dropT=null,scanT=null;
 $("q").addEventListener("keydown",e=>{if(e.key.length===1){const n=performance.now();if(!$("q").value)kT=[];kT.push(n)}},true);
 function fast(){if(kT.length<4)return false;for(let i=1;i<kT.length;i++)if(kT[i]-kT[i-1]>45)return false;return true}
 $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("drop").classList.remove("show");
- scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){const x=BY.get(t);if(x){add(x);kT=[];return}if(t.length>=4){beep(false);toast("الصنف غير موجود: "+t,2500);$("q").value="";kT=[];return}}
+ scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){const x=BY.get(t);if(x){add(x);kT=[];return}if(t.length>=4){warn(t);$("q").value="";kT=[];return}}
   showDrop()},90)});
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
  else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
  else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t)return;const ex=BY.get(t);
-  if(ex)add(ex);else if(sel>=0&&hits[sel])add(hits[sel]);else{beep(false);toast("الصنف غير موجود: "+t)}}
+  if(ex)add(ex);else if(sel>=0&&hits[sel])add(hits[sel]);else{warn(t);$("q").value="";$("drop").classList.remove("show")}}
  else if(e.key==="Escape"){$("q").value="";showDrop()}});
 $("drop").addEventListener("mousedown",e=>{const el=e.target.closest("[data-i]");if(el){e.preventDefault();add(hits[+el.dataset.i])}});
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("drop").classList.remove("show")});
 
-function add(x,q){if(!x)return;const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
+function warn(c){$("warnCode").textContent=c;$("warn").style.display="flex";beep(false)}
+function warnOff(){$("warn").style.display="none"}
+$("warnOk").onclick=()=>{warnOff();$("q").focus()};
+function add(x,q){if(!x)return;warnOff();const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
  lastCode=x.c;beep(true);$("q").value="";$("drop").classList.remove("show");render();$("q").focus()}
 function totals(){let t=0,n=0;for(const l of cart){t=r2(t+r2(l.p*l.q));n+=l.q}return{t,n}}
 function render(){
@@ -252,7 +256,7 @@ async function camStart(){
  try{await zx.decodeFromConstraints({video:{facingMode:"environment",width:{ideal:1280}}},v,(res)=>{if(res&&camOn)onScan(res.getText())})}catch(e){toast("لم يُسمح بالكاميرا",3000);camStop()}
 }
 function camStop(){camOn=false;try{zx&&zx.reset()}catch(e){}zx=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("camWrap").classList.remove("show");$("camBtn").classList.remove("on");$("camBtn").querySelector("span").textContent="قراءة بالكاميرا"}
-function onScan(code){code=String(code).trim();const now=Date.now();if(code===lastScan.c&&now-lastScan.t<1500)return;lastScan={c:code,t:now};const x=BY.get(code);if(x){add(x);$("camMsg").textContent="أُضيف: "+x.n}else{beep(false);$("camMsg").textContent="غير موجود: "+code}}
+function onScan(code){code=String(code).trim();const now=Date.now();if(code===lastScan.c&&now-lastScan.t<1500)return;lastScan={c:code,t:now};const x=BY.get(code);if(x){add(x);$("camMsg").textContent="أُضيف: "+x.n}else{warn(code);$("camMsg").textContent="غير موجود: "+code}}
 $("camBtn").onclick=()=>camOn?camStop():camStart();
 
 // today's invoices (cashier: his own; owner: all, with live totals per branch)
