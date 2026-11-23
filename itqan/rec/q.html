@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مقارنة جودة الصوت</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#f6f4ee;margin:0;padding:16px;color:#222}
+h1{font-size:20px;margin:0 0 6px}p{margin:4px 0 12px;color:#555;font-size:15px;line-height:1.6}
+button{width:100%;font-size:19px;padding:16px;border:0;border-radius:14px;background:#1f6f54;color:#fff;font-weight:700}
+button.stop{background:#b3261e}
+.card{background:#fff;border-radius:14px;padding:14px;margin-top:12px;box-shadow:0 1px 3px #0001}
+.card b{font-size:17px}.card small{display:block;color:#666;margin:4px 0 8px}
+audio{width:100%}#st{text-align:center;font-size:16px;margin:10px 0;color:#1f6f54;font-weight:700}
+</style></head><body>
+<h1>مقارنة جودة الصوت</h1>
+<p>اضغط «ابدأ»، واقرأ آية أو آيتين، ثم «إيقاف». يُسجَّل نفس الصوت بثلاث جودات، فاسمعها وقارن.</p>
+<button id="b">🎙️ ابدأ التسجيل</button>
+<div id="st"></div>
+<div id="out"></div>
+<script>
+var B=document.getElementById("b"),ST=document.getElementById("st"),OUT=document.getElementById("out");
+var stream=null,recs=[],t0=0,tm=null,on=false;
+var Q=[[32000,"الجودة الحالية (32)"],[24000,"متوسطة (24)"],[16000,"خفيفة (16)"]];
+var mt=["audio/mp4","audio/webm;codecs=opus","audio/webm"].filter(function(t){try{return MediaRecorder.isTypeSupported(t)}catch(e){return false}})[0]||"";
+function kb(n){return n<1024*1024?Math.round(n/1024)+" كيلوبايت":(n/1048576).toFixed(2)+" ميجا"}
+B.onclick=async function(){
+ if(on){on=false;clearInterval(tm);recs.forEach(function(r){try{r.stop()}catch(e){}});B.textContent="🎙️ سجّل مرة ثانية";B.className="";return}
+ OUT.innerHTML="";
+ try{stream=stream||await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){ST.textContent="ما انفتح المايك، اسمح للصفحة باستخدامه";return}
+ recs=[];var dur=0;
+ Q.forEach(function(q){
+  var ch=[],r;
+  try{r=new MediaRecorder(stream,mt?{mimeType:mt,audioBitsPerSecond:q[0]}:{audioBitsPerSecond:q[0]})}catch(e){return}
+  r.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};
+  r.onstop=function(){
+   var bl=new Blob(ch,{type:r.mimeType||mt}),d=(Date.now()-t0)/1000;
+   var c=document.createElement("div");c.className="card";
+   c.innerHTML="<b>"+q[1]+"</b><small>الحجم: "+kb(bl.size)+" — للدقيقة تقريباً: "+kb(bl.size/d*60)+"</small>";
+   var a=document.createElement("audio");a.controls=true;a.src=URL.createObjectURL(bl);c.appendChild(a);
+   OUT.appendChild(c);
+  };
+  recs.push(r);
+ });
+ t0=Date.now();recs.forEach(function(r){r.start()});on=true;
+ B.textContent="⏹️ إيقاف";B.className="stop";
+ tm=setInterval(function(){ST.textContent="جارٍ التسجيل… "+Math.round((Date.now()-t0)/1000)+" ث"},300);
+ ST.textContent="جارٍ التسجيل…";
+};
+ST.textContent=mt?"صيغة جوالك: "+(mt.indexOf("mp4")>=0?"mp4 (آيفون غالباً)":"webm"):"";
+</script></body></html>
