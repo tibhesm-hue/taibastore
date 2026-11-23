@@ -2197,7 +2197,7 @@ function vPubSec(sec){
     }
   });
   h+='<div class="lgd"><span><i class="d-ok"></i>سليمة</span><span><i class="d-late"></i>متأخر</span><span><i class="d-redo"></i>عليه إعادة</span><span><i class="d-rdn"></i>أعاد</span>'+(PUBLIC?'':'<span><i class="d-mk"></i>عُوِّض</span>')+'<span><i class="d-no"></i>لم يُرسل</span></div>';
-  if((!PUBLIC||EDITOR||window.__shareOK||(window.TCH&&TCH.length))&&R.length){var IC={ok:"✅",late:"🟠",redo:"🔵",rdn:"🔷",mk:"🟣",no:"⚪",fut:"▫️"},T=["*🏆 "+(F?"نقاط المتنافسات":"نقاط المتنافسين")+"*","*الأسبوع "+(ORD[wn]||wn+1)+" من الدورة "+(cyc+1)+"*","من "+fmt(ws)+" إلى "+fmt(addDays(ws,4)),""];
+  if((!PUBLIC||EDITOR||window.__shareOK||(window.ITQ&&window.__tjD)||(window.TCH&&TCH.length))&&R.length){var IC={ok:"✅",late:"🟠",redo:"🔵",rdn:"🔷",mk:"🟣",no:"⚪",fut:"▫️"},T=["*🏆 "+(F?"نقاط المتنافسات":"نقاط المتنافسين")+"*","*الأسبوع "+(ORD[wn]||wn+1)+" من الدورة "+(cyc+1)+"*","من "+fmt(ws)+" إلى "+fmt(addDays(ws,4)),""];
     R.forEach(function(o,i){T.push((i+1)+". *"+o.x.name+"*: "+o.w+" من 20");T.push("    "+D.map(function(d){return IC[dotCls(o.x.id,d,td)]||"▫️"}).join(" "))});
     T.push("");T.push("✅ سليمة  🟠 متأخر  🔵 عليه إعادة  🔷 أعاد  ⚪ لم يُرسل");
     h+='<button type="button" class="btn" data-gimg="'+sec+'|'+ws+'" style="margin-top:12px;background:#3C3489;font-size:17px;padding:13px">🖼️ اعرض درجات الأسبوع '+(ORD[wn]||wn+1)+' للتصوير</button><div id="gprev"></div><a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(T.join("\n"))+'" style="margin-top:8px;font-size:15px">📤 أو أرسلها نصاً في الواتساب</a>'}
