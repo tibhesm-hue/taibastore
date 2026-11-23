@@ -138,9 +138,9 @@ const tjGrLog=async(sid,d,zp,kd,w,nt)=>{const rows=await all("SELECT kd,m,hd,gon
   return gr};
 if(a==="tjlv"){const role=await tjRole(),TG=role>=2?[]:await tjTeach();if(role<2&&!TG.length)return json({ok:false,err:"perm"});const ST=await tjStuds();const mine=role>=2?null:new Set(ST.filter(x=>TG.some(G=>G.mo===String(x.mother||"").trim())).map(x=>x.id));const td=rNow().slice(0,10);
   try{await run("CREATE TABLE IF NOT EXISTS tjlive (sid TEXT, d TEXT, t TEXT, st TEXT, n INTEGER, nn INTEGER, at INTEGER, PRIMARY KEY (sid,d,t))");await run("CREATE TABLE IF NOT EXISTS tjdr (sid TEXT, d TEXT, t TEXT, id TEXT, ix INTEGER, m TEXT, at INTEGER, sz INTEGER, PRIMARY KEY (sid,d,t,id))")}catch(z){}
-  try{await run("ALTER TABLE tjlive ADD COLUMN rs INTEGER")}catch(z){}const HB=await all("SELECT sid,t,st,n,nn,at,rs FROM tjlive WHERE d=?",td),DR=await all("SELECT sid,t,COUNT(*) AS c,MAX(at) AS at FROM tjdr WHERE d=? GROUP BY sid,t",td),M={};
-  for(const h of HB){M[h.sid+"|"+h.t]={s:h.sid,t:h.t,st:h.st,n:h.n,N:h.nn,at:h.at,rs:h.rs||0}}
-  for(const r of DR){const k=r.sid+"|"+r.t,x=M[k];if(x){if(r.c>x.n)x.n=r.c;if(r.at>x.at&&x.st!=="done")x.at=r.at}else M[k]={s:r.sid,t:r.t,st:"rec",n:r.c,N:0,at:r.at}}
+  try{await run("ALTER TABLE tjlive ADD COLUMN rs INTEGER")}catch(z){}const dy=new Date(Date.parse(td+"T00:00:00Z")-864e5).toISOString().slice(0,10),dz=new Date(Date.parse(td+"T00:00:00Z")+864e5).toISOString().slice(0,10);const HB=await all("SELECT sid,d,t,st,n,nn,at,rs FROM tjlive WHERE d>=? AND d<=?",dy,dz),DR=await all("SELECT sid,d,t,COUNT(*) AS c,MAX(at) AS at FROM tjdr WHERE d>=? AND d<=? GROUP BY sid,d,t",dy,dz),M={};
+  for(const h of HB){M[h.sid+"|"+h.d+"|"+h.t]={s:h.sid,d:h.d,t:h.t,st:h.st,n:h.n,N:h.nn,at:h.at,rs:h.rs||0}}
+  for(const r of DR){const k=r.sid+"|"+r.d+"|"+r.t,x=M[k];if(x){if(r.c>x.n)x.n=r.c;if(r.at>x.at&&x.st!=="done")x.at=r.at}else M[k]={s:r.sid,d:r.d,t:r.t,st:"rec",n:r.c,N:0,at:r.at}}
   return json({ok:true,now:Date.now(),rows:Object.values(M).filter(x=>!mine||mine.has(x.s))})}
 if(a==="tjals"||a==="tjgr"||a==="tjexc"){const role=await tjRole(),TG=role>=2?[]:await tjTeach();if(role<2&&!TG.length)return json({ok:false,err:"perm"});const ST=await tjStuds(),SM={};ST.forEach(x=>SM[x.id]=x);const mine=role>=2?null:new Set(ST.filter(x=>TG.some(G=>G.mo===String(x.mother||"").trim())).map(x=>x.id));const td=rNow().slice(0,10);
   if(a==="tjexc"){if(role>=2)return json({ok:false,err:"bad"});for(const G of TG)await run("INSERT OR REPLACE INTO itmeta (k,v) VALUES (?,?)","tjexc|"+G.mo+"|"+td,"1");return json({ok:true})}

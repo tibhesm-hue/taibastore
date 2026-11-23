@@ -2814,7 +2814,7 @@ function lvAgo(ms){var m=Math.round(ms/60000);return m<1?"أقل من دقيقة
 function lvSt(sid,l){if(!LV.rows||(l&&l.rep))return null;var R=LV.rows.filter(function(x){return x.s===sid&&x.st!=="done"}).sort(function(a,b){return b.at-a.at})[0];if(!R)return null;var age=Date.now()+LV.skew-R.at;if(age<=90000)return {k:R.st==="lis"?"lis":"rec",R:R,age:age};if(age<3*3600000)return {k:"stop",R:R,age:age};return null}
 function lvCol(sid,l){var S=lvSt(sid,l);return S?{rec:"#C0392B",lis:"#185FA5",stop:"#E0A800"}[S.k]:(l&&l.rep?"#0F6E56":"")}
 function lvClk(ms){var s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
-function lvChip(sid,l){var S=lvSt(sid,l);if(!S)return "";var R=S.R,pt=R.t==="r"?"المراجعة":"الدرس",cn=R.n?" · "+R.n+(R.N?"/"+R.N:""):"",bs="border-radius:20px;padding:4px 12px;font-weight:700;";
+function lvChip(sid,l){var S=lvSt(sid,l);if(!S)return "";var R=S.R,pt=(R.t==="r"?"المراجعة":"الدرس")+(R.d&&R.d!==todayStr()?" ("+DAYN[dow(R.d)]+")":""),cn=R.n?" · "+R.n+(R.N?"/"+R.N:""):"",bs="border-radius:20px;padding:4px 12px;font-weight:700;";
   if(S.k==="rec")return '<span style="background:#C0392B;color:#fff;'+bs+'">🔴 يسجّل '+pt+cn+(R.rs?' · <span data-lvrs="'+R.rs+'" dir="ltr">'+lvClk(Date.now()+LV.skew-R.rs)+'</span>':'')+'</span>';
   if(S.k==="lis")return '<span style="background:#185FA5;color:#fff;'+bs+'">🎧 يستمع'+cn+'</span>';
   return '<span style="background:#F2C200;color:#3A2A00;'+bs+'">⏸ متوقف من '+lvAgo(S.age).replace("قبل ","")+' · '+pt+cn+'</span>'}
