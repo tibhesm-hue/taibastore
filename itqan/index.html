@@ -2804,7 +2804,7 @@ function drawCyc(s){cairoLoad();var td=todayStr(),R=cycDays(s,td),L=R.L,lv=lvOf(
 var LV={rows:null,at:0,busy:0,skew:0};
 function lvLoad(f){var A=itAuth();if(!A||LV.busy)return;if(!f&&LV.rows&&Date.now()-LV.at<15000)return;LV.busy=1;itCall("tjlv",{e:A.e,h:A.h}).then(function(r){LV.busy=0;LV.at=Date.now();if(r&&r.ok){var had=JSON.stringify(LV.rows);LV.rows=r.rows||[];LV.skew=(+r.now||Date.now())-Date.now();if(had!==JSON.stringify(LV.rows)&&!ilPlaying()){try{render()}catch(e){}}}}).catch(function(){LV.busy=0})}
 setInterval(function(){if(!document.hidden&&window.__lvWant&&Date.now()-window.__lvWant<60000)lvLoad(true)},20000);
-function lvAgo(ms){var m=Math.round(ms/60000);return m<1?"الآن":m<60?"قبل "+m+" د":"قبل "+Math.round(m/60)+" س"}
+function lvAgo(ms){var m=Math.round(ms/60000);return m<1?"أقل من دقيقة":m<60?"قبل "+m+" د":"قبل "+Math.round(m/60)+" س"}
 function lvChip(sid,l){if(!LV.rows||(l&&l.rep))return "";var R=LV.rows.filter(function(x){return x.s===sid&&x.st!=="done"}).sort(function(a,b){return b.at-a.at})[0];if(!R)return "";var age=Date.now()+LV.skew-R.at,pt=R.t==="r"?"المراجعة":"الدرس",cn=R.n?" · "+R.n+(R.N?"/"+R.N:""):"";
   if(age<=90000)return '<span style="background:#FCEBEB;color:#A32D2D;border-radius:20px;padding:3px 10px">'+(R.st==="lis"?'🎧 يستمع':'🔴 يسجّل '+pt+cn)+'</span>';
   if(age<3*3600000)return '<span style="background:#FAEEDA;color:#854F0B;border-radius:20px;padding:3px 10px">⏸ توقّف'+cn+' · '+lvAgo(age)+'</span>';return ""}
