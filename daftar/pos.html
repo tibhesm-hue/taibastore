@@ -151,7 +151,10 @@ async function api(p,o){const r=await fetch(p,Object.assign({credentials:"same-o
 function clock(){const d=new Date();$("tm").textContent=d.toTimeString().slice(0,5);$("dt").textContent=d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear()}
 setInterval(clock,10000);clock();
 function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display="none",ms||1800)}
-let AC=null;function beep(ok){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=ok?1250:300;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+(ok?.09:.3))}catch(e){}}
+let AC=null;function acOn(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){}}
+["keydown","pointerdown","touchstart"].forEach(ev=>document.addEventListener(ev,acOn,true));
+function tone(f,t0,d,type,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,AC.currentTime+t0);g.gain.setValueAtTime(0,AC.currentTime+t0+d);o.connect(g);g.connect(AC.destination);o.start(AC.currentTime+t0);o.stop(AC.currentTime+t0+d+.02)}
+function beep(ok){try{acOn();if(!AC)return;if(ok)tone(1050,0,.12,"square",.35);else{tone(330,0,.25,"square",.6);tone(250,.32,.35,"square",.6)}}catch(e){}}
 
 async function loadCat(){
  const key="poscat_"+ME.br;let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
