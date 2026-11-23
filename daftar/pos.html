@@ -1,0 +1,250 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نقاط البيع — أسواق طيبة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{overflow-x:hidden;font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;background:#eef1f4;color:#1b2430;display:flex;flex-direction:column;min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+.top{background:#14532d;color:#fff;display:flex;align-items:center;flex-wrap:wrap;padding:10px 20px;gap:10px 22px}
+.brand{font-size:20px;font-weight:600}
+.brx{background:rgba(255,255,255,.14);padding:6px 14px;border-radius:9px;font-size:15px}
+.info{margin-right:auto;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px;color:#d7eadc}
+.info b{color:#fff;font-weight:500}
+.main{flex:1;display:flex;gap:18px;padding:18px 20px;align-items:flex-start}
+.left{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+.search{display:flex;gap:10px;position:relative}
+.box{flex:1;min-width:0;height:58px;background:#fff;border:2px solid #16a34a;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 16px}
+.box i{font-size:24px;color:#16a34a}
+.box input{flex:1;min-width:0;border:none;outline:none;font-size:19px;background:transparent;color:#1b2430}
+.cam{width:150px;height:58px;border-radius:12px;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:500;flex-shrink:0}
+.cam.on{background:#991b1b}
+.cam i{font-size:24px}
+.drop{position:absolute;top:64px;right:0;left:160px;background:#fff;border-radius:12px;box-shadow:0 12px 30px rgba(20,40,30,.18);border:1px solid #dfe5ea;z-index:5;overflow:hidden;display:none}
+.drop.show{display:block}
+.drop div{display:flex;justify-content:space-between;gap:10px;padding:12px 18px;font-size:16px;border-bottom:1px solid #eef1f4;cursor:pointer}
+.drop div.h{background:#ecfdf3}
+.drop .c{color:#7a8794;font-size:13px;margin-inline-start:10px}
+.drop .e{color:#7a8794;cursor:default}
+#camWrap{display:none;background:#000;border-radius:14px;overflow:hidden;position:relative;height:220px}
+#camWrap.show{display:block}
+#camWrap video{width:100%;height:100%;object-fit:cover}
+#camWrap .ln{position:absolute;right:10%;left:10%;top:50%;height:2px;background:#ef4444}
+#camMsg{position:absolute;bottom:8px;right:0;left:0;text-align:center;color:#fff;font-size:14px}
+.cart{background:#fff;border-radius:14px;border:1px solid #dfe5ea;overflow:hidden;min-height:300px}
+table{width:100%;border-collapse:collapse}
+th{background:#f6f8fa;color:#5c6b78;font-weight:500;font-size:14px;padding:12px 14px;text-align:right;border-bottom:1px solid #e3e8ec}
+td{padding:12px 14px;font-size:16px;border-bottom:1px solid #eef1f4}
+td.n{color:#7a8794;width:44px}
+.code{display:block;color:#8a96a2;font-size:12px}
+.q{display:inline-flex;align-items:center;border:1px solid #cfd8df;border-radius:9px;overflow:hidden}
+.q button{width:36px;height:34px;font-size:18px}
+.q input{width:56px;height:34px;text-align:center;font-weight:600;font-size:16px;border:none;border-inline:1px solid #cfd8df;outline:none}
+.del{color:#c0392b;font-size:20px}
+tr.last td{background:#f0fdf4}
+.empty{padding:60px 20px;text-align:center;color:#8a96a2;font-size:16px}
+.side{width:420px;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
+.card{background:#fff;border-radius:14px;border:1px solid #dfe5ea;padding:18px}
+.row{display:flex;justify-content:space-between;font-size:16px;color:#4a5866;padding:6px 0}
+.tot{border-top:1px dashed #cfd8df;margin-top:8px;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline}
+.tot b{font-size:44px;font-weight:600;color:#14532d}
+.pms{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.pm{height:46px;border-radius:10px;border:1px solid #cfd8df;font-size:15px;color:#4a5866}
+.pm.on{background:#16a34a;color:#fff;border-color:#16a34a;font-weight:600}
+.fl{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:15px;color:#4a5866}
+.in{width:170px;height:46px;border:2px solid #16a34a;border-radius:10px;padding:0 14px;font-size:20px;font-weight:600;color:#1b2430;outline:none;text-align:left;direction:ltr}
+.in[readonly]{border:1px solid #cfd8df;background:#f6f8fa}
+.save{width:100%;height:60px;border-radius:12px;background:#14532d;color:#fff;font-size:19px;font-weight:600;margin-top:4px}
+.save:disabled{background:#94a3b8}
+.err{color:#b91c1c;font-size:14px;margin-top:8px;min-height:18px;text-align:center}
+.mini{display:flex;gap:10px}
+.mini button{flex:1;height:48px;border-radius:10px;border:1px solid #cfd8df;background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;color:#4a5866}
+.ttl{font-weight:600;color:#1b2430;margin-bottom:8px;display:flex;justify-content:space-between}
+.inv{display:flex;justify-content:space-between;font-size:14px;color:#4a5866;padding:6px 0;border-bottom:1px solid #f1f4f6}
+.sumg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sb{background:#f6f8fa;border-radius:10px;padding:12px}
+.sb .k{font-size:13px;color:#5c6b78}.sb .v{font-size:22px;font-weight:600;color:#14532d}
+.sb .s{font-size:12px;color:#6b7884;margin-top:2px}
+.ur{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #f1f4f6;font-size:14px}
+.ur .bb{display:flex;gap:6px}
+.ur .bb button{padding:7px 10px;border-radius:8px;border:1px solid #cfd8df;font-size:13px}
+.ur .bb button.on{background:#16a34a;border-color:#16a34a;color:#fff}
+.foot{background:#fff;border-top:1px solid #dfe5ea;display:flex;flex-wrap:wrap;align-items:center;padding:8px 20px;gap:6px 22px;font-size:13px;color:#6b7884}
+.dot{width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;margin-inline-end:6px}
+.dot.off{background:#dc2626}
+.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#14532d;color:#fff;padding:12px 22px;border-radius:12px;font-size:17px;display:none;z-index:9}
+#rc{display:none}
+@media (max-width:900px){.main{flex-direction:column;padding:12px}.side{width:100%}.drop{left:0}.cam{width:58px}.cam span{display:none}.tot b{font-size:34px}td,th{padding:10px 8px}td.n,th.n{display:none}.q input{width:44px}}
+@media print{body>*:not(#rc){display:none!important}#rc{display:block;width:72mm;font-size:12px;color:#000}#rc table td{padding:2px 0;border:none;font-size:12px}}
+</style></head><body>
+<div class="top">
+ <div class="brand">أسواق طيبة</div>
+ <div class="brx" id="brName">…</div>
+ <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
+</div>
+<div class="main">
+ <div class="left">
+  <div class="search">
+   <div class="box"><i class="ti ti-scan"></i><input id="q" autocomplete="off" placeholder="الباركود أو اسم الصنف" autofocus></div>
+   <button class="cam" id="camBtn"><i class="ti ti-camera"></i><span>قراءة بالكاميرا</span></button>
+   <div class="drop" id="drop"></div>
+  </div>
+  <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
+  <div class="cart" id="cart"></div>
+ </div>
+ <div class="side">
+  <div class="card">
+   <div class="row"><span>عدد الأصناف</span><span id="cnt">0</span></div>
+   <div id="vatRows">
+    <div class="row"><span>المجموع قبل الضريبة</span><span id="net">0.00</span></div>
+    <div class="row"><span>ضريبة القيمة المضافة 15%</span><span id="vat">0.00</span></div>
+   </div>
+   <div class="tot"><span style="font-size:18px;font-weight:500">الإجمالي</span><b><span id="total">0.00</span> <small style="font-size:18px;color:#5c6b78;font-weight:400">ر.س</small></b></div>
+  </div>
+  <div class="card">
+   <div class="pms"><button class="pm on" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button></div>
+   <div id="mixBox" style="display:none">
+    <div class="fl"><span>المبلغ النقدي</span><input class="in" id="cashIn" inputmode="decimal" placeholder="0.00"></div>
+    <div class="fl"><span>على الشبكة</span><input class="in" id="cardIn" readonly value="0.00"></div>
+   </div>
+   <button class="save" id="saveBtn">حفظ الفاتورة</button>
+   <div class="err" id="err"></div>
+  </div>
+  <div class="mini"><button id="clrBtn"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
+  <div class="card" id="ownCard" style="display:none">
+   <div class="ttl"><span>مبيعات اليوم (لحظي)</span><span id="ownDay" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
+   <div class="sumg" id="sumg"></div>
+  </div>
+  <div class="card"><div class="ttl"><span id="lastTtl">آخر فواتيري</span></div><div id="last"><div class="inv">لا توجد فواتير اليوم</div></div></div>
+  <div class="card" id="brCard" style="display:none"><div class="ttl"><span>فرع كل عامل</span></div><div id="brList"></div></div>
+ </div>
+</div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
+<div class="toast" id="toast"></div>
+<div id="rc"></div>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const f2=x=>(Math.round(x*100)/100).toFixed(2);
+const r2=x=>Math.round(x*100)/100;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const BRN={shop:"فرع المبيعات",del:"فرع التوصيل"};
+let ME=null,CAT=[],BY=new Map(),cart=[],lastCode=null,mode="cash",sel=-1,hits=[],LASTINV=null;
+async function api(p,o){const r=await fetch(p,Object.assign({credentials:"same-origin",cache:"no-store"},o||{}));if(r.status===401){location.href="/pos/";throw new Error("login")}return r.json()}
+function clock(){const d=new Date();$("tm").textContent=d.toTimeString().slice(0,5);$("dt").textContent=d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear()}
+setInterval(clock,10000);clock();
+function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display="none",ms||1800)}
+let AC=null;function beep(ok){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=ok?1250:300;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+(ok?.09:.3))}catch(e){}}
+
+async function loadCat(){
+ const key="poscat_"+ME.br;let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
+ if(c)setCat(c.rows);
+ const j=await api("/api/pos/cat");if(j.ok){setCat(j.rows);try{localStorage.setItem(key,JSON.stringify({at:j.at,rows:j.rows}))}catch(e){}}
+}
+function norm(s){return String(s).toLowerCase().replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
+function setCat(rows){CAT=rows.map(r=>({c:r[0],n:r[1],p:r[2],k:norm(r[1])}));BY=new Map(CAT.map(x=>[x.c,x]))}
+
+function search(t){
+ t=t.trim();if(!t)return[];
+ if(/^\d+$/.test(t)){const ex=BY.get(t);const L=ex?[ex]:[];for(const x of CAT){if(L.length>=8)break;if(x!==ex&&x.c.startsWith(t))L.push(x)}return L}
+ const w=norm(t).split(" ");const L=[];for(const x of CAT){if(w.every(a=>x.k.includes(a)||x.c.includes(a))){L.push(x);if(L.length>=8)break}}return L;
+}
+function showDrop(){const d=$("drop");const t=$("q").value.trim();if(!t){d.classList.remove("show");return}
+ hits=search(t);sel=hits.length?0:-1;
+ d.innerHTML=hits.length?hits.map((x,i)=>`<div data-i="${i}" class="${i===sel?"h":""}"><span>${esc(x.n)} <span class="c">${esc(x.c)}</span></span><b>${f2(x.p)}</b></div>`).join(""):`<div class="e">لا يوجد صنف بهذا الباركود أو الاسم</div>`;
+ d.classList.add("show")}
+function hl(){[...$("drop").children].forEach((e,i)=>e.classList.toggle("h",i===sel))}
+$("q").addEventListener("input",showDrop);
+$("q").addEventListener("keydown",e=>{
+ if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
+ else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
+ else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t)return;const ex=BY.get(t);
+  if(ex)add(ex);else if(sel>=0&&hits[sel])add(hits[sel]);else{beep(false);toast("الصنف غير موجود: "+t)}}
+ else if(e.key==="Escape"){$("q").value="";showDrop()}});
+$("drop").addEventListener("mousedown",e=>{const el=e.target.closest("[data-i]");if(el){e.preventDefault();add(hits[+el.dataset.i])}});
+document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("drop").classList.remove("show")});
+
+function add(x,q){if(!x)return;const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
+ lastCode=x.c;beep(true);$("q").value="";$("drop").classList.remove("show");render();$("q").focus()}
+function totals(){let t=0,n=0;for(const l of cart){t=r2(t+r2(l.p*l.q));n+=l.q}return{t,n}}
+function render(){
+ const c=$("cart");
+ if(!cart.length)c.innerHTML=`<div class="empty">امسح باركود أو اكتب اسم الصنف لبدء الفاتورة</div>`;
+ else c.innerHTML=`<table><tr><th class="n">#</th><th>الصنف</th><th style="width:100px">السعر</th><th style="width:150px">الكمية</th><th style="width:110px">المجموع</th><th style="width:44px"></th></tr>`+
+  cart.map((l,i)=>`<tr class="${l.c===lastCode?"last":""}"><td class="n">${i+1}</td><td>${esc(l.n)}<span class="code">${esc(l.c)}</span></td><td>${f2(l.p)}</td><td><span class="q"><button data-a="-" data-i="${i}">−</button><input data-i="${i}" value="${l.q}" inputmode="decimal"><button data-a="+" data-i="${i}">+</button></span></td><td><b>${f2(l.p*l.q)}</b></td><td><button class="del" data-a="x" data-i="${i}"><i class="ti ti-trash"></i></button></td></tr>`).join("")+`</table>`;
+ const{t,n}=totals();$("total").textContent=f2(t);$("cnt").textContent=cart.length+" أصناف · "+(Math.round(n*1000)/1000)+" قطع";
+ const v=ME&&ME.vat?r2(t*15/115):0;$("vat").textContent=f2(v);$("net").textContent=f2(t-v);
+ mixCalc();
+}
+$("cart").addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(!b)return;const i=+b.dataset.i,L=cart[i];
+ if(b.dataset.a==="+")L.q=r2(L.q+1);else if(b.dataset.a==="-"){L.q=r2(L.q-1);if(L.q<=0)cart.splice(i,1)}else cart.splice(i,1);render()});
+$("cart").addEventListener("change",e=>{if(e.target.tagName!=="INPUT")return;const i=+e.target.dataset.i,v=+e.target.value;if(v>0)cart[i].q=Math.round(v*1000)/1000;else cart.splice(i,1);render()});
+$("clrBtn").onclick=()=>{if(cart.length&&confirmClr()){cart=[];render()}};
+function confirmClr(){if(confirmClr.t&&Date.now()-confirmClr.t<2500){confirmClr.t=0;return true}confirmClr.t=Date.now();toast("اضغط «تفريغ السلة» مرة ثانية للتأكيد");return false}
+
+function setMode(m){mode=m;document.querySelectorAll(".pm").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+document.querySelectorAll(".pm").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
+$("cashIn").addEventListener("input",mixCalc);
+$("cashIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();save()}});
+
+// queue: an invoice is never lost — if the network drops it waits and is resent with the same id
+function Q(){try{return JSON.parse(localStorage.getItem("posq")||"[]")}catch(e){return[]}}
+function setQ(a){try{localStorage.setItem("posq",JSON.stringify(a))}catch(e){}pendShow()}
+function pendShow(){const n=Q().length;$("pend").textContent=n?("فواتير بانتظار الإرسال: "+n):""}
+async function flush(){const a=Q();if(!a.length)return;const keep=[];for(const s of a){try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});if(!j.ok&&j.err!=="item"&&j.err!=="empty"&&j.err!=="pay")keep.push(s);else if(!j.ok)toast("فاتورة لم تُقبل: "+j.err,4000)}catch(e){keep.push(s)}}setQ(keep);netState(!keep.length);loadDay()}
+function netState(ok){$("netDot").classList.toggle("off",!ok);$("netTxt").textContent=ok?"متصل بالدفتر · تُحفظ الفواتير لحظياً":"غير متصل · الفواتير محفوظة في الجهاز وتُرسل تلقائياً"}
+setInterval(flush,5000);
+let saving=false;
+async function save(){
+ if(saving)return;$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
+ const t=totals().t;let cash=mode==="cash"?t:mode==="card"?0:r2(+$("cashIn").value||0);
+ if(mode==="mix"&&(cash<=0||cash>=t)){$("err").textContent="اكتب المبلغ النقدي (أقل من الإجمالي)";$("cashIn").focus();return}
+ const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};
+ const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
+ try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
+  if(j.ok){done(snap,t,cash,j.no);netState(true)}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
+ catch(e){setQ(Q().concat([s]));netState(false);done(snap,t,cash,null)}
+ saving=false;$("saveBtn").disabled=false;
+}
+function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0};cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);loadDay();$("q").focus()}
+$("saveBtn").onclick=save;
+document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}});
+
+$("prnBtn").onclick=()=>{const L=LASTINV;if(!L){toast("لا توجد فاتورة محفوظة في هذا الجهاز بعد");return}
+ const d=L.at;$("rc").innerHTML=`<div style="text-align:center;font-weight:600;font-size:15px">أسواق طيبة</div><div style="text-align:center">${esc(ME.brName)}</div><div style="text-align:center">فاتورة رقم ${L.no||"—"} · ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.toTimeString().slice(0,5)}</div><div style="text-align:center">الكاشير: ${esc(ME.name)}</div><hr><table style="width:100%">${L.lines.map(l=>`<tr><td>${esc(l.n)}<br>${l.q} × ${f2(l.p)}</td><td style="text-align:left">${f2(l.p*l.q)}</td></tr>`).join("")}</table><hr>${ME.vat?`<div>قبل الضريبة: ${f2(L.total-L.vat)}</div><div>الضريبة 15%: ${f2(L.vat)}</div>`:""}<div style="font-size:16px;font-weight:600">الإجمالي: ${f2(L.total)} ر.س</div><div>نقدي ${f2(L.cash)} · شبكة ${f2(L.card)}</div>`;window.print()};
+
+// camera: live reading (BarcodeDetector where the browser has it, otherwise ZXing)
+let stream=null,camOn=false,lastScan={c:"",t:0},zx=null;
+async function camStart(){
+ const v=$("vid");camOn=true;$("camWrap").classList.add("show");$("camBtn").classList.add("on");$("camBtn").querySelector("span").textContent="إيقاف الكاميرا";$("camMsg").textContent="وجّه الكاميرا على الباركود";
+ let bd=null;if("BarcodeDetector" in window){try{const f=await BarcodeDetector.getSupportedFormats();if(f.includes("ean_13"))bd=new BarcodeDetector({formats:f})}catch(e){bd=null}}
+ if(bd){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280}},audio:false})}catch(e){toast("لم يُسمح بالكاميرا",3000);camStop();return}
+  v.srcObject=stream;await v.play();const tick=async()=>{if(!camOn)return;try{const r=await bd.detect(v);if(r[0])onScan(r[0].rawValue)}catch(e){}setTimeout(tick,120)};tick();return}
+ if(!window.ZXing){$("camMsg").textContent="المتصفح لا يدعم القراءة بالكاميرا";return}
+ zx=new ZXing.BrowserMultiFormatReader();
+ try{await zx.decodeFromConstraints({video:{facingMode:"environment",width:{ideal:1280}}},v,(res)=>{if(res&&camOn)onScan(res.getText())})}catch(e){toast("لم يُسمح بالكاميرا",3000);camStop()}
+}
+function camStop(){camOn=false;try{zx&&zx.reset()}catch(e){}zx=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("camWrap").classList.remove("show");$("camBtn").classList.remove("on");$("camBtn").querySelector("span").textContent="قراءة بالكاميرا"}
+function onScan(code){code=String(code).trim();const now=Date.now();if(code===lastScan.c&&now-lastScan.t<1500)return;lastScan={c:code,t:now};const x=BY.get(code);if(x){add(x);$("camMsg").textContent="أُضيف: "+x.n}else{beep(false);$("camMsg").textContent="غير موجود: "+code}}
+$("camBtn").onclick=()=>camOn?camStop():camStart();
+
+// today's invoices (cashier: his own; owner: all, with live totals per branch)
+async function loadDay(){try{const j=await api("/api/pos/day");if(!j.ok)return;
+ $("last").innerHTML=j.inv.length?j.inv.slice(0,ME.owner?12:6).map(d=>`<div class="inv"><span>${d.no} · ${d.mode==="cash"?"نقدي":d.mode==="card"?"شبكة":"نقدي + شبكة"}${ME.owner?" · "+esc(d.u)+" · "+(BRN[d.br]||""):""} · ${d.t.slice(0,5)}</span><span>${f2(d.total)}</span></div>`).join(""):`<div class="inv">لا توجد فواتير اليوم</div>`;
+ if(ME.owner){$("ownDay").textContent=j.day.split("-").reverse().join("/");$("sumg").innerHTML=Object.keys(BRN).map(k=>{const s=j.sum[k]||{n:0,total:0,cash:0,card:0};return`<div class="sb"><div class="k">${BRN[k]}</div><div class="v">${f2(s.total)}</div><div class="s">${s.n} فاتورة · نقدي ${f2(s.cash)} · شبكة ${f2(s.card)}</div></div>`}).join("")}
+}catch(e){}}
+async function loadBr(){const j=await api("/api/pos/branches");if(!j.ok)return;const us=[{email:j.owner,name:"صاحب المحل"}].concat(j.users.filter(u=>u.email!==j.owner));
+ $("brList").innerHTML=us.map(u=>{const b=j.map[u.email]||"shop";return`<div class="ur"><span>${esc(u.name||u.email)}<span class="code">${esc(u.email)}</span></span><span class="bb"><button data-e="${esc(u.email)}" data-b="shop" class="${b==="shop"?"on":""}">المبيعات</button><button data-e="${esc(u.email)}" data-b="del" class="${b==="del"?"on":""}">التوصيل</button></span></div>`}).join("")}
+$("brList").addEventListener("click",async e=>{const b=e.target.closest("button[data-b]");if(!b)return;const j=await api("/api/pos/branches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:b.dataset.e,br:b.dataset.b})});if(j.ok){toast("تم");loadBr();if(b.dataset.e===ME.email)location.reload()}});
+
+(async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
+ $("brName").textContent=ME.brName;$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
+ if(ME.owner){$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
+ render();pendShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
+</script>
+</body></html>
