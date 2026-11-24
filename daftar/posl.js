@@ -168,14 +168,25 @@
   }
 
   /* stocktake card (الجرد) in the reports, owner only */
-  var JDX = { at: 0, busy: false, data: null, tab: "c", ok2: 0 };
+  var JDX = { show: false, at: 0, busy: false, data: null, tab: "c", ok2: 0 };
   function jdxBox() {
     var home = document.getElementById("tab-home"); if (!home) return null; var c = document.getElementById("jdxCard");
     if (!c) { c = document.createElement("div"); c.className = "card"; c.id = "jdxCard"; c.hidden = true; var sg = document.getElementById("sgCard"); if (sg && sg.parentElement === home) home.insertBefore(c, sg.nextSibling); else home.appendChild(c); }
+    var bt = document.getElementById("jdxBtn");
+    if (!bt) { bt = document.createElement("button"); bt.type = "button"; bt.id = "jdxBtn"; bt.style.cssText = "display:block;width:100%;box-sizing:border-box;margin:0 0 10px;padding:12px;border-radius:14px;border:2px solid #ea5b2b;background:#fff;color:#1f2937;font:inherit;font-weight:700;text-align:center;line-height:1.5"; home.insertBefore(bt, home.firstChild); }
     return c;
   }
+  function jdxBtn() {
+    var bt = document.getElementById("jdxBtn"), j = JDX.data, c = document.getElementById("jdxCard"); if (!bt) return;
+    var t = "📦 الجرد", s = "";
+    if (j && j.cur) { var n = (j.rows || []).filter(function (x) { return !x.nw; }).length; s = (j.cur.st === "open" ? "جاري الجرد" : "آخر جرد معتمد") + " · انجرد " + n.toLocaleString("en-US") + " / " + (j.total || 0).toLocaleString("en-US"); }
+    else s = "ما فيه جرد للحين";
+    var h = t + '<br><span style="font-weight:400;font-size:13px;color:' + (j && j.cur && j.cur.st === "open" ? "#ea5b2b" : "#666") + '">' + s + (JDX.show ? " ▲" : " ▼") + '</span>';
+    if (bt.__h !== h) { bt.innerHTML = h; bt.__h = h; }
+    if (c) c.hidden = !JDX.show;
+  }
   function jdxDraw() {
-    var c = jdxBox(), j = JDX.data; if (!c || !j) return; c.hidden = false;
+    var c = jdxBox(), j = JDX.data; jdxBtn(); if (!c || !j) return; c.hidden = !JDX.show;
     var K = function (t, v, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + t + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + v + '</b></div>'; };
     var h = '<h2>📦 الجرد</h2>';
     if (!j.cur) { c.innerHTML = h + '<p class="small muted">ما فيه جرد للحين. يبدأ الجرد أول ما يضغط الكاشير «📋 الجرد» في تبويب الكاشير ويجرد أول صنف.</p>'; return; }
@@ -194,7 +205,7 @@
       : JDX.tab === "n" ? nw.map(function (x) { return row(esc(x.name), x.q, '<span dir="ltr">' + esc(x.code) + '</span> · ' + esc(x.u || "")); })
       : rn.map(function (x) { return row(esc(x.old) + ' ← <b>' + esc(x.rn) + '</b>', x.q, esc(x.u || "")); });
     h += '<div style="max-height:420px;overflow:auto">' + (L.length ? L.join("") : '<p class="small muted">ما فيه شيء هنا.</p>') + (JDX.tab === "m" && (j.missN || 0) > 300 ? '<p class="small muted">يظهر أول 300 من ' + j.missN + '</p>' : '') + '</div>';
-    if (open) h += '<button type="button" class="btn" id="jdxOk" style="width:100%;margin-top:10px">' + (JDX.ok2 && Date.now() - JDX.ok2 < 4000 ? "اضغط مرة ثانية للتأكيد — يصير العدد رصيد المخزون" : "اعتمد الجرد وأقفله") + '</button>';
+    if (open) h += '<button type="button" class="btn" id="jdxOk" style="width:100%;margin-top:10px">' + (JDX.ok2 && Date.now() - JDX.ok2 < 4000 ? "اضغط مرة ثانية للتأكيد" : "أقفل الجرد") + '</button>';
     else h += '<p class="small muted" style="margin-top:8px">اعتُمد' + (j.cur.applied != null ? " · صار رصيد " + j.cur.applied + " صنف في المخزون" : "") + '. الجرد الجاي يبدأ مع أول صنف يجرده الكاشير.</p>';
     if (c.__h !== h) { c.innerHTML = h; c.__h = h; }
   }
@@ -202,8 +213,9 @@
     if (JDX.busy || (!force && Date.now() - JDX.at < 30000)) return; JDX.busy = true;
     fetch("/api/jard/rep", { credentials: "same-origin", cache: "no-store" }).then(function (x) { return x.json(); }).then(function (j) { if (j && j.ok) { JDX.data = j; JDX.at = Date.now(); jdxDraw(); } }).catch(function () { }).then(function () { JDX.busy = false; });
   }
-  function jdxTick() { var h = document.getElementById("tab-home"); if (!h || h.hidden) return; jdxBox(); jdxLoad(false); }
+  function jdxTick() { var h = document.getElementById("tab-home"); if (!h || h.hidden) return; jdxBox(); jdxBtn(); jdxLoad(false); }
   document.addEventListener("click", function (e) {
+    if (e.target.closest && e.target.closest("#jdxBtn")) { JDX.show = !JDX.show; jdxDraw(); jdxBtn(); return; }
     var t = e.target.closest && e.target.closest("[data-jdt]"); if (t) { JDX.tab = t.dataset.jdt; jdxDraw(); return; }
     if (e.target.closest && e.target.closest("#jdxOk")) {
       if (!(JDX.ok2 && Date.now() - JDX.ok2 < 4000)) { JDX.ok2 = Date.now(); jdxDraw(); setTimeout(jdxDraw, 4100); return; }
