@@ -278,7 +278,10 @@ function dlvDraw(){if(!isDel())return;$("dlvCard").style.display="block";
  const miss=[DLV.fee==null?"الرسوم":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean);$("dlvSum").textContent=miss.length?"باقي: "+miss.join("، "):"✓";$("dlvSum").style.color=miss.length?"#b91c1c":"#15803d";
  $("feeRow").style.display=DLV.fee>0?"flex":"none";$("feeV").textContent=f2(DLV.fee||0)}
 function dlvReset(){DLV={fee:null,n:0,lv:0};$("feeIn").value="";dlvDraw()}
-function render(){
+/* owner 24 Nov: a refresh must not lose the sale in progress — the cart is kept in this browser until the invoice is saved */
+function cartKeep(){try{localStorage.setItem("poscart_"+(ME&&ME.email||""),JSON.stringify({at:Date.now(),cart:cart,ord:CUR_ORD,dlv:DLV}))}catch(e){}}
+function cartBack(){try{const o=JSON.parse(localStorage.getItem("poscart_"+(ME&&ME.email||""))||"null");if(o&&Array.isArray(o.cart)&&o.cart.length&&Date.now()-o.at<36*3600e3){cart=o.cart;if(o.ord)CUR_ORD=o.ord;if(o.dlv)DLV=o.dlv}}catch(e){}}
+function render(){try{cartKeep()}catch(e){}
  const c=$("cart");
  if(!cart.length)c.innerHTML=`<div class="empty">امسح باركود أو اكتب اسم الصنف لبدء الفاتورة</div>`;
  else c.innerHTML=`<table><tr><th class="n">#</th><th>الصنف</th><th style="width:100px">السعر</th><th style="width:150px">الكمية</th><th style="width:110px">المجموع</th><th style="width:44px"></th></tr>`+
@@ -503,6 +506,7 @@ $("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فوا
  if(!ME.owner){$("scBtn").style.display="";const sj=await api("/api/pos/shift");SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
  $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
+ cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
  render();pendShow();heldShow();await loadCat();ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
