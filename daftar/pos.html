@@ -238,7 +238,10 @@ async function loadCat(){
  const j=await api("/api/pos/cat");if(j.ok){setCat(j.rows);window.CATAT=j.at;try{localStorage.setItem(key,JSON.stringify({at:j.at,rows:j.rows}))}catch(e){}}
 }
 function norm(s){return String(s).toLowerCase().replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
-function setCat(rows){CAT=rows.map(r=>({c:r[0],n:r[1],p:r[2],k:norm(r[1])}));BY=new Map(CAT.map(x=>[x.c,x]))}
+function setCat(rows){CAT=rows.map(r=>({c:r[0],n:r[1],p:r[2],k:norm(r[1])}));BY=new Map(CAT.map(x=>[x.c,x]));BYZ=new Map();CAT.forEach(x=>{if(/^\d+$/.test(x.c)){const z=x.c.replace(/^0+/,"");if(!BYZ.has(z))BYZ.set(z,x)}})}
+/* owner 24 Nov: a scanned barcode may come with or without its leading zeros (UPC 12 digits ↔ EAN 13 digits) — match it either way; never a different item */
+let BYZ=new Map();
+function byCode(t){t=String(t||"").trim();return BY.get(t)||(/^\d+$/.test(t)?BYZ.get(t.replace(/^0+/,"")):null)||null}
 
 function search(t){
  t=t.trim();if(!t)return[];
@@ -246,22 +249,23 @@ function search(t){
  const w=norm(t).split(" ");const L=[];for(const x of CAT){if(w.every(a=>x.k.includes(a)||x.c.includes(a))){L.push(x);if(L.length>=8)break}}return L;
 }
 function showDrop(){const d=$("drop");const t=$("q").value.trim();if(!t){d.classList.remove("show");return}
- hits=search(t);sel=hits.length?0:-1;
+ hits=search(t);HQ=t;sel=hits.length?0:-1;
  d.innerHTML=hits.length?hits.map((x,i)=>`<div data-i="${i}" class="${i===sel?"h":""}"><span>${esc(x.n)} <span class="c">${esc(x.c)}</span></span><b>${f2(x.p)}</b></div>`).join(""):`<div class="e">لا يوجد صنف بهذا الباركود أو الاسم</div>`;
  d.classList.add("show")}
 function hl(){[...$("drop").children].forEach((e,i)=>e.classList.toggle("h",i===sel))}
 /* scanner: a hand scanner types the whole code in a few ms; then the item goes straight into the cart with no list and no Enter */
-let kT=[],dropT=null,scanT=null;
+let kT=[],dropT=null,scanT=null,HQ="";
 $("q").addEventListener("keydown",e=>{if(e.key.length===1){const n=performance.now();if(!$("q").value)kT=[];kT.push(n)}},true);
 function fast(){if(kT.length<4)return false;for(let i=1;i<kT.length;i++)if(kT[i]-kT[i-1]>45)return false;return true}
 $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("drop").classList.remove("show");
- scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){if(/^F\d+$/i.test(t)&&!BY.get(t)){$("q").value="";kT=[];retOpen();$("retNo").value=t.slice(1);retGet();return}const x=BY.get(t);if(x){add(x);kT=[];return}if(t.length>=4){warn(t);$("q").value="";kT=[];return}}
+ scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){if(/^F\d+$/i.test(t)&&!byCode(t)){$("q").value="";kT=[];retOpen();$("retNo").value=t.slice(1);retGet();return}const x=byCode(t);if(x){add(x);kT=[];return}if(t.length>=4){warn(t);$("q").value="";kT=[];return}}
   showDrop()},90)});
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
  else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
- else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(cart.length&&!e.repeat)save();return}const ex=BY.get(t);
-  if(ex)add(ex);else if(sel>=0&&hits[sel])add(hits[sel]);else{warn(t);$("q").value="";$("drop").classList.remove("show")}}
+ else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(cart.length&&!e.repeat)save();return}const ex=byCode(t);
+  /* owner 24 Nov: Enter adds a listed item only when the list on screen was made for exactly this text — a scanned code that is not found never picks another item */
+  if(ex)add(ex);else if(HQ===t&&$("drop").classList.contains("show")&&sel>=0&&hits[sel]&&!(/^\d{7,}$/.test(t)&&!hits[sel].c.includes(t)))add(hits[sel]);else{warn(t);$("q").value="";$("drop").classList.remove("show")}}
  else if(e.key==="Escape"){$("q").value="";showDrop()}});
 $("drop").addEventListener("mousedown",e=>{const el=e.target.closest("[data-i]");if(el){e.preventDefault();add(hits[+el.dataset.i])}});
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))$("drop").classList.remove("show")});
@@ -484,7 +488,7 @@ async function camStart(){
  try{await zx.decodeFromConstraints({video:{facingMode:"environment",width:{ideal:1280}}},v,(res)=>{if(res&&camOn)onScan(res.getText())})}catch(e){toast("لم يُسمح بالكاميرا",3000);camStop()}
 }
 function camStop(){camOn=false;try{zx&&zx.reset()}catch(e){}zx=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("camWrap").classList.remove("show");$("camBtn").classList.remove("on");$("camBtn").querySelector("span").textContent="قراءة بالكاميرا"}
-function onScan(code){code=String(code).trim();const now=Date.now();if(code===lastScan.c&&now-lastScan.t<1500)return;lastScan={c:code,t:now};const x=BY.get(code);if(x){add(x);$("camMsg").textContent="أُضيف: "+x.n}else{warn(code);$("camMsg").textContent="غير موجود: "+code}}
+function onScan(code){code=String(code).trim();const now=Date.now();if(code===lastScan.c&&now-lastScan.t<1500)return;lastScan={c:code,t:now};const x=byCode(code);if(x){add(x);$("camMsg").textContent="أُضيف: "+x.n}else{warn(code);$("camMsg").textContent="غير موجود: "+code}}
 $("camBtn").onclick=()=>camOn?camStop():camStart();
 
 // today's invoices (cashier: his own; owner: all, with live totals per branch)
