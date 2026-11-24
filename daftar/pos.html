@@ -176,7 +176,7 @@ tr.last td{background:#f0fdf4}
    <div class="pms" style="margin-bottom:0" id="lvBtns"><button class="pm" data-lv="1">قريب</button><button class="pm" data-lv="2">متوسط</button><button class="pm" data-lv="3">بعيد</button></div>
   </div>
   <div class="card">
-   <div class="pms" id="pmRow" style="grid-template-columns:repeat(5,minmax(0,1fr))"><button class="pm on" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button><button class="pm" data-m="aj" id="ajBtn">آجل</button></div>
+   <div class="pms" id="pmRow" style="grid-template-columns:repeat(5,minmax(0,1fr))"><button class="pm" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button><button class="pm" data-m="aj" id="ajBtn">آجل</button></div>
    <div id="ajBox" style="display:none;margin-top:8px">
     <input class="in" id="ajQ" placeholder="ابحث باسم العميل" style="width:100%;margin-bottom:6px">
     <div id="ajList" style="max-height:220px;overflow:auto"></div>
@@ -219,7 +219,7 @@ const f2=x=>(Math.round(x*100)/100).toFixed(2);
 const r2=x=>Math.round(x*100)/100;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const BRN={shop:"فرع المبيعات",del:"فرع التوصيل"};
-let ME=null,CAT=[],BY=new Map(),cart=[],lastCode=null,mode="cash",sel=-1,hits=[],LASTINV=null;
+let ME=null,CAT=[],BY=new Map(),cart=[],lastCode=null,mode="",sel=-1,hits=[],LASTINV=null;
 async function api(p,o){const r=await fetch(p,Object.assign({credentials:"same-origin",cache:"no-store"},o||{}));if(r.status===401){location.replace("/pos/");throw new Error("login")}return r.json()}
 function clock(){const d=new Date();$("tm").textContent=d.toTimeString().slice(0,5);$("dt").textContent=d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear()}
 setInterval(clock,10000);clock();
@@ -332,7 +332,7 @@ function HL(){try{return JSON.parse(localStorage.getItem("posheld")||"[]")}catch
 function setHL(a){try{localStorage.setItem("posheld",JSON.stringify(a))}catch(e){}heldShow()}
 function heldShow(){const a=HL();$("held").style.display=a.length?"block":"none";$("heldT").textContent="فواتير معلّقة ("+a.length+") — اضغط عليها لاسترجاعها";
  $("heldL").innerHTML=a.map((h,i)=>{const t=h.lines.reduce((s,l)=>r2(s+r2(l.p*l.q)),0),d=new Date(h.at);return`<button class="hb" data-h="${i}"><b>معلّقة ${i+1} · ${d.toTimeString().slice(0,5)}</b><small>${esc(h.lines.slice(0,2).map(l=>l.n).join("، "))}${h.lines.length>2?"…":""} (${h.lines.length} أصناف)</small><div class="t">${f2(t)}</div></button>`}).join("")}
-function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});setHL(a);cart=[];lastCode=null;CUR_ORD=null;ordCurDraw();if(isDel())dlvReset();$("cashIn").value="";setMode("cash");render();toast("عُلّقت الفاتورة");$("q").focus()}
+function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});setHL(a);cart=[];lastCode=null;CUR_ORD=null;ordCurDraw();if(isDel())dlvReset();$("cashIn").value="";setMode("");render();toast("عُلّقت الفاتورة");$("q").focus()}
 function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
  cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;CUR_ORD=h.ord||null;if(isDel()&&h.dlv){DLV=Object.assign({fee:null,n:0,lv:0},h.dlv)}ordCurDraw();render();$("q").focus()}
 $("holdBtn").onclick=hold;
@@ -352,7 +352,7 @@ async function ordOpen(id){const j=await api("/api/pos/orders/take",{method:"POS
  for(const it of o.items){const x=it[3]&&BY.get(it[3]);if(x)cart.push({c:x.c,n:x.n,p:x.p,q:it[1]});else miss.push(it[0]+" × "+it[1])}
  /* owner 24 Nov: a link order with «delivery» but no location has no real fee yet — the cashier's distance choice sets it by the price page's own rule */
  CUR_ORD=o;if(isDel()){DLV.fee=o.dist==="pickup"?0:(o.loc?o.fee:null);DLV.man=o.dist==="pickup"||!!o.loc;const lv0={d1:1,d3:2,d9:3}[o.dist]||0;if(lv0)DLV.lv=lv0;$("feeIn").value=""}
- if(o.pay==="card")setMode("card");else if(o.pay==="both"&&o.cash>0){setMode("mix");$("cashIn").value=o.cash}else setMode("cash");
+ if(o.pay==="card")setMode("card");else if(o.pay==="both"&&o.cash>0){setMode("mix");$("cashIn").value=o.cash}else setMode("");
  ordCurDraw(miss);render();ordDraw();$("q").focus()}
 function ordCurDraw(miss){const o=CUR_ORD;if(!o){$("ordCur").style.display="none";return}$("ordCur").style.display="block";
  $("ordCur").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>طلب #${esc(o.ono)} من رابط الأسعار · ${o.t.slice(0,5)}</b><span style="display:flex;gap:6px">${o.loc?`<a class="tb" style="color:#14532d;border-color:#16a34a" target="_blank" href="https://maps.google.com/?q=${o.loc.lat},${o.loc.lng}">📍 الموقع</a>`:""}<button class="tb" style="color:#991b1b;border-color:#dc2626" id="ordBack">إرجاع للقائمة</button></span></div>`
@@ -451,6 +451,7 @@ function LIset(a){try{localStorage.setItem("posli_"+(ME&&ME.email||""),JSON.stri
 function LIadd(x){LIset([x].concat(LI().filter(y=>y.cid!==x.cid)))}
 async function save(){
  if(saving)return;$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
+ if(!mode){$("err").textContent="اختر طريقة الدفع: نقدي أو شبكة";beep(false);return}
  const t=totals().t;let cash=mode==="cash"?t:(mode==="card"||mode==="tr"||mode==="aj")?0:r2(+$("cashIn").value||0);
  if(mode==="aj"&&!AJ.cust){$("err").textContent="اختر العميل للآجل";$("ajQ").focus();return}
  if(mode==="mix"&&(cash<=0||cash>=t)){$("err").textContent="اكتب المبلغ النقدي (أقل من الإجمالي)";$("cashIn").focus();return}
@@ -465,7 +466,7 @@ async function save(){
   if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no,j2.zqr);netState(true)}else{const rn=rvTake("s");if(rn){s.no=rn;s.dev=DEV}setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
 }
-function done(snap,t,cash,no,zqr){LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no,zqr){LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}save()},true);
