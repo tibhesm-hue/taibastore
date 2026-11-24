@@ -438,6 +438,24 @@
     });
     return h + "</div>";
   }
+  var ZL = { d: null, f: "all", at: 0, o: "" };
+  function ztList() { fetch("/api/zatca/list", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { ZL.d = j; ZL.at = Date.now(); ztDraw(); } }).catch(function () { }); }
+  function ztKind(x) { return x.st === "err" ? "e" : x.st === "ok" || x.st === "warn" ? "o" : "p"; }
+  function ztListH() {
+    var d = ZL.d; if (!d) return '<div class="small muted" style="margin:8px 0">جاري تحميل قائمة الفواتير…</div>';
+    var it = d.items || [], n = { o: 0, p: 0, e: 0 }; it.forEach(function (x) { n[ztKind(x)]++; });
+    var col = { o: "#15803d", p: "#b45309", e: "#c2410c" }, nm = { o: "وصلت", p: "معلّقة", e: "مرفوضة" };
+    var bs = "padding:10px 4px;border-radius:12px;font-size:15px;border:1px solid var(--line,#e5e7eb);background:none";
+    var h = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0">' + ["o", "p", "e"].map(function (k) { return '<button type="button" data-zlf="' + k + '" style="' + bs + (ZL.f === k ? ";border:2px solid " + col[k] : "") + '"><b style="color:' + col[k] + ';font-size:20px">' + n[k] + '</b><div class="small">' + nm[k] + "</div></button>"; }).join("") + "</div>" +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px"><span class="small muted">' + (ZL.f === "all" ? "كل الفواتير" : "المعروض: " + nm[ZL.f]) + (ZL.f !== "all" ? ' · <a href="#" data-zlf="all">الكل</a>' : "") + '</span><button type="button" class="btn sm ghost" data-zlr="1">تحديث</button></div>';
+    var rows = it.filter(function (x) { return ZL.f === "all" || ztKind(x) === ZL.f; });
+    if (!rows.length) return h + '<div class="small muted" style="padding:8px 0">لا توجد فواتير.</div>';
+    return h + rows.slice(0, 60).map(function (x) {
+      var k = ztKind(x), id = x.day + "|" + x.no + "|" + x.ret, no = (x.ret ? "R" : "") + fmtNo(x.no), op = ZL.o === id;
+      return '<div data-zlo="' + esc(id) + '" style="border-top:1px solid var(--line,#e5e7eb);padding:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b style="direction:ltr">' + esc(no) + '</b><b style="color:' + col[k] + '">' + (x.st === "warn" ? "وصلت (تنبيه)" : nm[k]) + '</b></div><div class="small muted">' + esc(x.day.slice(8) + "/" + x.day.slice(5, 7)) + " " + esc(x.t) + " · " + x.tot + " ريال</div>" +
+        (op ? '<div class="small" style="margin-top:4px">تسلسل الهيئة: ' + x.icv + (x.ret && x.ref ? " · عن فاتورة " + esc(fmtNo(x.ref)) : "") + (x.rt ? " · أُرسلت " + new Date(x.rt).getHours() + ":" + String(new Date(x.rt).getMinutes()).padStart(2, "0") : "") + ((x.m || []).length ? '<div style="color:' + col[k] + ';direction:ltr;text-align:left">' + esc(x.m.join(" | ")) + "</div>" : "") + "</div>" : "") + "</div>";
+    }).join("");
+  }
   function ztDraw() {
     var home = document.getElementById("tab-home"); if (!home) return;
     var c = document.getElementById("ztCard"); if (!c) { c = document.createElement("div"); c.id = "ztCard"; c.className = "card"; home.appendChild(c); }
@@ -447,6 +465,7 @@
     var st = j.linked ? '<b style="color:#15803d">مربوط بالهيئة</b>' : t && t.ok ? "التجربة نجحت — جاهز للربط الفعلي" : "غير مربوط";
     var bx = "display:block;width:100%;padding:16px 8px;border-radius:14px;font-size:16px";
     var h = '<h3 style="margin:0 0 4px">مبيعات — نقاط البيع</h3><div class="small muted">' + esc(S2.name || "") + " · " + esc(S2.vat || "") + "<br>" + esc((S2.bld || "") + " " + (S2.street || "") + "، " + (S2.dist || "") + "، " + (S2.city || "") + " " + (S2.zip || "")) + '</div><div style="margin:8px 0 0">الحالة: ' + st + "</div>" + rh +
+      (j.linked ? ztListH() : "") +
       (j.linked ? '<div class="small" style="margin:0 0 8px">فواتير موقّعة: <b>' + (j.signed || 0) + '</b> · بانتظار الإرسال للهيئة: <b style="color:' + (j.pend ? "#b45309" : "#15803d") + '">' + (j.pend || 0) + "</b></div>" : "") +
       ((j.errs || []).length ? '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="color:#c2410c">فواتير رفضتها الهيئة (' + j.errs.length + ')</b><button type="button" class="btn sm ghost" data-zterr="1">شفتها</button></div>' + j.errs.slice(-10).reverse().map(function (e) { return '<div class="small" style="margin-top:6px"><b>' + esc(e.no) + "</b> · " + esc(e.day) + '<div class="muted" style="direction:ltr;text-align:left">' + esc((e.m || []).join(" | ")) + "</div></div>"; }).join("") + "</div>" : "") +
       (j.relayReq ? '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 10px"><b>جهاز يطلب أن يكون وسيط الهيئة</b><div class="small muted" style="margin:4px 0 8px">' + (/Windows/.test(j.relayReq.ua) ? "كمبيوتر ويندوز" : "جهاز") + " · " + (/Chrome/.test(j.relayReq.ua) ? "كروم" : "متصفح") + " · " + new Date(j.relayReq.at).getHours() + ":" + String(new Date(j.relayReq.at).getMinutes()).padStart(2, "0") + '</div><button type="button" class="btn" data-ztok="1" style="display:block;width:100%;padding:14px;border-radius:14px;font-size:16px">اعتماده (كمبيوتر المحل)</button></div>' : "") +
@@ -493,7 +512,13 @@
     var b = e.target.closest && e.target.closest("[data-zterr]"); if (!b) return; b.disabled = true;
     fetch("/api/zatca/errseen", { method: "POST", credentials: "same-origin" }).then(function () { ZT.at = 0; ztLoad(); }).catch(function () { b.disabled = false; });
   });
-  function ztTick() { if (!document.body.classList.contains("sxOwn")) return; var d = ZT.d, run = d && ((d.test && d.test.run) || (d.prod && d.prod.run)); if (Date.now() - ZT.at > (run && document.body.classList.contains("jxZ") ? 5000 : 60000)) ztLoad(); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-zlf],[data-zlr],[data-zlo]"); if (!t) return; e.preventDefault();
+    if (t.dataset.zlf) { ZL.f = ZL.f === t.dataset.zlf ? "all" : t.dataset.zlf; ztDraw(); }
+    else if (t.dataset.zlr) { ZT.at = 0; ztLoad(); ztList(); }
+    else if (t.dataset.zlo) { ZL.o = ZL.o === t.dataset.zlo ? "" : t.dataset.zlo; ztDraw(); }
+  });
+  function ztTick() { if (!document.body.classList.contains("sxOwn")) return; if (ZT.d && ZT.d.linked && Date.now() - ZL.at > (document.body.classList.contains("jxZ") ? 30000 : 120000)) ztList(); var d = ZT.d, run = d && ((d.test && d.test.run) || (d.prod && d.prod.run)); if (Date.now() - ZT.at > (run && document.body.classList.contains("jxZ") ? 5000 : 60000)) ztLoad(); }
 
   /* owner 24 Nov: «الجرد» in the bottom bar, between «الكاشير» and «نقاط البيع» */
   function jcNav() {
