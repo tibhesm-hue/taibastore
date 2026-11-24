@@ -233,7 +233,7 @@
     var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
     b.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📋 الجرد</h2><button type="button" class="btn sm ghost" data-jcback>رجوع</button></div>'
       + '<div class="small muted" id="jcProg" style="margin:6px 0 8px"></div>'
-      + '<button type="button" class="btn" data-jccam style="' + BS + '">📷 صوّر الباركود</button>'
+      + '<button type="button" class="btn" data-jccam style="' + BS + '">📷 امسح الباركود بالكاميرا</button>'
       + '<div id="jcCamW" hidden style="position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:8px"><video id="jcVid" playsinline muted style="width:100%;max-height:260px;object-fit:cover;display:block"></video><div style="position:absolute;left:12%;right:12%;top:45%;height:2px;background:#ef4444"></div></div>'
       + '<div style="display:flex;gap:6px"><input type="text" id="jcIn" placeholder="أو اكتب الباركود أو اسم الصنف" style="flex:1;min-width:0"><button type="button" class="btn sm" data-jcfind>بحث</button></div>'
       + '<div id="jcList"></div><div id="jcWarn" hidden style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px"></div>'
@@ -273,10 +273,41 @@
   }
   /* owner 24 Nov: live video reading failed on the shop phones — take a photo instead and read it (phone reader, then ZXing, then the server reads the printed digits) */
   function jcSt(t) { var e = document.getElementById("jcCamS"); if (!e) { var cw = document.getElementById("jcCamW"); if (!cw) return; e = document.createElement("div"); e.id = "jcCamS"; e.style.cssText = "margin:0 0 8px;font-weight:700"; cw.parentNode.insertBefore(e, cw.nextSibling); } e.textContent = t; }
+  /* owner 24 Nov: «يقرأ دايركت» — live camera, no photo/confirm step. Each frame: phone reader, then ZXing on a sharp centre crop; every 3 s a frame goes to the server which reads the printed digits */
   function jcCam() {
-    var fi = document.getElementById("jcFile");
-    if (!fi) { fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.setAttribute("capture", "environment"); fi.id = "jcFile"; fi.style.display = "none"; document.body.appendChild(fi); fi.addEventListener("change", function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) jcRead(f); }); }
-    fi.click();
+    if (JC.cam) { jcCamStop(); jcSt(""); return; }
+    var w = document.getElementById("jcCamW"), v = document.getElementById("jcVid"); w.hidden = false; jcSt("⏳ يفتح الكاميرا…");
+    var done = false, busyS = false, lastS = 0, t0 = Date.now(), bd = null, rd = null;
+    var hit = function (code) { code = String(code || "").replace(/\s/g, ""); if (!code || done) return; done = true; jcCamStop(); jcSt(""); document.getElementById("jcIn").value = code; jcFind(code); };
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }).then(function (st0) {
+      JC.cam = st0; v.srcObject = st0; v.play();
+      try { var tr = st0.getVideoTracks()[0], cp = tr.getCapabilities ? tr.getCapabilities() : {}; if (cp.focusMode && cp.focusMode.indexOf("continuous") >= 0) tr.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch (e) { }
+      if ("BarcodeDetector" in window) { try { bd = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf"] }); } catch (e) { try { bd = new BarcodeDetector(); } catch (e2) { } } }
+      loadZX().then(function () { var h = new Map(); h.set(ZXing.DecodeHintType.TRY_HARDER, true); rd = new ZXing.MultiFormatReader(); rd.setHints(h); }).catch(function () { });
+      jcSt("📷 وجّه الكاميرا على الباركود — يقرأ لوحده");
+      var cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+      var loop = function () {
+        if (done || !JC.cam) return;
+        if (Date.now() - t0 > 45000) { jcCamStop(); jcSt("ما انقرأ — اضغط الكاميرا مرة ثانية أو اكتب الرقم اللي تحت الباركود"); return; }
+        var W = v.videoWidth, H = v.videoHeight; if (!W) { setTimeout(loop, 150); return; }
+        var p1 = bd ? bd.detect(v).then(function (r) { if (r && r[0] && r[0].rawValue) hit(r[0].rawValue); }).catch(function () { }) : Promise.resolve();
+        p1.then(function () {
+          if (done) return;
+          var cw = Math.round(W * 0.9), ch = Math.round(H * 0.6), sx = Math.round((W - cw) / 2), sy = Math.round((H - ch) / 2);
+          cv.width = cw; cv.height = ch; cx.drawImage(v, sx, sy, cw, ch, 0, 0, cw, ch);
+          if (rd) {
+            try { var d = cx.getImageData(0, 0, cw, ch).data, L = new Uint8ClampedArray(cw * ch); for (var i = 0, j = 0; i < L.length; i++, j += 4) L[i] = (d[j] * 299 + d[j + 1] * 587 + d[j + 2] * 114) / 1000;
+              var src = new ZXing.RGBLuminanceSource(L, cw, ch); try { hit(rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src))).getText()); } catch (e) { try { hit(rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src.rotateCounterClockwise()))).getText()); } catch (e2) { } } } catch (e) { }
+          }
+          if (!done && !busyS && Date.now() - t0 > 2500 && Date.now() - lastS > 3000) {
+            busyS = true; lastS = Date.now(); var k = Math.min(1, 1400 / Math.max(cw, ch)), c2 = document.createElement("canvas"); c2.width = Math.round(cw * k); c2.height = Math.round(ch * k); c2.getContext("2d").drawImage(cv, 0, 0, c2.width, c2.height);
+            fetch(jcQ("/api/jard/read"), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ b64: c2.toDataURL("image/jpeg", 0.85).split(",")[1] }) }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok && j.code && j.code.length >= 6) hit(j.code); }).catch(function () { }).then(function () { busyS = false; });
+          }
+          setTimeout(loop, 200);
+        });
+      };
+      loop();
+    }).catch(function () { jcCamStop(); jcSt("ما سمحت للكاميرا — اسمح لها من إعدادات المتصفح، أو اكتب الرقم"); });
   }
   function jcRead(f) {
     jcSt("⏳ يقرأ الباركود…");
