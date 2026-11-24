@@ -262,15 +262,35 @@
       L.innerHTML = A.length ? A.map(function (x, i) { return '<div data-jch="' + i + '" style="padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb);cursor:pointer">' + esc(x[1]) + ' <span class="small muted" dir="ltr">' + esc(x[0]) + '</span></div>'; }).join("") : '<p class="small muted">ما لقيت صنف بهالاسم</p>'; }).catch(function () { });
   }
   function jcCamStop() { try { if (JC.zx) JC.zx.reset(); } catch (e) { } JC.zx = null; if (JC.cam) { JC.cam.getTracks().forEach(function (t) { t.stop(); }); JC.cam = null; } var w = document.getElementById("jcCamW"); if (w) w.hidden = true; }
+  function loadZX() {
+    if (window.ZXing) return Promise.resolve();
+    if (window.__zxp) return window.__zxp;
+    var U = ["https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js", "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"];
+    window.__zxp = new Promise(function (ok, no) {
+      var i = 0, nx = function () { if (i >= U.length) { window.__zxp = null; no(); return; } var sc = document.createElement("script"); sc.src = U[i++]; sc.onload = function () { window.ZXing ? ok() : nx(); }; sc.onerror = nx; document.head.appendChild(sc); }; nx();
+    });
+    return window.__zxp;
+  }
   function jcCam() {
     if (JC.cam || JC.zx) { jcCamStop(); return; }
     var w = document.getElementById("jcCamW"), v = document.getElementById("jcVid"); w.hidden = false;
     var hit = function (code) { code = String(code || "").trim(); if (!code) return; jcCamStop(); document.getElementById("jcIn").value = code; jcFind(code); };
-    var useZX = function () { (typeof loadZX === "function" ? loadZX() : Promise.reject()).then(function () { JC.zx = new ZXing.BrowserMultiFormatReader(); return JC.zx.decodeFromConstraints({ video: { facingMode: "environment" } }, v, function (r) { if (r) hit(r.getText()); }); }).catch(function () { jcCamStop(); alert("ما قدرت أفتح الكاميرا — اكتب الباركود"); }); };
+    var useZX = function () {
+      loadZX().then(function () {
+        var h = new Map(); try { h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E, ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.QR_CODE]); h.set(ZXing.DecodeHintType.TRY_HARDER, true); } catch (e) { }
+        JC.zx = new ZXing.BrowserMultiFormatReader(h, 200);
+        return JC.zx.decodeFromConstraints({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } }, v, function (r) { if (r) hit(r.getText()); });
+      }).catch(function () { jcCamStop(); alert("ما قدرت أفتح الكاميرا — اكتب الباركود"); });
+    };
     if ("BarcodeDetector" in window) {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }).then(function (st) {
-        JC.cam = st; v.srcObject = st; v.play(); var bd; try { bd = new BarcodeDetector(); } catch (e) { jcCamStop(); useZX(); return; }
-        var tick = function () { if (!JC.cam) return; bd.detect(v).then(function (r) { if (r && r[0]) hit(r[0].rawValue); else setTimeout(tick, 150); }).catch(function () { setTimeout(tick, 300); }); }; tick();
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (st) {
+        JC.cam = st; v.srcObject = st; v.play(); var bd, t0 = Date.now(), bad = 0, sw = function () { jcCamStop(); w.hidden = false; useZX(); };
+        try { bd = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"] }); } catch (e) { try { bd = new BarcodeDetector(); } catch (e2) { sw(); return; } }
+        var tick = function () {
+          if (!JC.cam) return;
+          if (Date.now() - t0 > 4000) { sw(); return; }
+          bd.detect(v).then(function (r) { if (r && r[0] && r[0].rawValue) hit(r[0].rawValue); else setTimeout(tick, 120); }).catch(function () { if (++bad > 3) sw(); else setTimeout(tick, 200); });
+        }; tick();
       }).catch(function () { jcCamStop(); alert("ما سمحت للكاميرا — اسمح لها من إعدادات المتصفح أو اكتب الباركود"); });
     } else useZX();
   }
