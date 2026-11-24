@@ -75,6 +75,7 @@ tr.last td{background:#f0fdf4}
 .ur .bb button.on{background:#16a34a;border-color:#16a34a;color:#fff}
 .uin{width:100%;height:44px;border:1px solid #cfd8df;border-radius:10px;padding:0 12px;font-size:15px;margin-bottom:8px;outline:none}.small2{font-size:12px;color:#6b7884;margin-bottom:8px}.usave{flex:1;height:44px;border-radius:10px;background:#14532d;color:#fff;font-weight:600}.ucan{height:44px;padding:0 16px;border-radius:10px;border:1px solid #cfd8df}.ur .ed{color:#16a34a;font-size:13px;border:1px solid #16a34a;border-radius:8px;padding:6px 10px}
 .tb{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px;font-size:14px}
+.hb{border:1.5px solid #d97706;background:#fffbeb;border-radius:12px;padding:10px 12px;text-align:right;color:#92400e;cursor:pointer}.hb b{display:block;font-size:15px}.hb small{display:block;font-size:12px;margin-top:2px}.hb .t{font-size:17px;font-weight:600;margin-top:4px}
 .foot{background:#fff;border-top:1px solid #dfe5ea;display:flex;flex-wrap:wrap;align-items:center;padding:8px 20px;gap:6px 22px;font-size:13px;color:#6b7884}
 .dot{width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;margin-inline-end:6px}
 .dot.off{background:#dc2626}
@@ -97,6 +98,7 @@ tr.last td{background:#f0fdf4}
    <div class="drop" id="drop"></div>
   </div>
   <div id="warn" style="display:none;background:#b91c1c;color:#fff;border-radius:12px;padding:14px 18px;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-size:20px;font-weight:600">الصنف لم يُضف</div><div style="font-size:15px;margin-top:2px">الباركود <b id="warnCode" dir="ltr"></b> غير مسجّل في البرنامج</div></div><button id="warnOk" style="border:1px solid rgba(255,255,255,.7);border-radius:9px;padding:8px 18px;font-size:16px;color:#fff">حسناً</button></div>
+  <div id="held" style="display:none"><div style="font-size:14px;color:#5c6b78;margin-bottom:6px" id="heldT"></div><div id="heldL" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px"></div></div>
   <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
   <div class="cart" id="cart"></div>
  </div>
@@ -118,7 +120,7 @@ tr.last td{background:#f0fdf4}
    <button class="save" id="saveBtn">حفظ الفاتورة</button>
    <div class="err" id="err"></div>
   </div>
-  <div class="mini"><button id="clrBtn"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
+  <div class="mini"><button id="holdBtn" style="border-color:#d97706;color:#92400e;font-weight:600">تعليق الفاتورة (F7)</button><button id="clrBtn"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
   <div class="card" id="ownCard" style="display:none">
    <div class="ttl"><span>مبيعات اليوم (لحظي)</span><span id="ownDay" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
    <div class="sumg" id="sumg"></div>
@@ -137,7 +139,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 7</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 8</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F7 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -213,6 +215,15 @@ function render(){
 $("cart").addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(!b)return;const i=+b.dataset.i,L=cart[i];
  if(b.dataset.a==="+")L.q=r2(L.q+1);else if(b.dataset.a==="-"){L.q=r2(L.q-1);if(L.q<=0)cart.splice(i,1)}else cart.splice(i,1);render()});
 $("cart").addEventListener("change",e=>{if(e.target.tagName!=="INPUT")return;const i=+e.target.dataset.i,v=+e.target.value;if(v>0)cart[i].q=Math.round(v*1000)/1000;else cart.splice(i,1);render()});
+function HL(){try{return JSON.parse(localStorage.getItem("posheld")||"[]")}catch(e){return[]}}
+function setHL(a){try{localStorage.setItem("posheld",JSON.stringify(a))}catch(e){}heldShow()}
+function heldShow(){const a=HL();$("held").style.display=a.length?"block":"none";$("heldT").textContent="فواتير معلّقة ("+a.length+") — اضغط عليها لاسترجاعها";
+ $("heldL").innerHTML=a.map((h,i)=>{const t=h.lines.reduce((s,l)=>r2(s+r2(l.p*l.q)),0),d=new Date(h.at);return`<button class="hb" data-h="${i}"><b>معلّقة ${i+1} · ${d.toTimeString().slice(0,5)}</b><small>${esc(h.lines.slice(0,2).map(l=>l.n).join("، "))}${h.lines.length>2?"…":""} (${h.lines.length} أصناف)</small><div class="t">${f2(t)}</div></button>`}).join("")}
+function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart});setHL(a);cart=[];lastCode=null;$("cashIn").value="";setMode("cash");render();toast("عُلّقت الفاتورة");$("q").focus()}
+function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
+ cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;render();$("q").focus()}
+$("holdBtn").onclick=hold;
+$("heldL").addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(b)resume(+b.dataset.h)});
 $("clrBtn").onclick=()=>{if(cart.length&&confirmClr()){cart=[];render()}};
 function confirmClr(){if(confirmClr.t&&Date.now()-confirmClr.t<2500){confirmClr.t=0;return true}confirmClr.t=Date.now();toast("اضغط «تفريغ السلة» مرة ثانية للتأكيد");return false}
 
@@ -243,7 +254,7 @@ async function save(){
 }
 function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0};cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
-document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}});
+document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F7"){e.preventDefault();hold()}});
 
 $("prnBtn").onclick=()=>{const L=LASTINV;if(!L){toast("لا توجد فاتورة محفوظة في هذا الجهاز بعد");return}
  const d=L.at;$("rc").innerHTML=`<div style="text-align:center;font-weight:600;font-size:15px">أسواق طيبة</div><div style="text-align:center">${esc(ME.brName)}</div><div style="text-align:center">فاتورة رقم ${L.no||"—"} · ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.toTimeString().slice(0,5)}</div><div style="text-align:center">الكاشير: ${esc(ME.name)}</div><hr><table style="width:100%">${L.lines.map(l=>`<tr><td>${esc(l.n)}<br>${l.q} × ${f2(l.p)}</td><td style="text-align:left">${f2(l.p*l.q)}</td></tr>`).join("")}</table><hr>${ME.vat?`<div>قبل الضريبة: ${f2(L.total-L.vat)}</div><div>الضريبة 15%: ${f2(L.vat)}</div>`:""}<div style="font-size:16px;font-weight:600">الإجمالي: ${f2(L.total)} ر.س</div><div>نقدي ${f2(L.cash)} · شبكة ${f2(L.card)}</div>`;window.print()};
@@ -282,6 +293,6 @@ $("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/
 (async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
  $("brName").textContent=ME.brName;$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
- render();pendShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
+ render();pendShow();heldShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
