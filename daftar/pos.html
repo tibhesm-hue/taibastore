@@ -175,7 +175,12 @@ tr.last td{background:#f0fdf4}
    <div class="pms" style="margin-bottom:0" id="lvBtns"><button class="pm" data-lv="1">قريب</button><button class="pm" data-lv="2">متوسط</button><button class="pm" data-lv="3">بعيد</button></div>
   </div>
   <div class="card">
-   <div class="pms" style="grid-template-columns:repeat(4,minmax(0,1fr))"><button class="pm on" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button></div>
+   <div class="pms" id="pmRow" style="grid-template-columns:repeat(5,minmax(0,1fr))"><button class="pm on" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button><button class="pm" data-m="aj" id="ajBtn">آجل</button></div>
+   <div id="ajBox" style="display:none;margin-top:8px">
+    <input class="in" id="ajQ" placeholder="ابحث باسم العميل" style="width:100%;margin-bottom:6px">
+    <div id="ajList" style="max-height:220px;overflow:auto"></div>
+    <div id="ajSel" style="margin-top:6px;font-weight:600"></div>
+   </div>
    <div id="mixBox" style="display:none">
     <div class="fl"><span>المبلغ النقدي</span><input class="in" id="cashIn" inputmode="decimal" placeholder="0.00"></div>
     <div class="fl"><span>على الشبكة</span><input class="in" id="cardIn" readonly value="0.00"></div>
@@ -348,7 +353,7 @@ async function retGet(){const no=$("retNo").value.trim().replace(/^[FfRr]/,"");i
  RINV=j.inv;RHOW="cash";retDraw()}
 $("retGet").onclick=retGet;$("retNo").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();retGet()}});
 function retDraw(){const d=RINV;
- $("retBody").innerHTML=`<div class="small2">فاتورة ${d.no} · ${d.day.split("-").reverse().map(x=>+x).join("/")} · ${d.t.slice(0,5)} · ${esc(d.u)} · ${d.mode==="cash"?"نقدي":d.mode==="card"?"شبكة":d.mode==="tr"?"تحويل":"نقدي + شبكة"} ${f2(d.total)}</div>
+ $("retBody").innerHTML=`<div class="small2">فاتورة ${d.no} · ${d.day.split("-").reverse().map(x=>+x).join("/")} · ${d.t.slice(0,5)} · ${esc(d.u)} · ${d.mode==="cash"?"نقدي":d.mode==="card"?"شبكة":d.mode==="tr"?"تحويل":d.mode==="aj"?"آجل":"نقدي + شبكة"} ${f2(d.total)}</div>
  <table><tr><th>الصنف</th><th style="width:90px">السعر</th><th style="width:110px">انشرى</th><th style="width:140px">يرجع</th><th style="width:100px">المبلغ</th></tr>${d.lines.map((l,i)=>{const left=r2(l.q-l.back);return`<tr><td>${esc(l.n)}<span class="code">${esc(l.c)}</span></td><td>${f2(l.p)}</td><td>${l.q}${l.back?`<span class="code">رجع منه ${l.back}</span>`:""}</td><td>${left>0?`<span class="q"><button data-r="-" data-i="${i}">−</button><input data-ri="${i}" value="0" inputmode="decimal"><button data-r="+" data-i="${i}">+</button></span>`:'<span class="code">رجع كله</span>'}</td><td><b id="ra${i}">0.00</b></td></tr>`}).join("")}</table>
  <div style="display:flex;justify-content:space-between;margin:14px 2px;font-size:22px;font-weight:600;color:#991b1b"><span>المبلغ المرتجع</span><span id="rTot">0.00</span></div>
  <div class="pms" style="grid-template-columns:1fr 1fr"><button class="pm rh" data-h="cash">رد نقدي</button><button class="pm rh" data-h="card">رد على الشبكة</button></div>
@@ -372,7 +377,16 @@ $("heldL").addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(
 $("clrBtn").onclick=()=>{if(cart.length&&confirmClr()){vlog("clr",cart.map(l=>[l.c,l.n,l.p,l.q]));cart=[];render()}};
 function confirmClr(){if(confirmClr.t&&Date.now()-confirmClr.t<2500){confirmClr.t=0;return true}confirmClr.t=Date.now();toast("اضغط «تفريغ السلة» مرة ثانية للتأكيد");return false}
 
-function setMode(m){mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+/* owner 24 Nov: «آجل» (credit) — sales branch only; the cashier picks an existing customer (no new customers from the cashier) */
+const AJ={list:[],cust:"",bal:0};
+async function ajLoad(){try{const j=await api("/api/pos/custs");if(j.ok){AJ.list=j.list||[];ajDraw()}}catch(e){$("ajList").innerHTML='<div class="small2">ما قدرنا نجيب العملاء، تأكد من النت</div>'}}
+function ajNorm(x){return String(x||"").replace(/\s+/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")}
+function ajDraw(){const q=ajNorm($("ajQ").value),L=AJ.list.filter(c=>!q||ajNorm(c[0]).includes(q)).slice(0,40);
+ $("ajList").innerHTML=L.map(c=>`<div data-aj="${esc(c[0])}" style="display:flex;justify-content:space-between;padding:9px 6px;border-bottom:1px solid #eef1f4;cursor:pointer;${AJ.cust===c[0]?"background:#e7f0ff;border-radius:8px;font-weight:600":""}"><span>${esc(c[0])}${AJ.cust===c[0]?" ✓":""}</span><span>${f2(c[1])}</span></div>`).join("")||'<div class="small2">ما فيه عميل بهذا الاسم</div>';
+ const c=AJ.list.find(x=>x[0]===AJ.cust);$("ajSel").innerHTML=c?`${esc(c[0])} · الرصيد بعد الفاتورة: <b>${f2(c[1]+totals().t)}</b>`:""}
+document.addEventListener("click",e=>{const r=e.target.closest&&e.target.closest("[data-aj]");if(r){AJ.cust=r.dataset.aj;ajDraw()}});
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()});
+function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
 document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
 $("cashIn").addEventListener("input",mixCalc);
@@ -407,10 +421,11 @@ function LIset(a){try{localStorage.setItem("posli_"+(ME&&ME.email||""),JSON.stri
 function LIadd(x){LIset([x].concat(LI().filter(y=>y.cid!==x.cid)))}
 async function save(){
  if(saving)return;$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
- const t=totals().t;let cash=mode==="cash"?t:(mode==="card"||mode==="tr")?0:r2(+$("cashIn").value||0);
+ const t=totals().t;let cash=mode==="cash"?t:(mode==="card"||mode==="tr"||mode==="aj")?0:r2(+$("cashIn").value||0);
+ if(mode==="aj"&&!AJ.cust){$("err").textContent="اختر العميل للآجل";$("ajQ").focus();return}
  if(mode==="mix"&&(cash<=0||cash>=t)){$("err").textContent="اكتب المبلغ النقدي (أقل من الإجمالي)";$("cashIn").focus();return}
  if(isDel()&&(DLV.fee==null||!DLV.n||!DLV.lv)&&!save.warned){save.warned=1;$("err").textContent="انتبه: ما اخترت "+[DLV.fee==null?"رسوم التوصيل":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean).join(" و")+". اضغط حفظ مرة ثانية إذا تبي تحفظ كذا.";beep(false);return}save.warned=0;
- const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};
+ const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};if(mode==="aj")s.cust=AJ.cust;
  if(isDel()){const dr=(ME.drivers||[]).find(x=>x.n===DLV.n);s.dlv={fee:DLV.fee||0,n:DLV.n,lv:DLV.lv,name:dr?dr.name:""}}
  if(CUR_ORD)s.ord=CUR_ORD.id;
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
@@ -420,7 +435,7 @@ async function save(){
   if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no,j2.zqr);netState(true)}else{const rn=rvTake("s");if(rn)s.no=rn;setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
 }
-function done(snap,t,cash,no,zqr){LASTINV={no,zqr:zqr||"",lines:snap,total:t,cash,card:mode==="tr"?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no,zqr){LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}save()},true);
@@ -428,7 +443,7 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();setMode("tr");save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
- return{fee:(d.dlv&&d.dlv.fee)||0,zqr:(d.z&&d.z.qr)||"",ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),tr:Math.abs(d.tr||0),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
+ return{fee:(d.dlv&&d.dlv.fee)||0,zqr:(d.z&&d.z.qr)||"",aj:Math.abs(d.aj||0),cust:d.cust||"",ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),tr:Math.abs(d.tr||0),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
 /* Code 128-B barcode as SVG (for the invoice number on the receipt) */
 const C128=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
 function bc128(txt,h){const codes=[104];for(const ch of txt)codes.push(ch.charCodeAt(0)-32);let sum=104;for(let i=1;i<codes.length;i++)sum+=codes[i]*i;codes.push(sum%103);codes.push(106);
@@ -451,7 +466,7 @@ async function printInv(){let L=LASTINV;if(!L){L=await lastFromServer();if(!L){t
   +`<table class="kv">`+TR("رقم الفاتورة<br><small>Invoice No.</small>",(L.ret?"R":"")+L.no)+(L.ret?TR("عن فاتورة",L.refNo):"")+TR("التاريخ<br><small>Date</small>",ds+"<br>"+tm)+TR("الكاشير",esc(ME.name))+`</table>`
   +`<table class="it"><tr><th>الإجمالي</th><th>الكمية</th><th>السعر</th></tr>`+L.lines.map(l=>`<tr><td colspan="3" class="nm">${esc(l.n)}</td></tr><tr><td>${f2(l.p*l.q)}</td><td>${l.q}</td><td>${f2(l.p)}</td></tr>`).join("")+`</table>`
   +`<table class="kv">`+(L.fee>0?TR("رسوم التوصيل",f2(L.fee)):"")+(ME.vat?TR("الإجمالي غير شامل الضريبة",f2(net))+TR("ضريبة القيمة المضافة 15%",f2(L.vat||0)):"")
-  +TR(L.ret?"المبلغ المردود":"المبلغ المستحق",f2(L.total)+" ر.س",1)+(L.cash?TR("نقدي",f2(L.cash)):"")+(L.card?TR("شبكة",f2(L.card)):"")+(L.tr?TR("تحويل",f2(L.tr)):"")+`</table>`
+  +TR(L.ret?"المبلغ المردود":"المبلغ المستحق",f2(L.total)+" ر.س",1)+(L.cash?TR("نقدي",f2(L.cash)):"")+(L.card?TR("شبكة",f2(L.card)):"")+(L.tr?TR("تحويل",f2(L.tr)):"")+(L.aj?TR("آجل على",esc(L.cust||"")):"")+`</table>`
   +(qr?`<div style="margin-top:4px">${qr}</div>`:(L.no?`<div style="margin-top:4px">${qrSvg(code)}</div><div class="c" style="letter-spacing:2px">${code}</div>`:""))
   +`<div class="c" style="margin-top:3px">شكراً لزيارتكم</div>`;
  setTimeout(()=>window.print(),80)}
@@ -474,7 +489,7 @@ $("camBtn").onclick=()=>camOn?camStop():camStart();
 
 // today's invoices (cashier: his own; owner: all, with live totals per branch)
 async function loadDay(){try{const j=await api("/api/pos/day");if(!j.ok)return;
- $("last").innerHTML=j.inv.length?j.inv.slice(0,ME.owner?12:6).map(d=>`<div class="inv"${d.kind==="ret"?' style="color:#b91c1c"':""}><span>${d.kind==="ret"?"مرتجع "+d.no+" عن "+d.refNo:d.no} · ${d.mode==="cash"?"نقدي":d.mode==="card"?"شبكة":d.mode==="tr"?"تحويل":"نقدي + شبكة"}${ME.owner?" · "+esc(d.u)+" · "+(BRN[d.br]||""):""} · ${d.t.slice(0,5)}</span><span>${f2(d.total)}</span></div>`).join(""):`<div class="inv">لا توجد فواتير اليوم</div>`;
+ $("last").innerHTML=j.inv.length?j.inv.slice(0,ME.owner?12:6).map(d=>`<div class="inv"${d.kind==="ret"?' style="color:#b91c1c"':""}><span>${d.kind==="ret"?"مرتجع "+d.no+" عن "+d.refNo:d.no} · ${d.mode==="cash"?"نقدي":d.mode==="card"?"شبكة":d.mode==="tr"?"تحويل":d.mode==="aj"?"آجل":"نقدي + شبكة"}${ME.owner?" · "+esc(d.u)+" · "+(BRN[d.br]||""):""} · ${d.t.slice(0,5)}</span><span>${f2(d.total)}</span></div>`).join(""):`<div class="inv">لا توجد فواتير اليوم</div>`;
  if(ME.owner){$("ownDay").textContent=j.day.split("-").reverse().join("/");$("sumg").innerHTML=Object.keys(BRN).map(k=>{const s=j.sum[k]||{n:0,total:0,cash:0,card:0};return`<div class="sb"><div class="k">${BRN[k]}</div><div class="v">${f2(s.total)}</div><div class="s">${s.n} فاتورة${s.rn?" · "+s.rn+" مرتجع":""} · نقدي ${f2(s.cash)} · شبكة ${f2(s.card)}</div></div>`}).join("")}
 }catch(e){}}
 let UF={email:"",br:"shop"};const UERR={un:"اسم المستخدم: من 3 إلى 20 حرفاً إنجليزياً أو رقماً",taken:"اسم المستخدم مستخدم لعامل آخر",name:"اكتب الاسم",pw:"اكتب الرقم السري",rule:"الرقم السري لازم من 6 إلى 20، فيه 4 أرقام وحرف كبير وحرف صغير",nouser:"المستخدم غير موجود",br:"اختر الفرع"};
@@ -542,7 +557,7 @@ $("scGo").onclick=async()=>{if(Q().length||!navigator.onLine){if(!Q().some(x=>x.
 try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{})}catch(e){}
 (async()=>{let OFF=false;try{ME=await api("/api/pos/me");if(ME&&ME.ok)try{localStorage.setItem("posme",JSON.stringify(ME))}catch(e){}}catch(e){OFF=true;try{ME=JSON.parse(localStorage.getItem("posme")||"null")}catch(x){ME=null}if(!ME){document.body.insertAdjacentHTML("afterbegin",'<div style="padding:30px;text-align:center;font-size:20px">ما فيه إنترنت — افتح نقاط البيع مرة وحدة والنت شغّال عشان تشتغل بعدها بدون نت</div>');return}netState(false)}if(!ME||!ME.ok)return;
  if(!ME.owner){$("scBtn").style.display="";let sj=null;try{sj=await api("/api/pos/shift");try{localStorage.setItem("posshift_"+ME.email,JSON.stringify(sj.shift||null))}catch(e){}}catch(e){let s0=null;try{s0=JSON.parse(localStorage.getItem("posshift_"+ME.email)||"null")}catch(x){}sj={shift:s0||{offline:1}}}SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
- $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
+ $("brName").textContent=ME.brName;if(isDel()){$("ajBtn").style.display="none";$("pmRow").style.gridTemplateColumns="repeat(4,minmax(0,1fr))"}if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
  render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},60000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush();rvTop();setInterval(rvTop,60000)})();
