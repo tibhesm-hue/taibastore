@@ -53,7 +53,7 @@ tr.last td{background:#f0fdf4}
 .tot{border-top:1px dashed #cfd8df;margin-top:8px;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline}
 .tot b{font-size:44px;font-weight:600;color:#14532d}
 .pms{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
-.pm{height:46px;border-radius:10px;border:1px solid #cfd8df;font-size:15px;color:#4a5866}
+.pm{min-width:0;height:46px;font-size:16px;border-radius:10px;border:1px solid #cfd8df;font-size:15px;color:#4a5866}
 .pm.on{background:#16a34a;color:#fff;border-color:#16a34a;font-weight:600}
 .fl{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:15px;color:#4a5866}
 .in{width:170px;height:46px;border:2px solid #16a34a;border-radius:10px;padding:0 14px;font-size:20px;font-weight:600;color:#1b2430;outline:none;text-align:left;direction:ltr}
@@ -134,7 +134,17 @@ tr.last td{background:#f0fdf4}
     <div class="row"><span>المجموع قبل الضريبة</span><span id="net">0.00</span></div>
     <div class="row"><span>ضريبة القيمة المضافة 15%</span><span id="vat">0.00</span></div>
    </div>
+   <div class="row" id="feeRow" style="display:none"><span>رسوم التوصيل</span><span id="feeV">0.00</span></div>
    <div class="tot"><span style="font-size:18px;font-weight:500">الإجمالي</span><b><span id="total">0.00</span> <small style="font-size:18px;color:#5c6b78;font-weight:400">ر.س</small></b></div>
+  </div>
+  <div class="card" id="dlvCard" style="display:none">
+   <div class="ttl"><span>🛵 التوصيل</span><span id="dlvSum" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
+   <div class="small2" style="margin-bottom:4px">رسوم التوصيل على الزبون (من رابط الأسعار)</div>
+   <div class="pms" style="grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.6fr);margin-bottom:8px" id="feeBtns"><button class="pm" data-fee="0">0</button><button class="pm" data-fee="2">2</button><button class="pm" data-fee="3">3</button><button class="pm" data-fee="4">4</button><button class="pm" data-fee="5">5</button><input id="feeIn" class="pm" style="text-align:center;padding:0 4px;width:100%;min-width:0;font-family:inherit" inputmode="decimal" placeholder="غيره"></div>
+   <div class="small2" style="margin-bottom:4px">المندوب</div>
+   <div class="pms" style="margin-bottom:8px" id="drvBtns"></div>
+   <div class="small2" style="margin-bottom:4px">مسافة المندوب</div>
+   <div class="pms" style="margin-bottom:0" id="lvBtns"><button class="pm" data-lv="1">قريب</button><button class="pm" data-lv="2">متوسط</button><button class="pm" data-lv="3">بعيد</button></div>
   </div>
   <div class="card">
    <div class="pms"><button class="pm on" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button></div>
@@ -164,7 +174,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 20</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 21</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -228,13 +238,24 @@ function warnOff(){$("warn").style.display="none"}
 $("warnOk").onclick=()=>{warnOff();$("q").focus()};
 function add(x,q){if(!x)return;warnOff();const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
  lastCode=x.c;beep(true);$("q").value="";$("drop").classList.remove("show");render();$("q").focus()}
-function totals(){let t=0,n=0;for(const l of cart){t=r2(t+r2(l.p*l.q));n+=l.q}return{t,n}}
+let DLV={fee:null,n:0,lv:0};
+function isDel(){return ME&&ME.br==="del"}
+function itemsT(){let t=0,n=0;for(const l of cart){t=r2(t+r2(l.p*l.q));n+=l.q}return{t,n}}
+function totals(){const a=itemsT();if(isDel()&&DLV.fee>0)a.t=r2(a.t+DLV.fee);return a}
+function dlvDraw(){if(!isDel())return;$("dlvCard").style.display="block";
+ document.querySelectorAll("[data-fee]").forEach(b=>b.classList.toggle("on",DLV.fee!=null&&+b.dataset.fee===DLV.fee&&$("feeIn").value===""));
+ $("feeIn").classList.toggle("on",$("feeIn").value!=="");
+ document.querySelectorAll("[data-drv]").forEach(b=>b.classList.toggle("on",+b.dataset.drv===DLV.n));
+ document.querySelectorAll("[data-lv]").forEach(b=>b.classList.toggle("on",+b.dataset.lv===DLV.lv));
+ const miss=[DLV.fee==null?"الرسوم":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean);$("dlvSum").textContent=miss.length?"باقي: "+miss.join("، "):"✓";$("dlvSum").style.color=miss.length?"#b91c1c":"#15803d";
+ $("feeRow").style.display=DLV.fee>0?"flex":"none";$("feeV").textContent=f2(DLV.fee||0)}
+function dlvReset(){DLV={fee:null,n:0,lv:0};$("feeIn").value="";dlvDraw()}
 function render(){
  const c=$("cart");
  if(!cart.length)c.innerHTML=`<div class="empty">امسح باركود أو اكتب اسم الصنف لبدء الفاتورة</div>`;
  else c.innerHTML=`<table><tr><th class="n">#</th><th>الصنف</th><th style="width:100px">السعر</th><th style="width:150px">الكمية</th><th style="width:110px">المجموع</th><th style="width:44px"></th></tr>`+
   cart.map((l,i)=>`<tr class="${l.c===lastCode?"last":""}"><td class="n">${i+1}</td><td>${esc(l.n)}<span class="code">${esc(l.c)}</span></td><td>${f2(l.p)}</td><td><span class="q"><button data-a="-" data-i="${i}">−</button><input data-i="${i}" value="${l.q}" inputmode="decimal"><button data-a="+" data-i="${i}">+</button></span></td><td><b>${f2(l.p*l.q)}</b></td><td><button class="del" data-a="x" data-i="${i}"><i class="ti ti-trash"></i></button></td></tr>`).join("")+`</table>`;
- const{t,n}=totals();$("total").textContent=f2(t);$("cnt").textContent=cart.length+" أصناف · "+(Math.round(n*1000)/1000)+" قطع";
+ const{t,n}=totals();$("total").textContent=f2(t);dlvDraw();$("cnt").textContent=cart.length+" أصناف · "+(Math.round(n*1000)/1000)+" قطع";
  const v=ME&&ME.vat?r2(t*15/115):0;$("vat").textContent=f2(v);$("net").textContent=f2(t-v);
  mixCalc();
 }
@@ -249,6 +270,8 @@ function hold(){if(!cart.length){toast("السلة فارغة");return}const a=H
 function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
  cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;render();$("q").focus()}
 $("holdBtn").onclick=hold;
+document.addEventListener("click",e=>{const f=e.target.closest("[data-fee]");if(f){DLV.fee=+f.dataset.fee;$("feeIn").value="";render();return}const d=e.target.closest("[data-drv]");if(d){DLV.n=+d.dataset.drv;dlvDraw();return}const l=e.target.closest("[data-lv]");if(l){DLV.lv=+l.dataset.lv;dlvDraw()}});
+$("feeIn").addEventListener("input",()=>{const v=$("feeIn").value.trim();DLV.fee=v===""?null:(isNaN(+v)?null:r2(+v));render()});
 let RINV=null,RHOW="cash";
 function retOpen(){$("retBox").style.display="block";$("cart").style.display="none";$("retNo").value="";$("retBody").innerHTML="";RINV=null;retList();$("retNo").focus()}
 let ROPEN=null;
@@ -284,8 +307,8 @@ $("heldL").addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(
 $("clrBtn").onclick=()=>{if(cart.length&&confirmClr()){cart=[];render()}};
 function confirmClr(){if(confirmClr.t&&Date.now()-confirmClr.t<2500){confirmClr.t=0;return true}confirmClr.t=Date.now();toast("اضغط «تفريغ السلة» مرة ثانية للتأكيد");return false}
 
-function setMode(m){mode=m;document.querySelectorAll(".pm").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
-document.querySelectorAll(".pm").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+function setMode(m){mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
 $("cashIn").addEventListener("input",mixCalc);
 $("cashIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();save()}});
@@ -302,19 +325,21 @@ async function save(){
  if(saving)return;$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
  const t=totals().t;let cash=mode==="cash"?t:mode==="card"?0:r2(+$("cashIn").value||0);
  if(mode==="mix"&&(cash<=0||cash>=t)){$("err").textContent="اكتب المبلغ النقدي (أقل من الإجمالي)";$("cashIn").focus();return}
+ if(isDel()&&(DLV.fee==null||!DLV.n||!DLV.lv)&&!save.warned){save.warned=1;$("err").textContent="انتبه: ما اخترت "+[DLV.fee==null?"رسوم التوصيل":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean).join(" و")+". اضغط حفظ مرة ثانية إذا تبي تحفظ كذا.";beep(false);return}save.warned=0;
  const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};
+ if(isDel()){const dr=(ME.drivers||[]).find(x=>x.n===DLV.n);s.dlv={fee:DLV.fee||0,n:DLV.n,lv:DLV.lv,name:dr?dr.name:""}}
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
  try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
   if(j.ok){done(snap,t,cash,j.no);netState(true)}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
  catch(e){setQ(Q().concat([s]));netState(false);done(snap,t,cash,null)}
  saving=false;$("saveBtn").disabled=false;
 }
-function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0};cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
- return{ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
+ return{fee:(d.dlv&&d.dlv.fee)||0,ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
 /* Code 128-B barcode as SVG (for the invoice number on the receipt) */
 const C128=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
 function bc128(txt,h){const codes=[104];for(const ch of txt)codes.push(ch.charCodeAt(0)-32);let sum=104;for(let i=1;i<codes.length;i++)sum+=codes[i]*i;codes.push(sum%103);codes.push(106);
@@ -336,7 +361,7 @@ async function printInv(){let L=LASTINV;if(!L){L=await lastFromServer();if(!L){t
   +`<div class="rbox c b" style="margin-top:3px">${L.ret?"إشعار دائن (مرتجع)<br>Credit Note":ME.vat?"فاتورة ضريبية مبسطة<br>Simplified Tax Invoice":"فاتورة<br>Invoice"}</div>`
   +`<table class="kv">`+TR("رقم الفاتورة<br><small>Invoice No.</small>",(L.ret?"R":"")+L.no)+(L.ret?TR("عن فاتورة",L.refNo):"")+TR("التاريخ<br><small>Date</small>",ds+"<br>"+tm)+TR("الكاشير",esc(ME.name))+`</table>`
   +`<table class="it"><tr><th>الإجمالي</th><th>الكمية</th><th>السعر</th></tr>`+L.lines.map(l=>`<tr><td colspan="3" class="nm">${esc(l.n)}</td></tr><tr><td>${f2(l.p*l.q)}</td><td>${l.q}</td><td>${f2(l.p)}</td></tr>`).join("")+`</table>`
-  +`<table class="kv">`+(ME.vat?TR("الإجمالي غير شامل الضريبة",f2(net))+TR("ضريبة القيمة المضافة 15%",f2(L.vat||0)):"")
+  +`<table class="kv">`+(L.fee>0?TR("رسوم التوصيل",f2(L.fee)):"")+(ME.vat?TR("الإجمالي غير شامل الضريبة",f2(net))+TR("ضريبة القيمة المضافة 15%",f2(L.vat||0)):"")
   +TR(L.ret?"المبلغ المردود":"المبلغ المستحق",f2(L.total)+" ر.س",1)+(L.cash?TR("نقدي",f2(L.cash)):"")+(L.card?TR("شبكة",f2(L.card)):"")+`</table>`
   +(qr?`<div style="margin-top:4px">${qr}</div>`:"")
   +`<div class="c" style="margin-top:3px">شكراً لزيارتكم</div>`;
@@ -390,7 +415,7 @@ $("scGo").onclick=async()=>{const c=$("scCash").value.trim(),d=$("scCard").value
  else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};
 (async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
  if(!ME.owner){$("scBtn").style.display="";const sj=await api("/api/pos/shift");SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
- $("brName").textContent=ME.brName;$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
+ $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  render();pendShow();heldShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
