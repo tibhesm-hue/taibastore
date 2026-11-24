@@ -89,7 +89,7 @@ tr.last td{background:#f0fdf4}
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
- <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="scBtn" style="display:none;background:#991b1b;border-color:#991b1b">إقفال الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
+ <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="jdBtn">📦 الجرد</button><button class="tb" id="scBtn" style="display:none;background:#991b1b;border-color:#991b1b">إقفال الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
 </div>
 <div id="shOpen" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:420px;max-width:94vw">
@@ -97,7 +97,7 @@ tr.last td{background:#f0fdf4}
   <div class="small2" id="shWho"></div>
   <div style="margin:14px 0 6px">رصيد الصندوق (العهدة) الموجود الحين</div>
   <input id="shFloat" class="uin" style="height:54px;font-size:22px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
-  <button class="save" id="shGo">ابدأ البيع</button><div class="err" id="shErr"></div>
+  <button class="save" id="shGo">ابدأ البيع</button><button id="shJd" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px;background:#fff;font-family:inherit;font-size:15px">📦 أبي أجرد بس</button><div class="err" id="shErr"></div>
  </div></div>
 <div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:460px;max-width:94vw;border:2px solid #dc2626">
@@ -111,6 +111,29 @@ tr.last td{background:#f0fdf4}
   <div style="font-size:17px">الحين افتح <b>الدفتر من جوالك</b> وكمّل الإقفال: عدّ الصندوق، وصوّر إيصال المدى وحمّله.</div>
   <div style="color:#5c6b78;margin-top:10px" id="scSum"></div></div>
   <div class="err" id="scErr"></div>
+ </div></div>
+<div id="jdView" style="display:none;flex:1;gap:18px;padding:18px 20px;align-items:flex-start;flex-direction:row-reverse">
+ <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+  <div class="card">
+   <div style="position:relative"><input id="jdQ" autocomplete="off" placeholder="امسح الباركود أو اكتب اسم الصنف…" style="width:100%;height:58px;border:2px solid #16a34a;border-radius:12px;padding:0 16px;font-size:20px;font-family:inherit;outline:none">
+   <div id="jdDrop" style="display:none;position:absolute;top:62px;right:0;left:0;background:#fff;border:1px solid #dfe5ea;border-radius:12px;box-shadow:0 8px 24px #0002;z-index:5;max-height:330px;overflow:auto"></div></div>
+   <div id="jdWarn" style="display:none;margin-top:10px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 12px;font-size:15px"></div>
+   <div id="jdCur" style="display:none;margin-top:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px">
+    <div style="display:flex;gap:12px;align-items:center">
+     <div style="flex:1;min-width:0"><b id="jdName" style="font-size:20px;display:block"></b><input id="jdNameIn" placeholder="اكتب اسم الصنف" style="display:none;width:100%;height:46px;border:2px solid #d97706;border-radius:10px;padding:0 12px;font-size:18px;font-family:inherit"><span id="jdCode" style="color:#6b7884;font-size:13px"></span>
+      <button id="jdRen" style="margin-top:6px;border:1px solid #cfd8df;border-radius:8px;background:#fff;padding:3px 10px;font-family:inherit;font-size:13px">✏️ تعديل الاسم</button></div>
+     <div style="text-align:center"><div style="color:#6b7884;font-size:13px" id="jdQL">العدد</div><input id="jdN" inputmode="decimal" dir="ltr" style="width:150px;height:58px;border:2px solid #1d4ed8;border-radius:12px;font-size:28px;font-weight:700;text-align:center"></div>
+    </div>
+    <div style="color:#6b7884;font-size:13px;margin-top:6px" id="jdHint">اكتب العدد واضغط Enter — ينضاف على اللي قبله</div>
+   </div>
+  </div>
+  <div class="card"><b>آخر ما جردت</b> <span style="color:#6b7884;font-size:13px">(اضغط الصنف لتصحيح عدده)</span><div id="jdMine" style="margin-top:6px"></div></div>
+ </div>
+ <div style="width:380px;flex-shrink:0;display:flex;flex-direction:column;gap:14px">
+  <div class="card"><div style="color:#6b7884;font-size:13px" id="jdTtl">الجرد</div><div style="font-size:40px;font-weight:800;color:#14532d"><span id="jdNum">0</span> <span style="font-size:18px;color:#6b7884" id="jdOf"></span></div>
+   <div style="height:10px;background:#e5e7eb;border-radius:6px;overflow:hidden;margin:8px 0"><i id="jdBar" style="display:block;height:100%;width:0;background:#16a34a"></i></div><div style="color:#6b7884;font-size:13px" id="jdLeft"></div></div>
+  <div class="card"><div style="color:#6b7884;font-size:13px">اللي يجردون</div><div id="jdUs" style="margin-top:6px"></div></div>
+  <button class="save" id="jdDone" style="margin:0">انتهيت</button>
  </div></div>
 <div class="main" id="mainView">
  <div class="left">
@@ -179,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 22</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 23</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -363,7 +386,7 @@ async function save(){
 }
 function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
-document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F8"){e.preventDefault();hold()}});
+document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
  return{fee:(d.dlv&&d.dlv.fee)||0,ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
@@ -427,11 +450,53 @@ $("ufCan").onclick=ufReset;
 $("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/pos/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:UF.email,name:$("ufName").value,username:$("ufUser").value,pw:$("ufPw").value,br:UF.br})});
  if(j.ok){toast("تم الحفظ");const self=UF.email===ME.email;ufReset();loadBr();if(self)setTimeout(()=>location.reload(),800)}else $("ufErr").textContent=UERR[j.err]||("لم يُحفظ: "+j.err)};
 let SHIFT=null;
-function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
+function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("jdView").style.display=v==="jard"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
 $("shGo").onclick=async()=>{const v=$("shFloat").value.trim();if(v===""||isNaN(+v)||+v<0){$("shErr").textContent="اكتب رصيد الصندوق (ولو صفر)";return}const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:+v})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية · العهدة "+f2(SHIFT.float))}else $("shErr").textContent="ما انفتحت: "+j.err};
 $("shFloat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("shGo").click()}});
 $("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الإقفال",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";view("close");$("scBack").focus()};
 $("scBack").onclick=()=>view("main");
+/* stocktake (الجرد): scan → count → Enter; unknown barcode → name + count; name fix kept for the owner */
+let JD={c:null,set:false,back:"main",kT:[],t:null,hits:[]};
+function jdOpen(){JD.back=SHIFT||ME.owner?"main":"open";view("jard");jdClear();jdLoad();setTimeout(()=>$("jdQ").focus(),50)}
+function jdClear(){JD.c=null;JD.set=false;$("jdCur").style.display="none";$("jdWarn").style.display="none";$("jdQ").value="";$("jdDrop").style.display="none";$("jdQ").focus()}
+function jdShow(c,isNew,set,q){JD.c={c:c.c,n:c.n,nw:!!isNew};JD.set=!!set;$("jdDrop").style.display="none";$("jdCur").style.display="block";
+ $("jdName").textContent=c.n||"";$("jdName").style.display=isNew?"none":"block";$("jdNameIn").style.display=isNew?"block":"none";$("jdNameIn").value=isNew?"":(c.n||"");
+ $("jdRen").style.display=isNew?"none":"";$("jdCode").textContent=c.c;$("jdN").value=set&&q!=null?q:"";
+ $("jdQL").textContent=set?"العدد الصحيح":"العدد";$("jdHint").textContent=set?"اكتب العدد الصحيح كاملاً واضغط Enter — يستبدل اللي قبله":"اكتب العدد واضغط Enter — ينضاف على اللي قبله";
+ if(isNew){$("jdWarn").innerHTML="🔊 باركود <b dir=ltr>"+esc(c.c)+"</b> غير مسجل — اكتب اسمه وعدده وينضاف";$("jdWarn").style.display="block";beep(false);setTimeout(()=>$("jdNameIn").focus(),30)}
+ else{$("jdWarn").style.display="none";setTimeout(()=>{$("jdN").focus();$("jdN").select()},30)}}
+function jdFind(t){t=String(t).trim();if(!t)return;const x=BY.get(t)||BY.get(t.replace(/^0+/,""));if(x){jdShow(x,false);return}
+ if(/^\d{4,}$/.test(t)){jdShow({c:t,n:""},true);return}jdDropShow(t)}
+function jdDropShow(t){const k=norm(t),L=CAT.filter(x=>x.k.includes(k)||x.c===t).slice(0,10);JD.hits=L;const d=$("jdDrop");
+ if(!L.length){d.innerHTML='<div style="padding:10px 14px;color:#6b7884">ما لقيت صنف بهالاسم</div>';d.style.display="block";return}
+ d.innerHTML=L.map((x,i)=>'<div data-ji="'+i+'" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer">'+esc(x.n)+' <span style="color:#6b7884;font-size:12px" dir=ltr>'+esc(x.c)+'</span></div>').join("");d.style.display="block"}
+$("jdDrop").addEventListener("mousedown",e=>{const el=e.target.closest("[data-ji]");if(el){e.preventDefault();jdShow(JD.hits[+el.dataset.ji],false)}});
+$("jdQ").addEventListener("keydown",e=>{if(e.key.length===1){if(!$("jdQ").value)JD.kT=[];JD.kT.push(performance.now())}if(e.key==="Enter"){e.preventDefault();clearTimeout(JD.t);jdFind($("jdQ").value)}else if(e.key==="Escape")jdClear()});
+$("jdQ").addEventListener("input",()=>{clearTimeout(JD.t);JD.t=setTimeout(()=>{const t=$("jdQ").value.trim();if(!t)return;const K=JD.kT;let fast=K.length>=4;for(let i=1;i<K.length;i++)if(K[i]-K[i-1]>45)fast=false;if(fast)jdFind(t);else if(!/^\d+$/.test(t))jdDropShow(t)},120)});
+$("jdNameIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if($("jdNameIn").value.trim())$("jdN").focus()}});
+$("jdRen").onclick=()=>{$("jdName").style.display="none";$("jdNameIn").style.display="block";$("jdRen").style.display="none";$("jdNameIn").focus();$("jdNameIn").select()};
+$("jdN").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();jdSave()}else if(e.key==="Escape")jdClear()});
+let jdBusy=false;
+async function jdSave(){if(!JD.c||jdBusy)return;const v=$("jdN").value.trim().replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632).replace(/[٫,]/g,".");
+ if(v===""||isNaN(+v)||(+v===0&&!JD.set)){toast("اكتب العدد");$("jdN").focus();return}
+ const nm=$("jdNameIn").style.display!=="none"?$("jdNameIn").value.trim():"";if(JD.c.nw&&!nm){toast("اكتب اسم الصنف");$("jdNameIn").focus();return}
+ jdBusy=true;try{const j=await api("/api/pos/jard/count",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:JD.c.c,q:+v,set:JD.set,name:nm&&nm!==JD.c.n?nm:""})});
+  if(j.ok){beep(true);toast("✓ "+(j.row.rn||j.row.name)+" · المجموع "+j.row.q,2200);jdClear();jdLoad()}else toast(j.err==="name"?"اكتب اسم الصنف":"ما انحفظ، جرّب مرة ثانية",2500)}
+ catch(e){toast("تعذّر الاتصال، جرّب مرة ثانية",2500)}jdBusy=false}
+let JDM=[];
+async function jdLoad(){try{const j=await api("/api/pos/jard");if(!j.ok)return;const n=j.n||0,T=j.total||0,pc=T?Math.min(100,Math.round(n/T*100)):0;
+ $("jdTtl").textContent=j.cur?("جرد "+j.cur.day.split("-").slice(1).reverse().map(x=>+x).join("/")+" — التقدّم"):"الجرد — يبدأ مع أول صنف تجرده";
+ $("jdNum").textContent=n.toLocaleString("en-US");$("jdOf").textContent="من "+T.toLocaleString("en-US")+" صنف";$("jdBar").style.width=pc+"%";
+ $("jdLeft").textContent="انجرد "+pc+"% · باقي "+Math.max(0,T-n).toLocaleString("en-US")+" صنف"+(j.nw?" · غير مسجلة "+j.nw:"");
+ const U=Object.keys(j.us||{});$("jdUs").innerHTML=U.length?U.map(u=>'<div>'+esc(u)+' · '+j.us[u]+' صنف</div>').join(""):'<div style="color:#6b7884">ما بدأ أحد</div>';
+ JDM=j.mine||[];const tm=a=>{const d=new Date(a),h=d.getHours();return (h%12||12)+":"+String(d.getMinutes()).padStart(2,"0")+(h<12?" ص":" م")};
+ $("jdMine").innerHTML=JDM.length?JDM.map((x,i)=>'<div data-jm="'+i+'" style="display:flex;justify-content:space-between;gap:8px;padding:9px 6px;border-bottom:1px solid #f1f5f9;cursor:pointer"><span>'+esc(x.rn||x.name)+(x.nw?' <span style="color:#c2410c;font-size:12px">جديد</span>':'')+(x.rn?' <span style="color:#1d4ed8;font-size:12px">اسم معدّل</span>':'')+'</span><span><b style="font-size:17px">'+x.q+'</b> <span style="color:#6b7884;font-size:12px">'+tm(x.at)+'</span></span></div>').join(""):'<div style="color:#6b7884">لسا ما جردت شي</div>'}catch(e){}}
+$("jdMine").addEventListener("click",e=>{const el=e.target.closest("[data-jm]");if(!el)return;const x=JDM[+el.dataset.jm];jdShow({c:x.code,n:x.rn||x.name},false,true,x.q);if(x.nw){$("jdRen").click()}});
+$("jdBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الجرد",3000);return}jdOpen()};
+$("shJd").onclick=()=>jdOpen();
+$("jdDone").onclick=()=>{toast("✓ الجرد محفوظ",2000);view(JD.back);if(JD.back==="open")setTimeout(()=>$("shFloat").focus(),50)};
+setInterval(()=>{if($("jdView").style.display!=="none")jdLoad()},15000);
+
 $("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فواتير ما أُرسلت بعد، انتظر شوي وجرّب";flush();return}
  $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
  if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",8000)}

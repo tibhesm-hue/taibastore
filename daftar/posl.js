@@ -166,7 +166,52 @@
     if (PLX.busy || (PLX.key === k && Date.now() - PLX.at < 20000)) return; PLX.busy = true;
     fetch("/api/pos/plstats?f=" + f + "&t=" + t2, { credentials: "same-origin", cache: "no-store" }).then(function (x) { return x.json(); }).then(function (j) { if (j && j.ok) { PLX.data = j; PLX.key = k; PLX.at = Date.now(); plxDraw(); } }).catch(function () { }).then(function () { PLX.busy = false; });
   }
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } }
+
+  /* stocktake card (الجرد) in the reports, owner only */
+  var JDX = { at: 0, busy: false, data: null, tab: "c", ok2: 0 };
+  function jdxBox() {
+    var pl = document.getElementById("plCard"); if (!pl) return null; var c = document.getElementById("jdxCard");
+    if (!c) { c = document.createElement("div"); c.className = "card"; c.id = "jdxCard"; c.hidden = true; pl.parentNode.insertBefore(c, pl.nextSibling); }
+    return c;
+  }
+  function jdxDraw() {
+    var c = jdxBox(), j = JDX.data; if (!c || !j) return; c.hidden = false;
+    var K = function (t, v, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + t + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + v + '</b></div>'; };
+    var h = '<h2>📦 الجرد</h2>';
+    if (!j.cur) { c.innerHTML = h + '<p class="small muted">ما فيه جرد للحين. يبدأ الجرد أول ما يضغط العامل «📦 الجرد» في نقاط البيع ويجرد أول صنف.</p>'; return; }
+    var R = j.rows || [], cnt = R.filter(function (x) { return !x.nw; }), nw = R.filter(function (x) { return x.nw; }), rn = R.filter(function (x) { return x.rn; }), us = {};
+    R.forEach(function (x) { for (var u in (x.by || {})) us[u] = (us[u] || 0) + 1; });
+    var open = j.cur.st === "open", dd = dm(j.cur.day || ymd(new Date(j.cur.at + 3 * 3600e3)));
+    h += '<div class="grid2">' + K("جرد " + dd + (open ? " — شغّال" : " — معتمد"), cnt.length.toLocaleString("en-US") + " / " + (j.total || 0).toLocaleString("en-US"))
+      + K("باقي ما انجرد", (j.missN || 0).toLocaleString("en-US"), "#b91c1c") + K("غير مسجلة", nw.length, "#c2410c")
+      + '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">العمال</div><b style="display:block;font-size:14px;line-height:1.6">' + (Object.keys(us).map(function (u) { return esc(u) + " " + us[u]; }).join(" · ") || "—") + '</b></div></div>';
+    var T = [["c", "انجرد"], ["m", "ما انجرد"], ["n", "غير مسجلة"], ["r", "أسماء معدّلة"]];
+    h += '<div class="irq" style="margin:10px 0 6px">' + T.map(function (t) { return '<button type="button" data-jdt="' + t[0] + '" aria-pressed="' + (JDX.tab === t[0]) + '">' + t[1] + '</button>'; }).join("") + '</div>';
+    var tm = function (a) { var d = new Date(a), hh = d.getHours(); return (hh % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + (hh < 12 ? " ص" : " م"); };
+    var row = function (a, b, sub) { return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:14px"><span>' + a + (sub ? '<br><span class="small muted">' + sub + '</span>' : '') + '</span><b style="white-space:nowrap">' + b + '</b></div>'; };
+    var L = JDX.tab === "c" ? cnt.map(function (x) { return row(esc(x.rn || x.name), x.q, esc(x.u || "") + " · " + tm(x.at)); })
+      : JDX.tab === "m" ? (j.miss || []).slice(0, 300).map(function (x) { return row(esc(x[1]), '<span class="small muted" dir="ltr">' + esc(x[0]) + '</span>'); })
+      : JDX.tab === "n" ? nw.map(function (x) { return row(esc(x.name), x.q, '<span dir="ltr">' + esc(x.code) + '</span> · ' + esc(x.u || "")); })
+      : rn.map(function (x) { return row(esc(x.old) + ' ← <b>' + esc(x.rn) + '</b>', x.q, esc(x.u || "")); });
+    h += '<div style="max-height:420px;overflow:auto">' + (L.length ? L.join("") : '<p class="small muted">ما فيه شيء هنا.</p>') + (JDX.tab === "m" && (j.missN || 0) > 300 ? '<p class="small muted">يظهر أول 300 من ' + j.missN + '</p>' : '') + '</div>';
+    if (open) h += '<button type="button" class="btn" id="jdxOk" style="width:100%;margin-top:10px">' + (JDX.ok2 && Date.now() - JDX.ok2 < 4000 ? "اضغط مرة ثانية للتأكيد — يصير العدد رصيد المخزون" : "اعتمد الجرد وأقفله") + '</button>';
+    else h += '<p class="small muted" style="margin-top:8px">اعتُمد' + (j.cur.applied != null ? " · صار رصيد " + j.cur.applied + " صنف في المخزون" : "") + '. الجرد الجاي يبدأ مع أول صنف يجرده العامل.</p>';
+    if (c.__h !== h) { c.innerHTML = h; c.__h = h; }
+  }
+  function jdxLoad(force) {
+    if (JDX.busy || (!force && Date.now() - JDX.at < 30000)) return; JDX.busy = true;
+    fetch("/api/pos/jard/rep", { credentials: "same-origin", cache: "no-store" }).then(function (x) { return x.json(); }).then(function (j) { if (j && j.ok) { JDX.data = j; JDX.at = Date.now(); jdxDraw(); } }).catch(function () { }).then(function () { JDX.busy = false; });
+  }
+  function jdxTick() { var pl = document.getElementById("plCard"); if (!pl || pl.hidden || !pl.offsetParent) return; jdxBox(); jdxLoad(false); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-jdt]"); if (t) { JDX.tab = t.dataset.jdt; jdxDraw(); return; }
+    if (e.target.closest && e.target.closest("#jdxOk")) {
+      if (!(JDX.ok2 && Date.now() - JDX.ok2 < 4000)) { JDX.ok2 = Date.now(); jdxDraw(); setTimeout(jdxDraw, 4100); return; }
+      JDX.ok2 = 0; var b = document.getElementById("jdxOk"); if (b) { b.disabled = true; b.textContent = "⏳ يعتمد…"; }
+      fetch("/api/pos/jard/close", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: "{}" }).then(function (x) { return x.json(); }).then(function () { jdxLoad(true); }).catch(function () { jdxLoad(true); });
+    }
+  });
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();
