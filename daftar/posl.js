@@ -427,7 +427,36 @@
     if (b.getAttribute("aria-selected") !== "false") b.setAttribute("aria-selected", "false");
     if (!w.__jc) { w.__jc = 1; w.addEventListener("click", function (e) { var x = e.target.closest && e.target.closest("button"); if (x && x.id !== "jcNavB" && JC.on) jcClose(); }, true); }
   }
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } }
+
+  /* owner 24 Nov: items taken off a sale before it was saved (line deleted, quantity lowered, basket emptied) — red counter on «نقاط البيع», list inside its card, «شفته» clears one */
+  var PV = { at: 0, d: null, busy: false };
+  function pvLoad() {
+    if (PV.busy || !document.body.classList.contains("sxOwn")) return; PV.busy = true;
+    fetch("/api/pos/voids", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { PV.d = j; pvDraw(); } }).catch(function () { }).then(function () { PV.busy = false; PV.at = Date.now(); });
+  }
+  function pvBadge(el, n) {
+    if (!el) return; var b = el.querySelector(".pvB");
+    if (!n) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement("b"); b.className = "pvB"; b.style.cssText = "position:absolute;top:2px;inset-inline-end:6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#c2410c;color:#fff;font-size:12px;line-height:20px;text-align:center"; if (getComputedStyle(el).position === "static") el.style.position = "relative"; el.appendChild(b); }
+    if (b.textContent !== String(n)) b.textContent = n;
+  }
+  function pvDraw() {
+    var j = PV.d; if (!j) return; var n = j.unseen || 0;
+    pvBadge(document.getElementById("posTab"), n); pvBadge(document.querySelector('[data-jx="p"]'), n);
+    var card = document.getElementById("posSgCard"); if (!card) return;
+    var box = document.getElementById("pvBox"); if (!box) { box = document.createElement("div"); box.id = "pvBox"; card.insertBefore(box, card.firstChild); }
+    var L = (j.list || []).filter(function (x) { return !x.seen; }).slice(0, 40), K = { del: "حذف صنف", dec: "نقّص الكمية", clr: "فرّغ السلة" };
+    var h = !L.length ? "" : '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><b style="color:#c2410c">حذوفات قبل الحفظ (' + L.length + ')</b><button type="button" class="btn sm ghost" data-pvall="1">شفتها كلها</button></div>' +
+      L.map(function (x) { var d = x.day.split("-"), dd = (+d[2]) + "/" + (+d[1]); return '<div style="padding:8px 2px;border-top:1px solid var(--line,#e5e7eb)"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(x.u) + " · " + (K[x.kind] || "حذف") + '</b><b style="color:#c2410c">' + Number(x.amt).toFixed(2) + '</b></div><div class="small muted">' + dd + " · " + String(x.t || "").slice(0, 5) + " · " + (x.br === "del" ? "التوصيل" : "المبيعات") + '</div><div class="small">' + x.lines.map(function (l) { return esc(l[1]) + " × " + l[3]; }).join("، ") + '</div><button type="button" class="btn sm ghost" data-pvseen="' + esc(x.id) + '" style="margin-top:6px">شفته</button></div>'; }).join("") + "</div>";
+    if (box.__h !== h) { box.innerHTML = h; box.__h = h; }
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-pvseen],[data-pvall]"); if (!b) return;
+    var body = b.dataset.pvall ? { all: 1 } : { id: b.dataset.pvseen }; b.disabled = true;
+    fetch("/api/pos/voids/seen", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function () { PV.at = 0; pvLoad(); }).catch(function () { b.disabled = false; });
+  });
+  function pvTick() { if (Date.now() - PV.at > 30000) pvLoad(); else pvDraw(); }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } try { pvTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();
