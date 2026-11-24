@@ -249,7 +249,7 @@
   }
   function jcClose() { jcCamStop(); JC.on = false; JC.c = null; document.body.classList.remove("jcFull"); var b = document.getElementById("jcBox"); if (b) b.hidden = true; JDX.show = false; var jc = document.getElementById("jdxCard"); if (jc) jc.hidden = true; }
   function jcShow(code, name, isNew, set, q) {
-    JC.c = { c: code, n: name || "", nw: !!isNew }; JC.set = !!set; jcCamStop();
+    JC.c = { c: code, n: name || "", nw: !!isNew }; JC.set = !!set; JC.cid = null; jcCamStop();
     var g = function (id) { return document.getElementById(id); };
     g("jcList").innerHTML = ""; g("jcCur").hidden = false; g("jcName").textContent = name || ""; g("jcName").hidden = !!isNew; g("jcNameIn").hidden = !isNew; g("jcNameIn").value = isNew ? "" : (name || ""); g("jcCode").textContent = code;
     document.querySelector("[data-jcren]").hidden = !!isNew; g("jcN").value = set && q != null ? q : ""; g("jcQL").textContent = set ? "العدد الصحيح (يستبدل اللي قبله)" : "العدد الموجود على الرف (ينضاف على اللي قبله)";
@@ -258,8 +258,13 @@
     g("jcCur").scrollIntoView({ block: "center", behavior: "smooth" });
   }
   function jcFind(t) {
-    t = String(t || "").trim(); if (!t) return; var L = document.getElementById("jcList");
-    if (/^\d{4,}$/.test(t)) { jcGet("/api/jard/find?code=" + encodeURIComponent(t)).then(function (j) { if (!j.ok) return; if (j.hit) jcShow(j.hit[0], j.hit[1], false); else jcShow(t, "", true); }).catch(function () { L.innerHTML = '<p class="small" style="color:#b91c1c">تعذّر الاتصال</p>'; }); return; }
+    t = String(t || "").trim().replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 1776; }); if (!t) return; var L = document.getElementById("jcList");
+    /* owner 24 Nov: a full barcode that is not in the catalogue is a new item; part of a barcode lists the matches (never a wrong «new item») */
+    if (/^\d{4,}$/.test(t)) { jcGet("/api/jard/find?code=" + encodeURIComponent(t)).then(function (j) { if (!j.ok) return; if (j.hit) { jcShow(j.hit[0], j.hit[1], false); return; }
+        jcGet("/api/jard/find?q=" + encodeURIComponent(t)).then(function (k) { var A = (k && k.list) || []; JC.hits = A;
+          if (A.length === 1 && t.length < 8) { jcShow(A[0][0], A[0][1], false); return; }
+          if (A.length && t.length < 8) { L.innerHTML = A.map(function (x, i) { return '<div data-jch="' + i + '" style="padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb);cursor:pointer">' + esc(x[1]) + ' <span class="small muted" dir="ltr">' + esc(x[0]) + '</span></div>'; }).join(""); return; }
+          if (t.length >= 8) jcShow(t, "", true); else L.innerHTML = '<p class="small muted">ما لقيت صنف بهالرقم — اكتب الباركود كامل أو اسم الصنف</p>'; }); }).catch(function () { L.innerHTML = '<p class="small" style="color:#b91c1c">تعذّر الاتصال</p>'; }); return; }
     jcGet("/api/jard/find?q=" + encodeURIComponent(t)).then(function (j) { var A = (j && j.list) || []; JC.hits = A;
       L.innerHTML = A.length ? A.map(function (x, i) { return '<div data-jch="' + i + '" style="padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb);cursor:pointer">' + esc(x[1]) + ' <span class="small muted" dir="ltr">' + esc(x[0]) + '</span></div>'; }).join("") : '<p class="small muted">ما لقيت صنف بهالاسم</p>'; }).catch(function () { });
   }
@@ -346,11 +351,12 @@
   function jcSave() {
     if (!JC.c || JC.busy) return; var g = function (id) { return document.getElementById(id); };
     var v = String(g("jcN").value || "").trim().replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/[٫,]/g, ".");
-    if (v === "" || isNaN(+v) || (+v === 0 && !JC.set)) { g("jcN").focus(); return; }
+    if (v === "" || isNaN(+v) || +v < 0 || (+v === 0 && !JC.set)) { g("jcN").focus(); return; }
+    if (!JC.cid) JC.cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     var nm = !g("jcNameIn").hidden ? g("jcNameIn").value.trim() : ""; if (JC.c.nw && !nm) { g("jcNameIn").focus(); return; }
     JC.busy = true; var sb = document.querySelector("[data-jcsave]"); sb.disabled = true; sb.textContent = "⏳ يحفظ…";
-    fetch(jcQ("/api/jard/count"), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: JC.c.c, q: +v, set: JC.set, name: nm && nm !== JC.c.n ? nm : "" }) }).then(function (r) { return r.json(); }).then(function (j) {
-      if (j.ok) { jcBeep(true); g("jcCur").hidden = true; g("jcWarn").hidden = true; g("jcIn").value = ""; JC.c = null; g("jcProg").innerHTML = '<b style="color:#15803d">✓ ' + esc(j.row.rn || j.row.name) + ' · المجموع ' + j.row.q + '</b>'; jcLoad(true); }
+    fetch(jcQ("/api/jard/count"), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: JC.c.c, q: +v, set: JC.set, cid: JC.cid, name: nm && nm !== JC.c.n ? nm : "" }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { JC.cid = null; jcBeep(true); g("jcCur").hidden = true; g("jcWarn").hidden = true; g("jcIn").value = ""; JC.c = null; g("jcProg").innerHTML = '<b style="color:#15803d">✓ ' + esc(j.row.rn || j.row.name) + ' · المجموع ' + j.row.q + '</b>'; jcLoad(true); }
       else alert(j.err === "name" ? "اكتب اسم الصنف" : "ما انحفظ، جرّب مرة ثانية");
     }).catch(function () { alert("تعذّر الاتصال، جرّب مرة ثانية"); }).then(function () { JC.busy = false; sb.disabled = false; sb.textContent = "احفظ"; });
   }
