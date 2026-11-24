@@ -170,15 +170,15 @@
   /* stocktake card (الجرد) in the reports, owner only */
   var JDX = { at: 0, busy: false, data: null, tab: "c", ok2: 0 };
   function jdxBox() {
-    var pl = document.getElementById("plCard"); if (!pl) return null; var c = document.getElementById("jdxCard");
-    if (!c) { c = document.createElement("div"); c.className = "card"; c.id = "jdxCard"; c.hidden = true; pl.parentNode.insertBefore(c, pl.nextSibling); }
+    var home = document.getElementById("tab-home"); if (!home) return null; var c = document.getElementById("jdxCard");
+    if (!c) { c = document.createElement("div"); c.className = "card"; c.id = "jdxCard"; c.hidden = true; var sg = document.getElementById("sgCard"); if (sg && sg.parentElement === home) home.insertBefore(c, sg.nextSibling); else home.appendChild(c); }
     return c;
   }
   function jdxDraw() {
     var c = jdxBox(), j = JDX.data; if (!c || !j) return; c.hidden = false;
     var K = function (t, v, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + t + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + v + '</b></div>'; };
     var h = '<h2>📦 الجرد</h2>';
-    if (!j.cur) { c.innerHTML = h + '<p class="small muted">ما فيه جرد للحين. يبدأ الجرد أول ما يضغط العامل «📦 الجرد» في نقاط البيع ويجرد أول صنف.</p>'; return; }
+    if (!j.cur) { c.innerHTML = h + '<p class="small muted">ما فيه جرد للحين. يبدأ الجرد أول ما يضغط الكاشير «📋 الجرد» في تبويب الكاشير ويجرد أول صنف.</p>'; return; }
     var R = j.rows || [], cnt = R.filter(function (x) { return !x.nw; }), nw = R.filter(function (x) { return x.nw; }), rn = R.filter(function (x) { return x.rn; }), us = {};
     R.forEach(function (x) { for (var u in (x.by || {})) us[u] = (us[u] || 0) + 1; });
     var open = j.cur.st === "open", dd = dm(j.cur.day || ymd(new Date(j.cur.at + 3 * 3600e3)));
@@ -195,23 +195,118 @@
       : rn.map(function (x) { return row(esc(x.old) + ' ← <b>' + esc(x.rn) + '</b>', x.q, esc(x.u || "")); });
     h += '<div style="max-height:420px;overflow:auto">' + (L.length ? L.join("") : '<p class="small muted">ما فيه شيء هنا.</p>') + (JDX.tab === "m" && (j.missN || 0) > 300 ? '<p class="small muted">يظهر أول 300 من ' + j.missN + '</p>' : '') + '</div>';
     if (open) h += '<button type="button" class="btn" id="jdxOk" style="width:100%;margin-top:10px">' + (JDX.ok2 && Date.now() - JDX.ok2 < 4000 ? "اضغط مرة ثانية للتأكيد — يصير العدد رصيد المخزون" : "اعتمد الجرد وأقفله") + '</button>';
-    else h += '<p class="small muted" style="margin-top:8px">اعتُمد' + (j.cur.applied != null ? " · صار رصيد " + j.cur.applied + " صنف في المخزون" : "") + '. الجرد الجاي يبدأ مع أول صنف يجرده العامل.</p>';
+    else h += '<p class="small muted" style="margin-top:8px">اعتُمد' + (j.cur.applied != null ? " · صار رصيد " + j.cur.applied + " صنف في المخزون" : "") + '. الجرد الجاي يبدأ مع أول صنف يجرده الكاشير.</p>';
     if (c.__h !== h) { c.innerHTML = h; c.__h = h; }
   }
   function jdxLoad(force) {
     if (JDX.busy || (!force && Date.now() - JDX.at < 30000)) return; JDX.busy = true;
-    fetch("/api/pos/jard/rep", { credentials: "same-origin", cache: "no-store" }).then(function (x) { return x.json(); }).then(function (j) { if (j && j.ok) { JDX.data = j; JDX.at = Date.now(); jdxDraw(); } }).catch(function () { }).then(function () { JDX.busy = false; });
+    fetch("/api/jard/rep", { credentials: "same-origin", cache: "no-store" }).then(function (x) { return x.json(); }).then(function (j) { if (j && j.ok) { JDX.data = j; JDX.at = Date.now(); jdxDraw(); } }).catch(function () { }).then(function () { JDX.busy = false; });
   }
-  function jdxTick() { var pl = document.getElementById("plCard"); if (!pl || pl.hidden || !pl.offsetParent) return; jdxBox(); jdxLoad(false); }
+  function jdxTick() { var h = document.getElementById("tab-home"); if (!h || h.hidden) return; jdxBox(); jdxLoad(false); }
   document.addEventListener("click", function (e) {
     var t = e.target.closest && e.target.closest("[data-jdt]"); if (t) { JDX.tab = t.dataset.jdt; jdxDraw(); return; }
     if (e.target.closest && e.target.closest("#jdxOk")) {
       if (!(JDX.ok2 && Date.now() - JDX.ok2 < 4000)) { JDX.ok2 = Date.now(); jdxDraw(); setTimeout(jdxDraw, 4100); return; }
       JDX.ok2 = 0; var b = document.getElementById("jdxOk"); if (b) { b.disabled = true; b.textContent = "⏳ يعتمد…"; }
-      fetch("/api/pos/jard/close", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: "{}" }).then(function (x) { return x.json(); }).then(function () { jdxLoad(true); }).catch(function () { jdxLoad(true); });
+      fetch("/api/jard/close", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: "{}" }).then(function (x) { return x.json(); }).then(function () { jdxLoad(true); }).catch(function () { jdxLoad(true); });
     }
   });
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } }
+
+  /* cashier tab: «📋 الجرد» — scan with the phone camera (or type), write the count, save */
+  var JC = { on: false, c: null, set: false, mine: [], cam: null, zx: null, t: null, busy: false };
+  function jcWho() { try { return (typeof curCashier === "function" && curCashier()) || ""; } catch (e) { return ""; } }
+  function jcQ(p) { return p + (p.indexOf("?") < 0 ? "?" : "&") + "who=" + encodeURIComponent(jcWho()); }
+  function jcGet(p) { return fetch(jcQ(p), { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }); }
+  var JCW = (function () { function w(parts) { var sr = 22050, n = 0; parts.forEach(function (p) { n += Math.round(p[1] * sr); }); var b = new DataView(new ArrayBuffer(44 + n * 2)), s = function (o, t) { for (var i = 0; i < t.length; i++) b.setUint8(o + i, t.charCodeAt(i)); }; s(0, "RIFF"); b.setUint32(4, 36 + n * 2, true); s(8, "WAVEfmt "); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true); b.setUint32(24, sr, true); b.setUint32(28, sr * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); s(36, "data"); b.setUint32(40, n * 2, true); var o = 44; parts.forEach(function (p) { var m = Math.round(p[1] * sr); for (var i = 0; i < m; i++) { var v = p[0] ? (Math.sin(2 * Math.PI * p[0] * i / sr) > 0 ? 0.6 : -0.6) : 0; b.setInt16(o, v * 32767, true); o += 2; } }); var u = new Uint8Array(b.buffer), str = ""; for (var i = 0; i < u.length; i++) str += String.fromCharCode(u[i]); return "data:audio/wav;base64," + btoa(str); } return { ok: w([[1050, .12]]), bad: w([[380, .22], [0, .08], [380, .22], [0, .08], [260, .5]]) }; })();
+  function jcBeep(ok) { try { var a = new Audio(ok ? JCW.ok : JCW.bad); a.play().catch(function () { }); } catch (e) { } try { if (!ok && navigator.vibrate) navigator.vibrate([200, 80, 200]); } catch (e) { } }
+  function jcBtnInject() {
+    var M = document.getElementById("cwMenu"); if (!M) return;
+    var T = document.getElementById("tab-close"); if (T && T.dataset.cw && T.dataset.cw !== "menu") return;
+    if (!JC.on && !M.querySelector("[data-jcgo]")) { var sk = M.querySelectorAll('[data-cwgo="sk"]'), last = sk[sk.length - 1]; var b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.setAttribute("data-jcgo", "1"); b.setAttribute("style", last ? (last.getAttribute("style") || "") : "display:block;width:100%;padding:16px 12px;margin:8px 0;border-radius:14px;font-size:1.15em;font-weight:800;text-align:center"); b.textContent = "📋 الجرد"; if (last) last.parentNode.insertBefore(b, last.nextSibling); else M.appendChild(b); }
+  }
+  function jcBox() { var b = document.getElementById("jcBox"); if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
+  function jcOpen() {
+    var b = jcBox(), M = document.getElementById("cwMenu"); if (!b) return; JC.on = true; M.style.display = "none"; b.hidden = false;
+    var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
+    b.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📋 الجرد</h2><button type="button" class="btn sm ghost" data-jcback>رجوع</button></div>'
+      + '<div class="small muted" id="jcProg" style="margin:6px 0 8px"></div>'
+      + '<button type="button" class="btn" data-jccam style="' + BS + '">📷 امسح الباركود بالكاميرا</button>'
+      + '<div id="jcCamW" hidden style="position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:8px"><video id="jcVid" playsinline muted style="width:100%;max-height:260px;object-fit:cover;display:block"></video><div style="position:absolute;left:12%;right:12%;top:45%;height:2px;background:#ef4444"></div></div>'
+      + '<div style="display:flex;gap:6px"><input type="text" id="jcIn" placeholder="أو اكتب الباركود أو اسم الصنف" style="flex:1;min-width:0"><button type="button" class="btn sm" data-jcfind>بحث</button></div>'
+      + '<div id="jcList"></div><div id="jcWarn" hidden style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px"></div>'
+      + '<div id="jcCur" hidden style="margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px">'
+      + '<b id="jcName" style="font-size:1.2em;display:block"></b><input type="text" id="jcNameIn" placeholder="اكتب اسم الصنف" hidden style="width:100%"><div class="small muted" id="jcCode" dir="ltr" style="text-align:right"></div>'
+      + '<button type="button" class="btn sm ghost" data-jcren style="margin-top:4px">✏️ تعديل الاسم</button>'
+      + '<div class="small" id="jcQL" style="margin-top:8px">العدد الموجود على الرف</div><input type="text" id="jcN" inputmode="decimal" style="width:100%;font-size:1.6em;font-weight:800;text-align:center">'
+      + '<button type="button" class="btn" data-jcsave style="' + BS + '">احفظ</button></div>'
+      + '<h3 style="margin:14px 0 4px;font-size:15px">آخر ما جردت <span class="small muted">(اضغط الصنف لتصحيح عدده)</span></h3><div id="jcMine"></div></div>';
+    jcLoad();
+  }
+  function jcClose() { jcCamStop(); JC.on = false; JC.c = null; var b = document.getElementById("jcBox"), M = document.getElementById("cwMenu"); if (b) b.hidden = true; if (M) M.style.display = ""; }
+  function jcShow(code, name, isNew, set, q) {
+    JC.c = { c: code, n: name || "", nw: !!isNew }; JC.set = !!set; jcCamStop();
+    var g = function (id) { return document.getElementById(id); };
+    g("jcList").innerHTML = ""; g("jcCur").hidden = false; g("jcName").textContent = name || ""; g("jcName").hidden = !!isNew; g("jcNameIn").hidden = !isNew; g("jcNameIn").value = isNew ? "" : (name || ""); g("jcCode").textContent = code;
+    document.querySelector("[data-jcren]").hidden = !!isNew; g("jcN").value = set && q != null ? q : ""; g("jcQL").textContent = set ? "العدد الصحيح (يستبدل اللي قبله)" : "العدد الموجود على الرف (ينضاف على اللي قبله)";
+    if (isNew) { g("jcWarn").innerHTML = "🔊 باركود <b dir=ltr>" + esc(code) + "</b> غير مسجل — اكتب اسمه وعدده وينضاف"; g("jcWarn").hidden = false; jcBeep(false); g("jcNameIn").focus(); }
+    else { g("jcWarn").hidden = true; jcBeep(true); setTimeout(function () { g("jcN").focus(); }, 50); }
+    g("jcCur").scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  function jcFind(t) {
+    t = String(t || "").trim(); if (!t) return; var L = document.getElementById("jcList");
+    if (/^\d{4,}$/.test(t)) { jcGet("/api/jard/find?code=" + encodeURIComponent(t)).then(function (j) { if (!j.ok) return; if (j.hit) jcShow(j.hit[0], j.hit[1], false); else jcShow(t, "", true); }).catch(function () { L.innerHTML = '<p class="small" style="color:#b91c1c">تعذّر الاتصال</p>'; }); return; }
+    jcGet("/api/jard/find?q=" + encodeURIComponent(t)).then(function (j) { var A = (j && j.list) || []; JC.hits = A;
+      L.innerHTML = A.length ? A.map(function (x, i) { return '<div data-jch="' + i + '" style="padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb);cursor:pointer">' + esc(x[1]) + ' <span class="small muted" dir="ltr">' + esc(x[0]) + '</span></div>'; }).join("") : '<p class="small muted">ما لقيت صنف بهالاسم</p>'; }).catch(function () { });
+  }
+  function jcCamStop() { try { if (JC.zx) JC.zx.reset(); } catch (e) { } JC.zx = null; if (JC.cam) { JC.cam.getTracks().forEach(function (t) { t.stop(); }); JC.cam = null; } var w = document.getElementById("jcCamW"); if (w) w.hidden = true; }
+  function jcCam() {
+    if (JC.cam || JC.zx) { jcCamStop(); return; }
+    var w = document.getElementById("jcCamW"), v = document.getElementById("jcVid"); w.hidden = false;
+    var hit = function (code) { code = String(code || "").trim(); if (!code) return; jcCamStop(); document.getElementById("jcIn").value = code; jcFind(code); };
+    var useZX = function () { (typeof loadZX === "function" ? loadZX() : Promise.reject()).then(function () { JC.zx = new ZXing.BrowserMultiFormatReader(); return JC.zx.decodeFromConstraints({ video: { facingMode: "environment" } }, v, function (r) { if (r) hit(r.getText()); }); }).catch(function () { jcCamStop(); alert("ما قدرت أفتح الكاميرا — اكتب الباركود"); }); };
+    if ("BarcodeDetector" in window) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }).then(function (st) {
+        JC.cam = st; v.srcObject = st; v.play(); var bd; try { bd = new BarcodeDetector(); } catch (e) { jcCamStop(); useZX(); return; }
+        var tick = function () { if (!JC.cam) return; bd.detect(v).then(function (r) { if (r && r[0]) hit(r[0].rawValue); else setTimeout(tick, 150); }).catch(function () { setTimeout(tick, 300); }); }; tick();
+      }).catch(function () { jcCamStop(); alert("ما سمحت للكاميرا — اسمح لها من إعدادات المتصفح أو اكتب الباركود"); });
+    } else useZX();
+  }
+  function jcSave() {
+    if (!JC.c || JC.busy) return; var g = function (id) { return document.getElementById(id); };
+    var v = String(g("jcN").value || "").trim().replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 1632; }).replace(/[٫,]/g, ".");
+    if (v === "" || isNaN(+v) || (+v === 0 && !JC.set)) { g("jcN").focus(); return; }
+    var nm = !g("jcNameIn").hidden ? g("jcNameIn").value.trim() : ""; if (JC.c.nw && !nm) { g("jcNameIn").focus(); return; }
+    JC.busy = true; var sb = document.querySelector("[data-jcsave]"); sb.disabled = true; sb.textContent = "⏳ يحفظ…";
+    fetch(jcQ("/api/jard/count"), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: JC.c.c, q: +v, set: JC.set, name: nm && nm !== JC.c.n ? nm : "" }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { jcBeep(true); g("jcCur").hidden = true; g("jcWarn").hidden = true; g("jcIn").value = ""; JC.c = null; g("jcProg").innerHTML = '<b style="color:#15803d">✓ ' + esc(j.row.rn || j.row.name) + ' · المجموع ' + j.row.q + '</b>'; jcLoad(true); }
+      else alert(j.err === "name" ? "اكتب اسم الصنف" : "ما انحفظ، جرّب مرة ثانية");
+    }).catch(function () { alert("تعذّر الاتصال، جرّب مرة ثانية"); }).then(function () { JC.busy = false; sb.disabled = false; sb.textContent = "احفظ"; });
+  }
+  function jcLoad(keepMsg) {
+    jcGet("/api/jard").then(function (j) { if (!j.ok) return; var n = j.n || 0, T = j.total || 0, pc = T ? Math.min(100, Math.round(n / T * 100)) : 0, P = document.getElementById("jcProg");
+      var line = j.cur ? "انجرد " + n.toLocaleString("en-US") + " من " + T.toLocaleString("en-US") + " صنف (" + pc + "%)" + (j.nw ? " · غير مسجلة " + j.nw : "") : "الجرد يبدأ مع أول صنف تجرده";
+      if (P) P.innerHTML = (keepMsg ? P.innerHTML + "<br>" : "") + line;
+      JC.mine = j.mine || []; var tm = function (a) { var d = new Date(a), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + (h < 12 ? " ص" : " م"); };
+      var M = document.getElementById("jcMine"); if (M) M.innerHTML = JC.mine.length ? JC.mine.map(function (x, i) { return '<div data-jcm="' + i + '" style="display:flex;justify-content:space-between;gap:8px;padding:9px 2px;border-bottom:1px solid var(--line,#e5e7eb);cursor:pointer"><span>' + esc(x.rn || x.name) + (x.nw ? ' <span class="small" style="color:#c2410c">جديد</span>' : '') + (x.rn ? ' <span class="small" style="color:#1d4ed8">اسم معدّل</span>' : '') + '</span><span><b>' + x.q + '</b> <span class="small muted">' + tm(x.at) + '</span></span></div>'; }).join("") : '<p class="small muted">لسا ما جردت شي</p>';
+    }).catch(function () { });
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target; if (!t.closest) return;
+    if (t.closest("[data-jcgo]")) { jcOpen(); return; }
+    if (t.closest("[data-jcback]")) { jcClose(); return; }
+    if (t.closest("[data-jccam]")) { jcCam(); return; }
+    if (t.closest("[data-jcfind]")) { jcFind(document.getElementById("jcIn").value); return; }
+    if (t.closest("[data-jcsave]")) { jcSave(); return; }
+    if (t.closest("[data-jcren]")) { var a = document.getElementById("jcName"), b = document.getElementById("jcNameIn"); a.hidden = true; b.hidden = false; b.focus(); t.closest("[data-jcren]").hidden = true; return; }
+    var h = t.closest("[data-jch]"); if (h) { var x = JC.hits[+h.dataset.jch]; jcShow(x[0], x[1], false); return; }
+    var m = t.closest("[data-jcm]"); if (m) { var y = JC.mine[+m.dataset.jcm]; jcShow(y.code, y.rn || y.name, false, true, y.q); return; }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || !e.target || !e.target.id) return;
+    if (e.target.id === "jcIn") { e.preventDefault(); jcFind(e.target.value); } else if (e.target.id === "jcN") { e.preventDefault(); jcSave(); } else if (e.target.id === "jcNameIn") { e.preventDefault(); document.getElementById("jcN").focus(); }
+  });
+  function jcTick() { var T = document.getElementById("tab-close"); if (!T || T.hidden) { if (JC.on) jcClose(); return; } jcBtnInject(); if (JC.on) { var M = document.getElementById("cwMenu"); if (M && M.style.display !== "none") M.style.display = "none"; } }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();

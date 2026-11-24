@@ -89,7 +89,7 @@ tr.last td{background:#f0fdf4}
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
- <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="jdBtn">📦 الجرد</button><button class="tb" id="scBtn" style="display:none;background:#991b1b;border-color:#991b1b">إقفال الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
+ <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="scBtn" style="display:none;background:#991b1b;border-color:#991b1b">إقفال الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
 </div>
 <div id="shOpen" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:420px;max-width:94vw">
@@ -97,7 +97,7 @@ tr.last td{background:#f0fdf4}
   <div class="small2" id="shWho"></div>
   <div style="margin:14px 0 6px">رصيد الصندوق (العهدة) الموجود الحين</div>
   <input id="shFloat" class="uin" style="height:54px;font-size:22px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
-  <button class="save" id="shGo">ابدأ البيع</button><button id="shJd" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px;background:#fff;font-family:inherit;font-size:15px">📦 أبي أجرد بس</button><div class="err" id="shErr"></div>
+  <button class="save" id="shGo">ابدأ البيع</button><div class="err" id="shErr"></div>
  </div></div>
 <div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:460px;max-width:94vw;border:2px solid #dc2626">
@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 23</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 24</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -492,8 +492,6 @@ async function jdLoad(){try{const j=await api("/api/pos/jard");if(!j.ok)return;c
  JDM=j.mine||[];const tm=a=>{const d=new Date(a),h=d.getHours();return (h%12||12)+":"+String(d.getMinutes()).padStart(2,"0")+(h<12?" ص":" م")};
  $("jdMine").innerHTML=JDM.length?JDM.map((x,i)=>'<div data-jm="'+i+'" style="display:flex;justify-content:space-between;gap:8px;padding:9px 6px;border-bottom:1px solid #f1f5f9;cursor:pointer"><span>'+esc(x.rn||x.name)+(x.nw?' <span style="color:#c2410c;font-size:12px">جديد</span>':'')+(x.rn?' <span style="color:#1d4ed8;font-size:12px">اسم معدّل</span>':'')+'</span><span><b style="font-size:17px">'+x.q+'</b> <span style="color:#6b7884;font-size:12px">'+tm(x.at)+'</span></span></div>').join(""):'<div style="color:#6b7884">لسا ما جردت شي</div>'}catch(e){}}
 $("jdMine").addEventListener("click",e=>{const el=e.target.closest("[data-jm]");if(!el)return;const x=JDM[+el.dataset.jm];jdShow({c:x.code,n:x.rn||x.name},false,true,x.q);if(x.nw){$("jdRen").click()}});
-$("jdBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الجرد",3000);return}jdOpen()};
-$("shJd").onclick=()=>jdOpen();
 $("jdDone").onclick=()=>{toast("✓ الجرد محفوظ",2000);view(JD.back);if(JD.back==="open")setTimeout(()=>$("shFloat").focus(),50)};
 setInterval(()=>{if($("jdView").style.display!=="none")jdLoad()},15000);
 
