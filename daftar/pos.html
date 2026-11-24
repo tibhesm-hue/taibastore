@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 32</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 33</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -313,7 +313,8 @@ async function ordOpen(id){const j=await api("/api/pos/orders/take",{method:"POS
  if(!j.ok){toast(j.err==="taken"?"الطلب مع "+(j.u||"كاشير ثاني"):"الطلب ما عاد موجود",3000);ordLoad();return}
  if(cart.length)hold();const o=j.order,miss=[];cart=[];
  for(const it of o.items){const x=it[3]&&BY.get(it[3]);if(x)cart.push({c:x.c,n:x.n,p:x.p,q:it[1]});else miss.push(it[0]+" × "+it[1])}
- CUR_ORD=o;if(isDel()){DLV.fee=o.dist==="pickup"?0:o.fee;$("feeIn").value=""}
+ /* owner 24 Nov: a link order with «delivery» but no location has no real fee yet — the cashier's distance choice sets it by the price page's own rule */
+ CUR_ORD=o;if(isDel()){DLV.fee=o.dist==="pickup"?0:(o.loc?o.fee:null);DLV.man=o.dist==="pickup"||!!o.loc;$("feeIn").value=""}
  if(o.pay==="card")setMode("card");else if(o.pay==="both"&&o.cash>0){setMode("mix");$("cashIn").value=o.cash}else setMode("cash");
  ordCurDraw(miss);render();ordDraw();$("q").focus()}
 function ordCurDraw(miss){const o=CUR_ORD;if(!o){$("ordCur").style.display="none";return}$("ordCur").style.display="block";
@@ -322,8 +323,8 @@ function ordCurDraw(miss){const o=CUR_ORD;if(!o){$("ordCur").style.display="none
  +((miss&&miss.length)?`<div style="color:#b91c1c;margin-top:4px;font-weight:600">ما لقيت هالأصناف، أضفها بالقارئ: ${miss.map(esc).join("، ")}</div>`:"")}
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-ord]");if(b){ordOpen(b.dataset.ord);return}
  if(e.target.closest("#ordBack")){const id=CUR_ORD&&CUR_ORD.id;await api("/api/pos/orders/back",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});CUR_ORD=null;cart=[];if(isDel())dlvReset();render();ordCurDraw();ordLoad()}});
-document.addEventListener("click",e=>{const f=e.target.closest("[data-fee]");if(f){DLV.fee=+f.dataset.fee;$("feeIn").value="";render();return}const d=e.target.closest("[data-drv]");if(d){DLV.n=+d.dataset.drv;dlvDraw();return}const l=e.target.closest("[data-lv]");if(l){DLV.lv=+l.dataset.lv;dlvDraw()}});
-$("feeIn").addEventListener("input",()=>{const v=$("feeIn").value.trim();DLV.fee=v===""?null:(isNaN(+v)?null:r2(+v));render()});
+document.addEventListener("click",e=>{const f=e.target.closest("[data-fee]");if(f){DLV.fee=+f.dataset.fee;DLV.man=true;$("feeIn").value="";render();return}const d=e.target.closest("[data-drv]");if(d){DLV.n=+d.dataset.drv;dlvDraw();return}const l=e.target.closest("[data-lv]");if(l){DLV.lv=+l.dataset.lv;if(!DLV.man){const sb=cart.reduce((a,x)=>a+x.p*x.q,0);DLV.fee=DLV.lv===1?(sb>=20?0:2):DLV.lv===2?(sb>=20?1:3):null;$("feeIn").value="";render()}dlvDraw()}});
+$("feeIn").addEventListener("input",()=>{const v=$("feeIn").value.trim();DLV.man=true;DLV.fee=v===""?null:(isNaN(+v)?null:r2(+v));render()});
 let RINV=null,RHOW="cash";
 function retOpen(){$("retBox").style.display="block";$("cart").style.display="none";$("retNo").value="";$("retBody").innerHTML="";RINV=null;retList();$("retNo").focus()}
 let ROPEN=null;
