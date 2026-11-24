@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 33</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 34</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -306,6 +306,8 @@ let CUR_ORD=null,ORDS=[],ORD_SEEN=null;
 const PAYL={cash:"نقدي",card:"شبكة",both:"نقدي + شبكة",tr:"تحويل"};
 function ordTone(){try{acOn();if(AC){tone(880,0,.15,"sine",.7);tone(1320,.2,.25,"sine",.7)}}catch(e){}}
 async function ordLoad(){if(!(isDel()||ME.owner))return;try{const j=await api("/api/pos/orders");if(!j.ok)return;ORDS=j.orders||[];
+ /* owner 24 Nov: the customer set his location after sending — the fee and distance follow to the order in hand */
+ if(CUR_ORD&&isDel()){const u=ORDS.find(o=>o.id===CUR_ORD.id);if(u&&u.updAt&&u.updAt!==CUR_ORD.updAt){CUR_ORD=u;const lv={d1:1,d3:2,d9:3}[u.dist]||0;if(lv&&!DLV.lv)DLV.lv=lv;if(!DLV.man){DLV.fee=u.fee;$("feeIn").value=""}try{render();dlvDraw();ordCurDraw()}catch(e){}toast("📍 الزبون حدّد موقعه — الرسوم "+f2(u.fee),3000)}}
  const ids=ORDS.filter(o=>o.st==="new").map(o=>o.id);if(ORD_SEEN&&ids.some(id=>!ORD_SEEN.has(id)))ordTone();ORD_SEEN=new Set(ids);ordDraw()}catch(e){}}
 function ordDraw(){const L=ORDS.filter(o=>o.id!==(CUR_ORD&&CUR_ORD.id));$("ordBox").style.display=L.length?"block":"none";$("ordN").textContent=L.length;
  $("ordL").innerHTML=L.map((o,i)=>`<button class="ob${o.st==="taken"?" mine":""}" data-ord="${esc(o.id)}"><b>طلب #${esc(o.ono)} · ${o.t.slice(0,5)}${o.edit?' <span style="color:#b45309">(تعديل)</span>':""}${o.st==="taken"?' <span style="color:#15803d">(معك)</span>':""}</b><small>${o.items.length} صنف · ${f2(o.sub)} · توصيل ${f2(o.fee)}</small><small>${PAYL[o.pay]||""}${o.loc?" · 📍 موقع":""}</small></button>`).join("")}
@@ -314,7 +316,7 @@ async function ordOpen(id){const j=await api("/api/pos/orders/take",{method:"POS
  if(cart.length)hold();const o=j.order,miss=[];cart=[];
  for(const it of o.items){const x=it[3]&&BY.get(it[3]);if(x)cart.push({c:x.c,n:x.n,p:x.p,q:it[1]});else miss.push(it[0]+" × "+it[1])}
  /* owner 24 Nov: a link order with «delivery» but no location has no real fee yet — the cashier's distance choice sets it by the price page's own rule */
- CUR_ORD=o;if(isDel()){DLV.fee=o.dist==="pickup"?0:(o.loc?o.fee:null);DLV.man=o.dist==="pickup"||!!o.loc;$("feeIn").value=""}
+ CUR_ORD=o;if(isDel()){DLV.fee=o.dist==="pickup"?0:(o.loc?o.fee:null);DLV.man=o.dist==="pickup"||!!o.loc;const lv0={d1:1,d3:2,d9:3}[o.dist]||0;if(lv0)DLV.lv=lv0;$("feeIn").value=""}
  if(o.pay==="card")setMode("card");else if(o.pay==="both"&&o.cash>0){setMode("mix");$("cashIn").value=o.cash}else setMode("cash");
  ordCurDraw(miss);render();ordDraw();$("q").focus()}
 function ordCurDraw(miss){const o=CUR_ORD;if(!o){$("ordCur").style.display="none";return}$("ordCur").style.display="block";
