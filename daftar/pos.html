@@ -120,7 +120,7 @@ tr.last td{background:#f0fdf4}
    <button class="save" id="saveBtn">حفظ الفاتورة</button>
    <div class="err" id="err"></div>
   </div>
-  <div class="mini"><button id="holdBtn" style="border-color:#d97706;color:#92400e;font-weight:600">تعليق الفاتورة (F7)</button><button id="clrBtn"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
+  <div class="mini"><button id="holdBtn" style="border-color:#d97706;color:#92400e;font-weight:600">تعليق الفاتورة (F8)</button><button id="clrBtn"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
   <div class="card" id="ownCard" style="display:none">
    <div class="ttl"><span>مبيعات اليوم (لحظي)</span><span id="ownDay" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
    <div class="sumg" id="sumg"></div>
@@ -139,7 +139,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 8</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F7 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 9</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -254,7 +254,7 @@ async function save(){
 }
 function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0};cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
-document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F7"){e.preventDefault();hold()}});
+document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 $("prnBtn").onclick=()=>{const L=LASTINV;if(!L){toast("لا توجد فاتورة محفوظة في هذا الجهاز بعد");return}
  const d=L.at;$("rc").innerHTML=`<div style="text-align:center;font-weight:600;font-size:15px">أسواق طيبة</div><div style="text-align:center">${esc(ME.brName)}</div><div style="text-align:center">فاتورة رقم ${L.no||"—"} · ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.toTimeString().slice(0,5)}</div><div style="text-align:center">الكاشير: ${esc(ME.name)}</div><hr><table style="width:100%">${L.lines.map(l=>`<tr><td>${esc(l.n)}<br>${l.q} × ${f2(l.p)}</td><td style="text-align:left">${f2(l.p*l.q)}</td></tr>`).join("")}</table><hr>${ME.vat?`<div>قبل الضريبة: ${f2(L.total-L.vat)}</div><div>الضريبة 15%: ${f2(L.vat)}</div>`:""}<div style="font-size:16px;font-weight:600">الإجمالي: ${f2(L.total)} ر.س</div><div>نقدي ${f2(L.cash)} · شبكة ${f2(L.card)}</div>`;window.print()};
