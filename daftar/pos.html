@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 29</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 30</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -506,11 +506,13 @@ $("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فوا
  $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
  if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",8000)}
  else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};
-(async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
- if(!ME.owner){$("scBtn").style.display="";const sj=await api("/api/pos/shift");SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
+/* owner 24 Nov: offline start — the last sign-in and shift are kept in this browser */
+try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{})}catch(e){}
+(async()=>{let OFF=false;try{ME=await api("/api/pos/me");if(ME&&ME.ok)try{localStorage.setItem("posme",JSON.stringify(ME))}catch(e){}}catch(e){OFF=true;try{ME=JSON.parse(localStorage.getItem("posme")||"null")}catch(x){ME=null}if(!ME){document.body.insertAdjacentHTML("afterbegin",'<div style="padding:30px;text-align:center;font-size:20px">ما فيه إنترنت — افتح نقاط البيع مرة وحدة والنت شغّال عشان تشتغل بعدها بدون نت</div>');return}netState(false)}if(!ME||!ME.ok)return;
+ if(!ME.owner){$("scBtn").style.display="";let sj=null;try{sj=await api("/api/pos/shift");try{localStorage.setItem("posshift_"+ME.email,JSON.stringify(sj.shift||null))}catch(e){}}catch(e){let s0=null;try{s0=JSON.parse(localStorage.getItem("posshift_"+ME.email)||"null")}catch(x){}sj={shift:s0||{offline:1}}}SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
  $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
- render();pendShow();heldShow();await loadCat();/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},60000);ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
+ render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},60000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
