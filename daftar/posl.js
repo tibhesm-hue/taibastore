@@ -274,17 +274,19 @@
   function jcCam() {
     if (JC.cam || JC.zx) { jcCamStop(); return; }
     var w = document.getElementById("jcCamW"), v = document.getElementById("jcVid"); w.hidden = false;
-    var hit = function (code) { code = String(code || "").trim(); if (!code) return; jcCamStop(); document.getElementById("jcIn").value = code; jcFind(code); };
+    var st = function (t) { var e = document.getElementById("jcCamS"); if (!e) { e = document.createElement("div"); e.id = "jcCamS"; e.className = "small muted"; e.style.cssText = "margin:0 0 8px"; w.parentNode.insertBefore(e, w.nextSibling); } e.textContent = t; };
+    var hit = function (code) { code = String(code || "").trim(); if (!code) return; jcCamStop(); st(""); document.getElementById("jcIn").value = code; jcFind(code); };
     var useZX = function () {
-      loadZX().then(function () {
+      st("قارئ احتياطي: يحمّل…"); loadZX().then(function () {
+        st("قارئ احتياطي شغّال — ثبّت الباركود في المنتصف");
         var h = new Map(); try { h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E, ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.QR_CODE]); h.set(ZXing.DecodeHintType.TRY_HARDER, true); } catch (e) { }
         JC.zx = new ZXing.BrowserMultiFormatReader(h, 200);
         return JC.zx.decodeFromConstraints({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } }, v, function (r) { if (r) hit(r.getText()); });
-      }).catch(function () { jcCamStop(); alert("ما قدرت أفتح الكاميرا — اكتب الباركود"); });
+      }).catch(function (e) { jcCamStop(); st("تعذّر تشغيل القارئ الاحتياطي (" + (e && e.name ? e.name : "تحميل المكتبة") + ") — اكتب الباركود"); });
     };
     if ("BarcodeDetector" in window) {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (st) {
-        JC.cam = st; v.srcObject = st; v.play(); var bd, t0 = Date.now(), bad = 0, sw = function () { jcCamStop(); w.hidden = false; useZX(); };
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (st0) {
+        JC.cam = st0; v.srcObject = st0; st("قارئ المتصفح شغّال — ثبّت الباركود في المنتصف"); v.play(); var bd, t0 = Date.now(), bad = 0, sw = function () { jcCamStop(); w.hidden = false; useZX(); };
         try { bd = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"] }); } catch (e) { try { bd = new BarcodeDetector(); } catch (e2) { sw(); return; } }
         var tick = function () {
           if (!JC.cam) return;
