@@ -170,9 +170,10 @@
 
   /* stocktake card (الجرد) in the reports, owner only */
   var JDX = { show: false, at: 0, busy: false, data: null, tab: "c", ok2: 0 };
+  function jcView() { var v = document.getElementById("jcView"); if (!v) { var H = document.getElementById("tab-home"); if (!H) return null; v = document.createElement("div"); v.id = "jcView"; H.parentNode.insertBefore(v, H); } return v; }
   function jdxBox() {
-    var home = document.getElementById("tab-home"); if (!home) return null; var c = document.getElementById("jdxCard");
-    if (!c) { c = document.createElement("div"); c.className = "card"; c.id = "jdxCard"; c.hidden = true; var sg = document.getElementById("sgCard"); if (sg && sg.parentElement === home) home.insertBefore(c, sg.nextSibling); else home.appendChild(c); }
+    var v = jcView(); if (!v) return null; var c = document.getElementById("jdxCard");
+    if (!c) { c = document.createElement("div"); c.className = "card"; c.id = "jdxCard"; c.hidden = true; v.appendChild(c); }
     return c;
   }
   function jdxDraw() {
@@ -228,9 +229,9 @@
     var ob = M.querySelector("[data-jcgo]"); if (ob) ob.remove();
     if (false) { var sk = M.querySelectorAll('[data-cwgo="sk"]'), last = sk[sk.length - 1]; var b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.setAttribute("data-jcgo", "1"); b.setAttribute("style", last ? (last.getAttribute("style") || "") : "display:block;width:100%;padding:16px 12px;margin:8px 0;border-radius:14px;font-size:1.15em;font-weight:800;text-align:center"); b.textContent = "📋 الجرد"; if (last) last.parentNode.insertBefore(b, last.nextSibling); else M.appendChild(b); }
   }
-  function jcBox() { var b = document.getElementById("jcBox"); if (JC.home) { if (b && b.parentNode && b.parentNode.id !== "tab-home") { b.remove(); b = null; } if (!b) { var H = document.getElementById("tab-home"), c = document.getElementById("sxV"); if (!H) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; H.insertBefore(b, c ? c.nextSibling : H.firstChild); } return b; } if (b && b.parentNode && b.parentNode.id === "tab-home") { b.remove(); b = null; } if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
+  function jcBox() { var v = jcView(); if (!v) return null; var b = document.getElementById("jcBox"); if (!b) { b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; v.insertBefore(b, v.firstChild); } else if (b.parentNode !== v) v.insertBefore(b, v.firstChild); return b; }
   function jcOpen() {
-    var b = jcBox(), M = document.getElementById("cwMenu"); if (!b) return; JC.on = true; if (M && !JC.home) M.style.display = "none"; document.body.classList.toggle("jcOn", !!JC.home); b.hidden = false;
+    var b = jcBox(); if (!b) return; JC.on = true; document.body.classList.add("jcFull"); b.hidden = false; try { window.scrollTo({ top: 0 }); } catch (e) { } if (document.body.classList.contains("sxOwn")) { JDX.show = true; var jc = jdxBox(); if (jc) jc.hidden = false; jdxLoad(true); }
     var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
     b.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📋 الجرد</h2><button type="button" class="btn sm ghost" data-jcback>رجوع</button></div>'
       + '<div class="small muted" id="jcProg" style="margin:6px 0 8px"></div>'
@@ -246,7 +247,7 @@
       + '<h3 style="margin:14px 0 4px;font-size:15px">آخر ما جردت <span class="small muted">(اضغط الصنف لتصحيح عدده)</span></h3><div id="jcMine"></div></div>';
     jcLoad();
   }
-  function jcClose() { jcCamStop(); JC.on = false; JC.c = null; document.body.classList.remove("jcOn"); var b = document.getElementById("jcBox"), M = document.getElementById("cwMenu"); if (b) b.hidden = true; if (M) M.style.display = ""; }
+  function jcClose() { jcCamStop(); JC.on = false; JC.c = null; document.body.classList.remove("jcFull"); var b = document.getElementById("jcBox"); if (b) b.hidden = true; JDX.show = false; var jc = document.getElementById("jdxCard"); if (jc) jc.hidden = true; }
   function jcShow(code, name, isNew, set, q) {
     JC.c = { c: code, n: name || "", nw: !!isNew }; JC.set = !!set; jcCamStop();
     var g = function (id) { return document.getElementById(id); };
@@ -363,8 +364,8 @@
   }
   document.addEventListener("click", function (e) {
     var t = e.target; if (!t.closest) return;
-    if (JC.on && !JC.home && t.closest('nav.tabs [data-go="close"]')) { jcClose(); return; }
-    if (t.closest("[data-jcgo]")) { JC.home = !!t.closest("#jdxCard"); jcOpen(); return; }
+    
+    
     if (t.closest("[data-jcback]")) { jcClose(); return; }
     if (t.closest("[data-jccam]")) { jcCam(); return; } if (t.closest("[data-jcphoto]")) { jcCamStop(); var fi = document.getElementById("jcFile"); if (!fi) { fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.setAttribute("capture", "environment"); fi.id = "jcFile"; fi.style.display = "none"; document.body.appendChild(fi); fi.addEventListener("change", function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) jcRead(f); }); } fi.click(); return; }
     if (t.closest("[data-jcfind]")) { jcFind(document.getElementById("jcIn").value); return; }
@@ -377,24 +378,24 @@
     if (e.key !== "Enter" || !e.target || !e.target.id) return;
     if (e.target.id === "jcIn") { e.preventDefault(); jcFind(e.target.value); } else if (e.target.id === "jcN") { e.preventDefault(); jcSave(); } else if (e.target.id === "jcNameIn") { e.preventDefault(); document.getElementById("jcN").focus(); }
   });
-  function jcTick() { if (JC.on && JC.home) { var H = document.getElementById("tab-home"); if (!H || H.hidden || JX !== "j") { jcClose(); } return; } var T = document.getElementById("tab-close"); if (!T || T.hidden) { if (JC.on) jcClose(); return; } jcBtnInject(); if (JC.on) { var M = document.getElementById("cwMenu"); if (M && M.style.display !== "none") M.style.display = "none"; } }
+  function jcTick() { jcBtnInject(); }
 
   /* owner 24 Nov: «الجرد» and «نقاط البيع» are squares in the same top bar as المبيعات/الدرج/…, and open their card under it */
   var JXST = document.createElement("style");
-  JXST.textContent = "body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
+  JXST.textContent = "#jcView{display:none}body.jcFull #jcView{display:block}body.jcFull section[data-tab]{display:none!important}body.jcFull [data-jcback]{display:none!important}body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
   document.head.appendChild(JXST);
   var JX = "";
   function jxSet(k) {
     JX = k; JDX.show = k === "j"; POSV.show = k === "p";
     document.body.classList.toggle("jxOn", !!k); document.body.classList.toggle("jxJ", k === "j"); document.body.classList.toggle("jxP", k === "p");
-    try { jdxBox(); if (k === "j") { jdxLoad(true); jdxDraw(); if (!JC.on) { JC.home = true; jcOpen(); } var jb = document.getElementById("jcBox"), sv = document.getElementById("sxV"); if (jb && sv && sv.nextSibling !== jb) sv.parentNode.insertBefore(jb, sv.nextSibling); } else { var c = document.getElementById("jdxCard"); if (c) c.hidden = true; } } catch (e) { }
+    try { jdxBox();  } catch (e) { }
     try { sales(); } catch (e) { }
   }
   function jxTiles() {
     var v = document.getElementById("sxV");
     if (!v || !document.body.classList.contains("sxOwn")) return;
     if (typeof S !== "undefined" && S.tab !== "home" && JX) jxSet("");
-    [["j", "📦 الجرد"], ["p", "🖥️ نقاط البيع"]].forEach(function (t) {
+    [["p", "🖥️ نقاط البيع"]].forEach(function (t) {
       var b = v.querySelector('[data-jx="' + t[0] + '"]');
       if (!b) { b = document.createElement("button"); b.type = "button"; b.dataset.jx = t[0]; b.textContent = t[1]; }
       var anc = t[0] === "j" ? v.querySelector('[data-sxv="c|sk"]') : null; if (anc) { if (anc.nextSibling !== b) anc.parentNode.insertBefore(b, anc.nextSibling); } else if (b.parentNode !== v) v.appendChild(b);
@@ -414,14 +415,11 @@
     var w = document.querySelector("nav.tabs .wrap"), pt = document.getElementById("posTab"); if (!w || !pt) return;
     var b = document.getElementById("jcNavB");
     if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "jcNavB"; b.setAttribute("role", "tab"); b.innerHTML = '<span class="i">📋</span>الجرد';
-      b.addEventListener("click", function (e) { e.stopPropagation();
-        if (document.body.classList.contains("sxOwn")) { try { if (S.tab !== "home") go("home"); } catch (x) { } setTimeout(function () { jxSet("j"); jxTiles(); try { window.scrollTo({ top: 0 }); } catch (x) { } }, 150); return; }
-        try { if (S.tab !== "close") go("close"); } catch (x) { }
-        var n = 0, iv = setInterval(function () { if (document.getElementById("cwMenu") || ++n > 30) { clearInterval(iv); JC.home = false; if (!JC.on) jcOpen(); try { window.scrollTo({ top: 0 }); } catch (x) { } } }, 100);
-      }); }
+      b.addEventListener("click", function (e) { e.stopPropagation(); if (JC.on) return; jcOpen(); jcLoad();       }); }
     if (pt.previousSibling !== b) w.insertBefore(b, pt);
     var on = JC.on ? "true" : "false"; if (b.getAttribute("aria-selected") !== on) b.setAttribute("aria-selected", on);
-    if (JC.on) { var c = w.querySelector('[data-go="close"]'); if (c && c.getAttribute("aria-selected") === "true") c.setAttribute("aria-selected", "false"); }
+    if (JC.on) [].forEach.call(w.querySelectorAll('button[aria-selected="true"]'), function (x) { if (x !== b) x.setAttribute("aria-selected", "false"); });
+    if (!w.__jc) { w.__jc = 1; w.addEventListener("click", function (e) { var x = e.target.closest && e.target.closest("button"); if (x && x.id !== "jcNavB" && JC.on) jcClose(); }, true); }
   }
   function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
