@@ -88,7 +88,7 @@ tr.last td{background:#f0fdf4}
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
- <div style="display:flex;gap:8px"><a href="/app/" class="tb">الدفتر</a><a href="/logout" class="tb">تسجيل خروج</a></div>
+ <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><a href="/poslogout" class="tb">تسجيل خروج</a></div>
 </div>
 <div class="main">
  <div class="left">
@@ -145,7 +145,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 18</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 19</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -157,7 +157,7 @@ const r2=x=>Math.round(x*100)/100;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const BRN={shop:"فرع المبيعات",del:"فرع التوصيل"};
 let ME=null,CAT=[],BY=new Map(),cart=[],lastCode=null,mode="cash",sel=-1,hits=[],LASTINV=null;
-async function api(p,o){const r=await fetch(p,Object.assign({credentials:"same-origin",cache:"no-store"},o||{}));if(r.status===401){location.href="/pos/";throw new Error("login")}return r.json()}
+async function api(p,o){const r=await fetch(p,Object.assign({credentials:"same-origin",cache:"no-store"},o||{}));if(r.status===401){location.replace("/pos/");throw new Error("login")}return r.json()}
 function clock(){const d=new Date();$("tm").textContent=d.toTimeString().slice(0,5);$("dt").textContent=d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear()}
 setInterval(clock,10000);clock();
 function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display="none",ms||1800)}
@@ -357,7 +357,7 @@ $("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/
  if(j.ok){toast("تم الحفظ");const self=UF.email===ME.email;ufReset();loadBr();if(self)setTimeout(()=>location.reload(),800)}else $("ufErr").textContent=UERR[j.err]||("لم يُحفظ: "+j.err)};
 (async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
  $("brName").textContent=ME.brName;$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
- if(ME.owner){$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
+ if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  render();pendShow();heldShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
