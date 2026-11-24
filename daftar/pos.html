@@ -382,8 +382,8 @@ const AJ={list:[],cust:"",bal:0};
 async function ajLoad(){try{const j=await api("/api/pos/custs");if(j.ok){AJ.list=j.list||[];ajDraw()}}catch(e){$("ajList").innerHTML='<div class="small2">ما قدرنا نجيب العملاء، تأكد من النت</div>'}}
 function ajNorm(x){return String(x||"").replace(/\s+/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")}
 function ajDraw(){const q=ajNorm($("ajQ").value),L=AJ.list.filter(c=>!q||ajNorm(c[0]).includes(q)).slice(0,40);
- $("ajList").innerHTML=L.map(c=>`<div data-aj="${esc(c[0])}" style="display:flex;justify-content:space-between;padding:9px 6px;border-bottom:1px solid #eef1f4;cursor:pointer;${AJ.cust===c[0]?"background:#e7f0ff;border-radius:8px;font-weight:600":""}"><span>${esc(c[0])}${AJ.cust===c[0]?" ✓":""}</span><span>${f2(c[1])}</span></div>`).join("")||'<div class="small2">ما فيه عميل بهذا الاسم</div>';
- const c=AJ.list.find(x=>x[0]===AJ.cust);$("ajSel").innerHTML=c?`${esc(c[0])} · الرصيد بعد الفاتورة: <b>${f2(c[1]+totals().t)}</b>`:""}
+ $("ajList").innerHTML=L.map(c=>`<div data-aj="${esc(c[0])}" style="display:flex;justify-content:space-between;padding:9px 6px;border-bottom:1px solid #eef1f4;cursor:pointer;${AJ.cust===c[0]?"background:#e7f0ff;border-radius:8px;font-weight:600":""}"><span>${esc(c[0])}${AJ.cust===c[0]?" ✓":""}</span></div>`).join("")||'<div class="small2">ما فيه عميل بهذا الاسم</div>';
+ const c=AJ.list.find(x=>x[0]===AJ.cust);$("ajSel").innerHTML=c?`آجل على: <b>${esc(c[0])}</b>`:""}
 document.addEventListener("click",e=>{const r=e.target.closest&&e.target.closest("[data-aj]");if(r){AJ.cust=r.dataset.aj;ajDraw()}});
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()});
 function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
