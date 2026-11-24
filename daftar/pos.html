@@ -96,8 +96,7 @@ tr.last td{background:#f0fdf4}
  <div class="card" style="width:420px;max-width:94vw">
   <div style="font-size:22px;font-weight:600;margin-bottom:4px">فتح الوردية</div>
   <div class="small2" id="shWho"></div>
-  <div style="margin:14px 0 6px">رصيد الصندوق (العهدة) الموجود الحين</div>
-  <input id="shFloat" class="uin" style="height:54px;font-size:22px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
+  <input id="shFloat" type="hidden" value="0">
   <button class="save" id="shGo">ابدأ البيع</button><div class="err" id="shErr"></div>
  </div></div>
 <div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
@@ -536,7 +535,7 @@ $("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/
  if(j.ok){toast("تم الحفظ");const self=UF.email===ME.email;ufReset();loadBr();if(self)setTimeout(()=>location.reload(),800)}else $("ufErr").textContent=UERR[j.err]||("لم يُحفظ: "+j.err)};
 let SHIFT=null;
 function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("jdView").style.display=v==="jard"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
-$("shGo").onclick=async()=>{const v=$("shFloat").value.trim();if(v===""||isNaN(+v)||+v<0){$("shErr").textContent="اكتب رصيد الصندوق (ولو صفر)";return}const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:+v})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية · العهدة "+f2(SHIFT.float))}else $("shErr").textContent="ما انفتحت: "+j.err};
+$("shGo").onclick=async()=>{const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:0})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية")}else $("shErr").textContent="ما انفتحت: "+j.err};
 $("shFloat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("shGo").click()}});
 $("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الإقفال",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";view("close");$("scBack").focus()};
 $("scBack").onclick=()=>view("main");
@@ -587,7 +586,7 @@ $("scGo").onclick=async()=>{if(Q().length||!navigator.onLine){if(!Q().some(x=>x.
 /* owner 24 Nov: offline start — the last sign-in and shift are kept in this browser */
 try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{})}catch(e){}
 (async()=>{let OFF=false;try{ME=await api("/api/pos/me");if(ME&&ME.ok)try{localStorage.setItem("posme",JSON.stringify(ME))}catch(e){}}catch(e){OFF=true;try{ME=JSON.parse(localStorage.getItem("posme")||"null")}catch(x){ME=null}if(!ME){document.body.insertAdjacentHTML("afterbegin",'<div style="padding:30px;text-align:center;font-size:20px">ما فيه إنترنت — افتح نقاط البيع مرة وحدة والنت شغّال عشان تشتغل بعدها بدون نت</div>');return}netState(false)}if(!ME||!ME.ok)return;
- if(!ME.owner){$("scBtn").style.display="";let sj=null;try{sj=await api("/api/pos/shift");try{localStorage.setItem("posshift_"+ME.email,JSON.stringify(sj.shift||null))}catch(e){}}catch(e){let s0=null;try{s0=JSON.parse(localStorage.getItem("posshift_"+ME.email)||"null")}catch(x){}sj={shift:s0||{offline:1}}}SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
+ if(!ME.owner){$("scBtn").style.display="";let sj=null;try{sj=await api("/api/pos/shift");try{localStorage.setItem("posshift_"+ME.email,JSON.stringify(sj.shift||null))}catch(e){}}catch(e){let s0=null;try{s0=JSON.parse(localStorage.getItem("posshift_"+ME.email)||"null")}catch(x){}sj={shift:s0||{offline:1}}}SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");if(!OFF)$("shGo").click()}}
  $("brName").textContent=ME.brName;if(isDel()){$("ajBtn").style.display="none";$("pmRow").style.gridTemplateColumns="repeat(4,minmax(0,1fr))"}if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
