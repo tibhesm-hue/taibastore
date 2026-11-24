@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 27</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 28</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -511,6 +511,6 @@ $("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فوا
  $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
- render();pendShow();heldShow();await loadCat();ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
+ render();pendShow();heldShow();await loadCat();/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");const c=JSON.parse(localStorage.getItem("poscat_"+ME.br)||"null");if(v&&v.ok&&(!c||c.at!==v.at))await loadCat()}catch(e){}},60000);ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
