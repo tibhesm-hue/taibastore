@@ -76,7 +76,46 @@
     if (!vis) { PB.on = false; return; }
     if (PB.on) { if (!box.querySelector("[data-posview]")) pbRender(); if (Date.now() - PB.at > 5000) pbLoad(); } else pbTab();
   }, 400);
-  function tick() { try { tab(); sales(); } catch (e) { } }
+
+  /* «📒 الدفتر» في قائمة الحساب ببطاقة المبيعات: أرقام نقاط البيع للفترة المختارة */
+  var SV = { on: false, busy: false, at: 0, key: "", data: null, hid: [] };
+  function svSel() { var c = document.getElementById("sgCard"); if (!c) return null; var L = c.querySelectorAll("select.grpSel"); for (var i = 0; i < L.length; i++) { var o = L[i].options; for (var k = 0; k < o.length; k++) if (/التوصيل/.test(o[k].textContent)) return L[i]; } return null; }
+  function svRange() { try { var R = sgRange(); return { f: R.f, t: R.t }; } catch (e) { var d = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return { f: d, t: d }; } }
+  function svBox() { var b = document.getElementById("posSgView"); if (!b) { var c = document.getElementById("sgCard"), sb = document.getElementById("sbOpen"); if (!c || !sb) return null; var row = sb.parentElement; while (row && row.parentElement !== c) row = row.parentElement; if (!row) return null; b = document.createElement("div"); b.id = "posSgView"; row.parentNode.insertBefore(b, row.nextSibling); } return b; }
+  function svHide(on) {
+    var b = svBox(); if (!b) return; var c = document.getElementById("sgCard");
+    if (on) { var x = b.nextElementSibling; while (x) { if (!x.hasAttribute("data-svh") && x.style.display !== "none") { x.setAttribute("data-svh", "1"); x.style.display = "none"; } x = x.nextElementSibling; } b.hidden = false; }
+    else { [].forEach.call(c.querySelectorAll("[data-svh]"), function (x) { x.style.display = ""; x.removeAttribute("data-svh"); }); b.hidden = true; }
+  }
+  function kpi(t, v, s) { return '<div style="min-width:0;border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:10px 12px"><div class="small muted">' + t + '</div><div style="font-size:1.45em;font-weight:800">' + v + '</div>' + (s ? '<div class="small muted">' + s + '</div>' : '') + '</div>'; }
+  function svDraw() {
+    var b = svBox(); if (!b || !SV.on) return; var j = SV.data;
+    if (!j) { b.innerHTML = '<p class="empty">⏳ يحمّل مبيعات نقاط البيع…</p>'; return; }
+    var a = j.all, avg = a.n ? (a.total - a.ret) / a.n : 0, sh = j.br.shop || {}, dl = j.br.del || {};
+    var U = Object.keys(j.us).sort(function (x, y) { return j.us[y].total - j.us[x].total; });
+    b.innerHTML = '<div class="small muted" style="margin:2px 0 8px">📒 نقاط البيع (الدفتر) · ' + (j.f === j.t ? j.f.split("-").reverse().map(function (x) { return +x; }).join("/") : j.f.split("-").reverse().map(function (x) { return +x; }).join("/") + " – " + j.t.split("-").reverse().map(function (x) { return +x; }).join("/")) + ' · لحظي</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      + kpi("المبيعات (بعد المرتجع)", f2(a.total), "نقدي " + f2(a.cash) + " · شبكة " + f2(a.card))
+      + kpi("عدد الفواتير", a.n, "متوسط الفاتورة " + f2(avg))
+      + kpi("🏪 فرع المبيعات", f2(sh.total || 0), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""))
+      + kpi("🛵 فرع التوصيل", f2(dl.total || 0), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : ""))
+      + kpi("↩️ المرتجعات", f2(a.ret), a.rn + " مرتجع")
+      + kpi("الضريبة", f2(a.vat), "فرع المبيعات فقط")
+      + '</div>'
+      + (U.length ? '<div style="font-weight:700;margin:10px 0 4px">حسب الكاشير</div>' + U.map(function (u) { var s = j.us[u]; return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line,#e5e7eb)"><span>' + esc(u) + ' <span class="small muted">· ' + s.n + ' فاتورة' + (s.rn ? ' · ' + s.rn + ' مرتجع' : '') + '</span></span><b>' + f2(s.total) + '</b></div>'; }).join("") : '<p class="small muted" style="margin-top:8px">ما فيه مبيعات نقاط بيع في هذي الفترة.</p>');
+  }
+  function svLoad(force) {
+    var R = svRange(), k = R.f + "|" + R.t; if (SV.busy) return; if (!force && k === SV.key && Date.now() - SV.at < 4000) return;
+    if (k !== SV.key) SV.data = null; SV.key = k; SV.busy = true; SV.at = Date.now(); svDraw();
+    fetch("/api/pos/range?f=" + R.f + "&t=" + R.t, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok && SV.key === k) { SV.data = j; svDraw(); } }).catch(function () { }).then(function () { SV.busy = false; });
+  }
+  function svTick() {
+    var sel = svSel(); if (!sel) return;
+    if (!sel.querySelector('option[value="pos"]')) { var o = document.createElement("option"); o.value = "pos"; o.textContent = "📒 الدفتر"; sel.appendChild(o);
+      sel.addEventListener("change", function (e) { if (sel.value === "pos") { e.stopImmediatePropagation(); SV.on = true; svHide(true); svLoad(true); } else if (SV.on) { SV.on = false; svHide(false); } }, true); }
+    if (SV.on) { if (sel.value !== "pos") sel.value = "pos"; svHide(true); svLoad(false); }
+  }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();
