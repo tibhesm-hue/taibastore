@@ -88,9 +88,28 @@ tr.last td{background:#f0fdf4}
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
- <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><a href="/poslogout" class="tb">تسجيل خروج</a></div>
+ <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="scBtn" style="display:none;background:#991b1b;border-color:#991b1b">إقفال الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
 </div>
-<div class="main">
+<div id="shOpen" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
+ <div class="card" style="width:420px;max-width:94vw">
+  <div style="font-size:22px;font-weight:600;margin-bottom:4px">فتح الوردية</div>
+  <div class="small2" id="shWho"></div>
+  <div style="margin:14px 0 6px">رصيد الصندوق (العهدة) الموجود الحين</div>
+  <input id="shFloat" class="uin" style="height:54px;font-size:22px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
+  <button class="save" id="shGo">ابدأ البيع</button><div class="err" id="shErr"></div>
+ </div></div>
+<div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
+ <div class="card" style="width:440px;max-width:94vw;border:2px solid #dc2626">
+  <div style="font-size:22px;font-weight:600;margin-bottom:12px;color:#991b1b">إقفال الوردية</div>
+  <div style="margin-bottom:6px">عدّ النقد اللي في الصندوق واكتبه</div>
+  <input id="scCash" class="uin" style="height:52px;font-size:20px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
+  <div style="margin:6px 0">مجموع الشبكة من إيصال جهاز المدى</div>
+  <input id="scCard" class="uin" style="height:52px;font-size:20px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
+  <button class="save" id="scGo" style="background:#991b1b">إقفال وطباعة</button>
+  <button id="scBack" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px">رجوع للبيع</button>
+  <div class="err" id="scErr"></div>
+ </div></div>
+<div class="main" id="mainView">
  <div class="left">
   <div class="search">
    <div class="box"><i class="ti ti-scan"></i><input id="q" autocomplete="off" placeholder="الباركود أو اسم الصنف" autofocus></div>
@@ -145,7 +164,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 19</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 20</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -355,7 +374,22 @@ $("brList").addEventListener("click",e=>{const b=e.target.closest("[data-ue]");i
 $("ufCan").onclick=ufReset;
 $("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/pos/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:UF.email,name:$("ufName").value,username:$("ufUser").value,pw:$("ufPw").value,br:UF.br})});
  if(j.ok){toast("تم الحفظ");const self=UF.email===ME.email;ufReset();loadBr();if(self)setTimeout(()=>location.reload(),800)}else $("ufErr").textContent=UERR[j.err]||("لم يُحفظ: "+j.err)};
+let SHIFT=null;
+function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
+$("shGo").onclick=async()=>{const v=$("shFloat").value.trim();if(v===""||isNaN(+v)||+v<0){$("shErr").textContent="اكتب رصيد الصندوق (ولو صفر)";return}const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:+v})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية · العهدة "+f2(SHIFT.float))}else $("shErr").textContent="ما انفتحت: "+j.err};
+$("shFloat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("shGo").click()}});
+$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الإقفال",3000);return}$("scCash").value="";$("scCard").value="";$("scErr").textContent="";view("close");$("scCash").focus()};
+$("scBack").onclick=()=>view("main");
+$("scGo").onclick=async()=>{const c=$("scCash").value.trim(),d=$("scCard").value.trim();if(c===""||isNaN(+c)||d===""||isNaN(+d)){$("scErr").textContent="اكتب النقد والشبكة (ولو صفر)";return}
+ if(Q().length){$("scErr").textContent="فيه فواتير ما أُرسلت بعد، انتظر شوي وجرّب";flush();return}
+ $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cash:+c,card:+d})});
+ if(j.ok){const s=j.shift,o=new Date(s.openAt),z=new Date(s.closeAt),hm=x=>x.toTimeString().slice(0,5),dd=x=>x.getDate()+"/"+(x.getMonth()+1)+"/"+x.getFullYear();
+  const R=(a,b)=>`<tr><td>${a}</td><td class="rv">${b}</td></tr>`;
+  $("rc").innerHTML=`<div class="c b" style="font-size:15px">${esc((ME.shop||{}).name||"أسواق طيبة")}</div><div class="c">${esc(ME.brName)}</div><div class="rbox c b" style="margin-top:3px">إقفال وردية</div><table class="kv">${R("الكاشير",esc(s.u))}${R("الفتح",dd(o)+" "+hm(o))}${R("الإقفال",dd(z)+" "+hm(z))}${R("العهدة",f2(s.float))}${R("النقد المعدود",f2(s.counted.cash))}${R("الشبكة",f2(s.counted.card))}${R("عدد الفواتير",s.n)}${R("المرتجعات",s.rn)}</table><div class="c" style="margin-top:14px">توقيع الكاشير: ................</div>`;
+  setTimeout(()=>{window.print();setTimeout(()=>location.href="/poslogout",800)},80)}
+ else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};
 (async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
+ if(!ME.owner){$("scBtn").style.display="";const sj=await api("/api/pos/shift");SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
  $("brName").textContent=ME.brName;$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  render();pendShow();heldShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();

@@ -29,6 +29,17 @@
       var box = function (k) { var s = j.sum[k] || { n: 0, total: 0, cash: 0, card: 0 }; return '<div style="flex:1;min-width:0;background:var(--brand-soft,#eef6f1);border-radius:12px;padding:10px"><div class="small muted">' + BRN[k] + '</div><div style="font-size:1.35em;font-weight:800;color:var(--brand,#0e5a3c)">' + f2(s.total) + '</div><div class="small muted">' + s.n + ' فاتورة' + (s.rn ? ' · ' + s.rn + ' مرتجع' : '') + '</div><div class="small muted">نقدي ' + f2(s.cash) + ' · شبكة ' + f2(s.card) + '</div></div>'; };
       var inv = (j.inv || []).slice(0, 8).map(function (d) { return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:.92em' + (d.kind === 'ret' ? ';color:#b91c1c' : '') + '"><span>' + (d.kind === 'ret' ? 'مرتجع ' + d.no + ' عن ' + d.refNo : d.no) + ' · ' + esc(d.u) + ' · ' + (d.br === "del" ? "التوصيل" : "المبيعات") + ' · ' + String(d.t || "").slice(0, 5) + ' · ' + (d.mode === "cash" ? "نقدي" : d.mode === "card" ? "شبكة" : "نقدي + شبكة") + '</span><b>' + f2(d.total) + '</b></div>'; }).join("");
       document.getElementById("posSgBody").innerHTML = '<div style="display:flex;gap:8px">' + box("shop") + box("del") + '</div>' + '<div style="font-weight:700;margin:10px 0 4px">آخر الفواتير</div>' + (inv || '<p class="small muted">لا توجد فواتير اليوم</p>');
+      fetch("/api/pos/shifts", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (s) {
+        if (!s || !s.ok) return; var el = document.getElementById("posSgSh"); if (!el) { el = document.createElement("div"); el.id = "posSgSh"; document.getElementById("posSgBody").appendChild(el); }
+        var hm = function (x) { var d = new Date(x); return d.toTimeString().slice(0, 5); }, col = function (v) { return Math.abs(v) < 0.01 ? "color:#15803d" : "color:#b91c1c"; };
+        el.innerHTML = '<div style="font-weight:700;margin:12px 0 4px">ورديات اليوم</div>' + (s.shifts.length ? s.shifts.map(function (h) {
+          var top = '<div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(h.u) + ' · ' + (h.br === "del" ? "التوصيل" : "المبيعات") + '</b><span class="small muted">' + hm(h.openAt) + (h.closeAt ? ' – ' + hm(h.closeAt) : ' · مفتوحة') + '</span></div>';
+          if (h.st !== "closed") return '<div style="padding:6px 0;border-bottom:1px solid var(--line,#e5e7eb)">' + top + '<div class="small muted">العهدة ' + f2(h.float) + '</div></div>';
+          return '<div style="padding:6px 0;border-bottom:1px solid var(--line,#e5e7eb)">' + top + '<div class="small" style="display:flex;justify-content:space-between"><span>العهدة ' + f2(h.float) + ' · ' + h.exp.n + ' فاتورة' + (h.exp.rn ? ' · ' + h.exp.rn + ' مرتجع' : '') + '</span></div>'
+            + '<div class="small" style="display:flex;justify-content:space-between"><span>النقد: متوقع ' + f2(h.exp.cash) + ' · معدود ' + f2(h.counted.cash) + '</span><b style="' + col(h.diff.cash) + '">' + (h.diff.cash > 0 ? "+" : "") + f2(h.diff.cash) + '</b></div>'
+            + '<div class="small" style="display:flex;justify-content:space-between"><span>الشبكة: متوقع ' + f2(h.exp.card) + ' · مكتوب ' + f2(h.counted.card) + '</span><b style="' + col(h.diff.card) + '">' + (h.diff.card > 0 ? "+" : "") + f2(h.diff.card) + '</b></div></div>';
+        }).join("") : '<p class="small muted">لا توجد ورديات اليوم</p>');
+      }).catch(function () { });
     }).catch(function () { }).then(function () { busy = false; });
   }
 
