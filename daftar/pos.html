@@ -361,7 +361,7 @@ $("retBody").addEventListener("click",async e=>{const b=e.target.closest("button
  else if(b.dataset.h)retHow(b.dataset.h);
  else if(b.id==="retSave"){const{L,t}=retQ();if(!L.length){$("retErr").textContent="حدد كمية المرتجع";return}b.disabled=true;
   try{const j=await api("/api/pos/ret",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cid:"r"+Date.now().toString(36)+Math.random().toString(36).slice(2,8),no:RINV.no,ref:RINV.cid,lines:L.map(x=>[x[0],x[1]]),how:RHOW})});
-   if(j.ok){LASTINV={ret:true,refNo:RINV.no,no:j.no,lines:L.map(x=>({n:x[2],p:x[3],q:x[1]})),total:t,cash:RHOW==="cash"?t:0,card:RHOW==="card"?t:0,mode:RHOW,at:new Date(),vat:ME.vat?r2(t*15/115):0};printInv();toast("حُفظ المرتجع رقم "+j.no+" · "+f2(t),2500);retClose();loadDay();ROPEN=null}
+   if(j.ok){LASTINV={ret:true,zqr:j.zqr||"",refNo:RINV.no,no:j.no,lines:L.map(x=>({n:x[2],p:x[3],q:x[1]})),total:t,cash:RHOW==="cash"?t:0,card:RHOW==="card"?t:0,mode:RHOW,at:new Date(),vat:ME.vat?r2(t*15/115):0};printInv();toast("حُفظ المرتجع رقم "+j.no+" · "+f2(t),2500);retClose();loadDay();ROPEN=null}
    else $("retErr").textContent=j.err==="qty"?"الكمية أكثر من المتبقي في الفاتورة":"لم يُحفظ: "+j.err}catch(x){
     /* offline: the return waits in the queue (after its sale) and prints now with a reserved number */
     const rn=rvTake("r"),body={type:"ret",cid:"r"+Date.now().toString(36)+Math.random().toString(36).slice(2,8),at:Date.now(),no:RINV.no,ref:RINV.cid,lines:L.map(x=>[x[0],x[1]]),how:RHOW,rno:rn};setQ(Q().concat([body]));
@@ -415,12 +415,12 @@ async function save(){
  if(CUR_ORD)s.ord=CUR_ORD.id;
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
  try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
-  if(j.ok){LIadd({cid:s.cid,no:j.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j.no);netState(true);rvTop()}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
+  if(j.ok){LIadd({cid:s.cid,no:j.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j.no,j.zqr);netState(true);rvTop()}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
  catch(e){let j2=null;for(let i=0;i<2&&!j2;i++){await new Promise(r=>setTimeout(r,1200));try{const x=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});if(x&&x.ok)j2=x}catch(e2){}}
-  if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no);netState(true)}else{const rn=rvTake("s");if(rn)s.no=rn;setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
+  if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no,j2.zqr);netState(true)}else{const rn=rvTake("s");if(rn)s.no=rn;setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
 }
-function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:mode==="tr"?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no,zqr){LASTINV={no,zqr:zqr||"",lines:snap,total:t,cash,card:mode==="tr"?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}save()},true);
@@ -428,7 +428,7 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();setMode("tr");save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
- return{fee:(d.dlv&&d.dlv.fee)||0,ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),tr:Math.abs(d.tr||0),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
+ return{fee:(d.dlv&&d.dlv.fee)||0,zqr:(d.z&&d.z.qr)||"",ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),tr:Math.abs(d.tr||0),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
 /* Code 128-B barcode as SVG (for the invoice number on the receipt) */
 const C128=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
 function bc128(txt,h){const codes=[104];for(const ch of txt)codes.push(ch.charCodeAt(0)-32);let sum=104;for(let i=1;i<codes.length;i++)sum+=codes[i]*i;codes.push(sum%103);codes.push(106);
@@ -439,12 +439,12 @@ function zatcaQR(seller,vatNo,iso,total,vat){const enc=new TextEncoder(),parts=[
 function qrSvg(text){try{const q=qrcode(0,"M");q.addData(text);q.make();const n=q.getModuleCount();let r="";for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.isDark(y,x))r+=`<rect x="${x}" y="${y}" width="1" height="1"/>`;return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" style="width:34mm;height:34mm;display:block;margin:0 auto" shape-rendering="crispEdges">${r}</svg>`}catch(e){return""}}
 async function printInv(){let L=LASTINV;if(!L){L=await lastFromServer();if(!L){toast("لا توجد فواتير اليوم");return}LASTINV=L}
  const d=L.at,p2=n=>String(n).padStart(2,"0"),ds=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`,tm=`${p2(d.getHours())}:${p2(d.getMinutes())}`;
- const SH=ME.shop||{},name=SH.name||"أسواق طيبة",net=r2(L.total-(L.vat||0));
+ const SH=ME.shop||{},name=isDel()?"توصيل أسواق طيبة":"مبيعات أسواق طيبة",net=r2(L.total-(L.vat||0));
  const TR=(a,b,bold)=>`<tr${bold?' style="font-weight:700"':""}><td>${a}</td><td class="rv">${b}</td></tr>`;
  const code=(L.ret?"R":"F")+L.no;
- const qr=ME.vat&&SH.vat&&!L.ret?qrSvg(zatcaQR(name,SH.vat,`${ds}T${tm}:00Z`,f2(L.total),f2(L.vat||0))):"";
+ const qr=L.zqr?qrSvg(L.zqr):ME.vat&&SH.vat&&!L.ret?qrSvg(zatcaQR(SH.name||name,SH.vat,`${ds}T${tm}:00Z`,f2(L.total),f2(L.vat||0))):"";
  $("rc").innerHTML=`<div class="c b" style="font-size:15px">${esc(name)}</div>`
-  +(SH.addr?`<div class="c">${esc(SH.addr)}</div>`:"")
+  +(ME.vat&&SH.name?`<div class="c">${esc(SH.name)}</div>`:"")+(SH.addr?`<div class="c">${esc(SH.addr)}</div>`:"")
   +(ME.vat&&SH.vat?`<div class="c">الرقم الضريبي: ${esc(SH.vat)}</div>`:"")
   +`<div class="c">${esc(ME.brName)}</div>`
   +`<div class="rbox c b" style="margin-top:3px">${L.ret?"إشعار دائن (مرتجع)<br>Credit Note":ME.vat?"فاتورة ضريبية مبسطة<br>Simplified Tax Invoice":"فاتورة<br>Invoice"}</div>`
