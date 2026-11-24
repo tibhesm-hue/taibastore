@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 26</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 27</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -390,6 +390,9 @@ async function save(){
 }
 function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
+/* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}save()},true);
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-fee],button[data-drv],button[data-lv]");if(b)setTimeout(()=>{try{if(!$("cashIn")||document.activeElement!==$("cashIn"))$("q").focus()}catch(x){}},0)});
 document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
