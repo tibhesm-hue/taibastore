@@ -388,7 +388,7 @@
 
   /* owner 24 Nov: «الجرد» and «نقاط البيع» are squares in the same top bar as المبيعات/الدرج/…, and open their card under it */
   var JXST = document.createElement("style");
-  JXST.textContent = "#jcView{display:none}body.jcFull #jcView{display:block}body.jcFull section[data-tab]{display:none!important}body.jcFull [data-jcback]{display:none!important}body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
+  JXST.textContent = "body.jcFull nav.tabs button[aria-selected=true]:not(#jcNavB){color:var(--muted)!important;background:none!important}body.jcFull #jcNavB{color:var(--brand)!important;background:var(--brand-soft)!important}#jcView{display:none}body.jcFull #jcView{display:block}body.jcFull section[data-tab]{display:none!important}body.jcFull [data-jcback]{display:none!important}body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
   document.head.appendChild(JXST);
   var JX = "";
   function jxSet(k) {
@@ -423,8 +423,8 @@
     if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "jcNavB"; b.setAttribute("role", "tab"); b.innerHTML = '<span class="i">📋</span>الجرد';
       b.addEventListener("click", function (e) { e.stopPropagation(); if (JC.on) return; jcOpen(); jcLoad();       }); }
     if (pt.previousSibling !== b) w.insertBefore(b, pt);
-    var on = JC.on ? "true" : "false"; if (b.getAttribute("aria-selected") !== on) b.setAttribute("aria-selected", on);
-    if (JC.on) [].forEach.call(w.querySelectorAll('button[aria-selected="true"]'), function (x) { if (x !== b) x.setAttribute("aria-selected", "false"); });
+    /* owner 24 Nov: the ledger's own tab code keeps re-marking its tab every 0.7 s; fighting it made the bar flicker — the Jard highlight is done in CSS instead */
+    if (b.getAttribute("aria-selected") !== "false") b.setAttribute("aria-selected", "false");
     if (!w.__jc) { w.__jc = 1; w.addEventListener("click", function (e) { var x = e.target.closest && e.target.closest("button"); if (x && x.id !== "jcNavB" && JC.on) jcClose(); }, true); }
   }
   function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } }
