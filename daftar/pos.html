@@ -82,7 +82,7 @@ tr.last td{background:#f0fdf4}
 .toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#14532d;color:#fff;padding:12px 22px;border-radius:12px;font-size:17px;display:none;z-index:9}
 #rc{display:none}
 @media (max-width:900px){.main{flex-direction:column;padding:12px}.side{width:100%}.drop{left:0}.cam{width:58px}.cam span{display:none}.tot b{font-size:34px}td,th{padding:10px 8px}td.n,th.n{display:none}.q input{width:44px}}
-@page{size:58mm auto;margin:0}@media print{html,body{background:#fff!important;min-height:0!important}body>*:not(#rc){display:none!important}#rc{display:block;width:48mm;margin:0 auto;padding:2mm 0;font-size:11px;line-height:1.35;color:#000}#rc table{width:100%}#rc table td{padding:1px 0;border:none;font-size:11px;color:#000;background:none}#rc hr{border:none;border-top:1px dashed #000;margin:3px 0}}
+@page{size:58mm auto;margin:0}@media print{html,body{background:#fff!important;min-height:0!important}body>*:not(#rc){display:none!important}#rc{display:block;width:44mm;margin:0;padding:1mm 1mm 4mm 0;font-size:11px;line-height:1.4;color:#000;overflow:hidden}#rc svg rect{fill:#000}#rc .c{text-align:center}#rc .b{font-weight:700}#rc .rbox{border-top:1px dashed #000;border-bottom:1px dashed #000;padding:2px 0}#rc table{width:100%;border-collapse:collapse;margin-top:3px}#rc .kv td{display:table-cell;color:#000;background:#fff;font-size:11px;border-bottom:1px solid #000;padding:2px 1px;vertical-align:middle}#rc .kv td.rv{text-align:left;white-space:nowrap;direction:ltr}#rc .it th,#rc .it td{border:1px solid #000;background:#fff;color:#000;font-weight:600;padding:1px 2px;text-align:center;font-size:10.5px}#rc .it td.nm{text-align:right;font-weight:700;border-bottom:none}#rc small{font-size:8.5px}#rc table{width:100%}#rc table td{padding:1px 0;border:none;font-size:11px;color:#000;background:none}#rc hr{border:none;border-top:1px dashed #000;margin:3px 0}}
 </style></head><body>
 <div class="top">
  <div class="brand">أسواق طيبة</div>
@@ -145,10 +145,11 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 14</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 16</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="/qr.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const f2=x=>(Math.round(x*100)/100).toFixed(2);
@@ -192,7 +193,7 @@ let kT=[],dropT=null,scanT=null;
 $("q").addEventListener("keydown",e=>{if(e.key.length===1){const n=performance.now();if(!$("q").value)kT=[];kT.push(n)}},true);
 function fast(){if(kT.length<4)return false;for(let i=1;i<kT.length;i++)if(kT[i]-kT[i-1]>45)return false;return true}
 $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("drop").classList.remove("show");
- scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){const x=BY.get(t);if(x){add(x);kT=[];return}if(t.length>=4){warn(t);$("q").value="";kT=[];return}}
+ scanT=setTimeout(()=>{const t=$("q").value.trim();if(!t)return;if(fast()){if(/^F\d+$/i.test(t)&&!BY.get(t)){$("q").value="";kT=[];retOpen();$("retNo").value=t.slice(1);retGet();return}const x=BY.get(t);if(x){add(x);kT=[];return}if(t.length>=4){warn(t);$("q").value="";kT=[];return}}
   showDrop()},90)});
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
@@ -239,7 +240,7 @@ async function retList(){const el=$("retList");try{const j=await api("/api/pos/d
 $("retList").addEventListener("click",e=>{const sn=e.target.closest("[data-sl]");if(sn){$("retNo").value=sn.dataset.sl;retGet();window.scrollTo(0,0);return}const r=e.target.closest("[data-rl]");if(!r)return;ROPEN=ROPEN===r.dataset.rl?null:r.dataset.rl;retList()});
 function retClose(){$("retBox").style.display="none";$("cart").style.display="block";RINV=null;$("q").focus()}
 $("retBtn").onclick=retOpen;$("retX").onclick=retClose;
-async function retGet(){const no=$("retNo").value.trim();if(!no)return;$("retBody").innerHTML='<p class="small2">يحمّل…</p>';const j=await api("/api/pos/inv?no="+encodeURIComponent(no));
+async function retGet(){const no=$("retNo").value.trim().replace(/^[FfRr]/,"");if(!no)return;$("retBody").innerHTML='<p class="small2">يحمّل…</p>';const j=await api("/api/pos/inv?no="+encodeURIComponent(no));
  if(!j.ok){$("retBody").innerHTML='<div class="err">'+(j.err==="nf"?"ما فيه فاتورة بهذا الرقم في "+ME.brName:"اكتب رقم الفاتورة")+'</div>';return}
  RINV=j.inv;RHOW="cash";retDraw()}
 $("retGet").onclick=retGet;$("retNo").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();retGet()}});
@@ -295,8 +296,33 @@ document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setM
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
  return{ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
+/* Code 128-B barcode as SVG (for the invoice number on the receipt) */
+const C128=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
+function bc128(txt,h){const codes=[104];for(const ch of txt)codes.push(ch.charCodeAt(0)-32);let sum=104;for(let i=1;i<codes.length;i++)sum+=codes[i]*i;codes.push(sum%103);codes.push(106);
+ let x=10,bars="";for(const c of codes){const p=C128[c];for(let k=0;k<p.length;k++){const w=+p[k];if(k%2===0)bars+=`<rect x="${x}" y="0" width="${w}" height="${h}"/>`;x+=w}}x+=10;
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${x} ${h}" preserveAspectRatio="none" style="width:100%;height:${h/4}mm;display:block" shape-rendering="crispEdges">${bars}</svg>`}
+/* ZATCA phase-1 QR: TLV (seller, VAT no., time, total, VAT) in base64 */
+function zatcaQR(seller,vatNo,iso,total,vat){const enc=new TextEncoder(),parts=[seller,vatNo,iso,total,vat].map(String),b=[];parts.forEach((v,i)=>{const x=enc.encode(v);b.push(i+1,x.length,...x)});let bin="";b.forEach(c=>bin+=String.fromCharCode(c));return btoa(bin)}
+function qrSvg(text){try{const q=qrcode(0,"M");q.addData(text);q.make();const n=q.getModuleCount();let r="";for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.isDark(y,x))r+=`<rect x="${x}" y="${y}" width="1" height="1"/>`;return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" style="width:34mm;height:34mm;display:block;margin:0 auto" shape-rendering="crispEdges">${r}</svg>`}catch(e){return""}}
 async function printInv(){let L=LASTINV;if(!L){L=await lastFromServer();if(!L){toast("لا توجد فواتير اليوم");return}LASTINV=L}
- const d=L.at;$("rc").innerHTML=`<div style="text-align:center;font-weight:600;font-size:15px">أسواق طيبة</div><div style="text-align:center">${esc(ME.brName)}</div>${L.ret?`<div style="text-align:center;font-weight:600">إيصال مرتجع رقم ${L.no} · عن فاتورة ${L.refNo}</div><div style="text-align:center">`:`<div style="text-align:center">فاتورة رقم ${L.no||"—"} · `} ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.toTimeString().slice(0,5)}</div><div style="text-align:center">الكاشير: ${esc(ME.name)}</div><hr><table style="width:100%">${L.lines.map(l=>`<tr><td>${esc(l.n)}<br>${l.q} × ${f2(l.p)}</td><td style="text-align:left">${f2(l.p*l.q)}</td></tr>`).join("")}</table><hr>${ME.vat?`<div>قبل الضريبة: ${f2(L.total-L.vat)}</div><div>الضريبة 15%: ${f2(L.vat)}</div>`:""}<div style="font-size:16px;font-weight:600">الإجمالي: ${f2(L.total)} ر.س</div><div>${L.ret?"المبلغ المردود":""} نقدي ${f2(L.cash)} · شبكة ${f2(L.card)}</div><div style="text-align:center;margin-top:6px">شكراً لزيارتكم</div>`;setTimeout(()=>window.print(),50)}
+ const d=L.at,p2=n=>String(n).padStart(2,"0"),ds=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`,tm=`${p2(d.getHours())}:${p2(d.getMinutes())}`;
+ const SH=ME.shop||{},name=SH.name||"أسواق طيبة",net=r2(L.total-(L.vat||0));
+ const TR=(a,b,bold)=>`<tr${bold?' style="font-weight:700"':""}><td>${a}</td><td class="rv">${b}</td></tr>`;
+ const code=(L.ret?"R":"F")+L.no;
+ const qr=ME.vat&&SH.vat&&!L.ret?qrSvg(zatcaQR(name,SH.vat,`${ds}T${tm}:00Z`,f2(L.total),f2(L.vat||0))):"";
+ $("rc").innerHTML=`<div class="c b" style="font-size:15px">${esc(name)}</div>`
+  +(SH.addr?`<div class="c">${esc(SH.addr)}</div>`:"")
+  +(ME.vat&&SH.vat?`<div class="c">الرقم الضريبي: ${esc(SH.vat)}</div>`:"")
+  +`<div class="c">${esc(ME.brName)}</div>`
+  +`<div class="rbox c b" style="margin-top:3px">${L.ret?"إشعار دائن (مرتجع)<br>Credit Note":ME.vat?"فاتورة ضريبية مبسطة<br>Simplified Tax Invoice":"فاتورة<br>Invoice"}</div>`
+  +`<table class="kv">`+TR("رقم الفاتورة<br><small>Invoice No.</small>",(L.ret?"R":"")+L.no)+(L.ret?TR("عن فاتورة",L.refNo):"")+TR("التاريخ<br><small>Date</small>",ds+"<br>"+tm)+TR("الكاشير",esc(ME.name))+`</table>`
+  +`<table class="it"><tr><th>الإجمالي</th><th>الكمية</th><th>السعر</th></tr>`+L.lines.map(l=>`<tr><td colspan="3" class="nm">${esc(l.n)}</td></tr><tr><td>${f2(l.p*l.q)}</td><td>${l.q}</td><td>${f2(l.p)}</td></tr>`).join("")+`</table>`
+  +`<table class="kv">`+(ME.vat?TR("الإجمالي غير شامل الضريبة",f2(net))+TR("ضريبة القيمة المضافة 15%",f2(L.vat||0)):"")
+  +TR(L.ret?"المبلغ المردود":"المبلغ المستحق",f2(L.total)+" ر.س",1)+(L.cash?TR("نقدي",f2(L.cash)):"")+(L.card?TR("شبكة",f2(L.card)):"")+`</table>`
+  +(qr?`<div style="margin-top:4px">${qr}</div>`:"")
+  +`<div style="margin:4px 4mm 0">${bc128(code,40)}</div><div class="c" style="font-size:10px;letter-spacing:1px">${code}</div>`
+  +`<div class="c" style="margin-top:3px">شكراً لزيارتكم</div>`;
+ setTimeout(()=>window.print(),80)}
 $("prnBtn").onclick=printInv;
 
 // camera: live reading (BarcodeDetector where the browser has it, otherwise ZXing)
