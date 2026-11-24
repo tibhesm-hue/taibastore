@@ -145,7 +145,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 17</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 18</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -198,7 +198,7 @@ $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
  else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
- else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t)return;const ex=BY.get(t);
+ else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(cart.length&&!e.repeat)save();return}const ex=BY.get(t);
   if(ex)add(ex);else if(sel>=0&&hits[sel])add(hits[sel]);else{warn(t);$("q").value="";$("drop").classList.remove("show")}}
  else if(e.key==="Escape"){$("q").value="";showDrop()}});
 $("drop").addEventListener("mousedown",e=>{const el=e.target.closest("[data-i]");if(el){e.preventDefault();add(hits[+el.dataset.i])}});
