@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 30</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 31</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -334,7 +334,7 @@ async function retList(){const el=$("retList");try{const j=await api("/api/pos/d
 $("retList").addEventListener("click",e=>{const sn=e.target.closest("[data-sl]");if(sn){$("retNo").value=sn.dataset.sl;retGet();window.scrollTo(0,0);return}const r=e.target.closest("[data-rl]");if(!r)return;ROPEN=ROPEN===r.dataset.rl?null:r.dataset.rl;retList()});
 function retClose(){$("retBox").style.display="none";$("cart").style.display="block";RINV=null;$("q").focus()}
 $("retBtn").onclick=retOpen;$("retX").onclick=retClose;
-async function retGet(){const no=$("retNo").value.trim().replace(/^[FfRr]/,"");if(!no)return;$("retBody").innerHTML='<p class="small2">يحمّل…</p>';const j=await api("/api/pos/inv?no="+encodeURIComponent(no));
+async function retGet(){const no=$("retNo").value.trim().replace(/^[FfRr]/,"");if(!no)return;$("retBody").innerHTML='<p class="small2">يحمّل…</p>';let j;try{j=await api("/api/pos/inv?no="+encodeURIComponent(no))}catch(e){const x=LI().find(y=>String(y.no)===String(+no));j=x?{ok:true,inv:JSON.parse(JSON.stringify(x)),off:1}:{ok:false,err:"nf"};if(!x){$("retBody").innerHTML='<div class="err">ما فيه نت، والفاتورة '+esc(no)+' مو من فواتير هذا الجهاز — انتظر رجوع النت</div>';return}}
  if(!j.ok){$("retBody").innerHTML='<div class="err">'+(j.err==="nf"?"ما فيه فاتورة بهذا الرقم في "+ME.brName:"اكتب رقم الفاتورة")+'</div>';return}
  RINV=j.inv;RHOW="cash";retDraw()}
 $("retGet").onclick=retGet;$("retNo").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();retGet()}});
@@ -353,7 +353,11 @@ $("retBody").addEventListener("click",async e=>{const b=e.target.closest("button
  else if(b.id==="retSave"){const{L,t}=retQ();if(!L.length){$("retErr").textContent="حدد كمية المرتجع";return}b.disabled=true;
   try{const j=await api("/api/pos/ret",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cid:"r"+Date.now().toString(36)+Math.random().toString(36).slice(2,8),no:RINV.no,ref:RINV.cid,lines:L.map(x=>[x[0],x[1]]),how:RHOW})});
    if(j.ok){LASTINV={ret:true,refNo:RINV.no,no:j.no,lines:L.map(x=>({n:x[2],p:x[3],q:x[1]})),total:t,cash:RHOW==="cash"?t:0,card:RHOW==="card"?t:0,mode:RHOW,at:new Date(),vat:ME.vat?r2(t*15/115):0};printInv();toast("حُفظ المرتجع رقم "+j.no+" · "+f2(t),2500);retClose();loadDay();ROPEN=null}
-   else $("retErr").textContent=j.err==="qty"?"الكمية أكثر من المتبقي في الفاتورة":"لم يُحفظ: "+j.err}catch(x){$("retErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}b.disabled=false}});
+   else $("retErr").textContent=j.err==="qty"?"الكمية أكثر من المتبقي في الفاتورة":"لم يُحفظ: "+j.err}catch(x){
+    /* offline: the return waits in the queue (after its sale) and prints now with a reserved number */
+    const rn=rvTake("r"),body={type:"ret",cid:"r"+Date.now().toString(36)+Math.random().toString(36).slice(2,8),at:Date.now(),no:RINV.no,ref:RINV.cid,lines:L.map(x=>[x[0],x[1]]),how:RHOW,rno:rn};setQ(Q().concat([body]));
+    const a=LI();const inv=a.find(y=>y.cid===RINV.cid);if(inv){L.forEach(x=>{const l=inv.lines.find(z=>z.c===x[0]);if(l)l.back=r2((l.back||0)+x[1])});LIset(a)}
+    LASTINV={ret:true,refNo:RINV.no,no:rn,lines:L.map(x=>({n:x[2],p:x[3],q:x[1]})),total:t,cash:RHOW==="cash"?t:0,card:RHOW==="card"?t:0,mode:RHOW,at:new Date(),vat:ME.vat?r2(t*15/115):0};printInv();toast("حُفظ المرتجع في الجهاز"+(rn?" رقم "+rn:"")+" · يُرسل لما يرجع النت",3000);retClose();netState(false);pendShow()}b.disabled=false}});
 $("retBody").addEventListener("input",e=>{if(e.target.dataset.ri!=null)retQ()});
 $("heldL").addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(b)resume(+b.dataset.h)});
 $("clrBtn").onclick=()=>{if(cart.length&&confirmClr()){cart=[];render()}};
@@ -369,10 +373,29 @@ $("cashIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault(
 function Q(){try{return JSON.parse(localStorage.getItem("posq")||"[]")}catch(e){return[]}}
 function setQ(a){try{localStorage.setItem("posq",JSON.stringify(a))}catch(e){}pendShow()}
 function pendShow(){const n=Q().length;$("pend").textContent=n?("فواتير بانتظار الإرسال: "+n):""}
-async function flush(){const a=Q();if(!a.length)return;const keep=[];for(const s of a){try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});if(!j.ok&&j.err!=="item"&&j.err!=="empty"&&j.err!=="pay")keep.push(s);else if(!j.ok)toast("فاتورة لم تُقبل: "+j.err,4000)}catch(e){keep.push(s)}}setQ(keep);netState(!keep.length);loadDay()}
+async function flush(){if(flush.busy)return;const a=Q();if(!a.length)return;flush.busy=true;let k=0,closed=false;
+ /* in order: a return never goes before its sale, the shift close goes last; the first network failure stops the round */
+ try{for(;k<a.length;k++){const s=a[k];let j;
+  try{if(s.type==="close")j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+   else if(s.type==="ret")j=await api("/api/pos/ret",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
+   else j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)})}catch(e){break}
+  if(!j||(!j.ok&&j.err!=="item"&&j.err!=="empty"&&j.err!=="pay"&&j.err!=="nf"&&j.err!=="qty"&&j.err!=="noshift"))break;
+  if(!j.ok)toast((s.type==="ret"?"مرتجع":s.type==="close"?"إقفال":"فاتورة")+" لم يُقبل: "+j.err,5000);
+  else if(!s.type&&s.no&&j.no!==s.no){const L0=LI(),x=L0.find(y=>y.cid===s.cid);if(x){x.no=j.no;LIset(L0)}}
+  if(s.type==="close")closed=true}}finally{setQ(Q().slice(k));flush.busy=false}
+ netState(!Q().length);pendShow();try{loadDay()}catch(e){}if(closed)setTimeout(()=>location.href="/poslogout",1500)}
 function netState(ok){$("netDot").classList.toggle("off",!ok);$("netTxt").textContent=ok?"متصل بالدفتر · تُحفظ الفواتير لحظياً":"غير متصل · الفواتير محفوظة في الجهاز وتُرسل تلقائياً"}
 setInterval(flush,5000);
 let saving=false;
+/* owner 24 Nov: offline selling — reserved invoice numbers, a local copy of this laptop's invoices for returns, and a queued shift close */
+function RV(){try{return JSON.parse(localStorage.getItem("posresv_"+(ME&&ME.email||""))||'{"s":[],"r":[]}')}catch(e){return{s:[],r:[]}}}
+function RVset(v){try{localStorage.setItem("posresv_"+(ME&&ME.email||""),JSON.stringify(v))}catch(e){}}
+function rvTake(k){const v=RV();const n=(v[k]||[]).shift();RVset(v);return n||null}
+function rvDrop(k,n){const v=RV();v[k]=(v[k]||[]).filter(x=>x!==n);RVset(v)}
+async function rvTop(){if(!ME||ME.owner||!navigator.onLine)return;for(const k of["s","r"]){const need=k==="s"?10:3;if((RV()[k]||[]).length<need){try{const j=await api("/api/pos/resv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({k,n:k==="s"?25:6})});if(j&&j.ok){const w=RV();w[k]=w[k]||[];for(let i=j.from;i<=j.to;i++)w[k].push(i);RVset(w)}}catch(e){}}}}
+function LI(){try{return JSON.parse(localStorage.getItem("posli_"+(ME&&ME.email||""))||"[]")}catch(e){return[]}}
+function LIset(a){try{localStorage.setItem("posli_"+(ME&&ME.email||""),JSON.stringify(a.slice(0,300)))}catch(e){}}
+function LIadd(x){LIset([x].concat(LI().filter(y=>y.cid!==x.cid)))}
 async function save(){
  if(saving)return;$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
  const t=totals().t;let cash=mode==="cash"?t:(mode==="card"||mode==="tr")?0:r2(+$("cashIn").value||0);
@@ -383,9 +406,9 @@ async function save(){
  if(CUR_ORD)s.ord=CUR_ORD.id;
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
  try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
-  if(j.ok){done(snap,t,cash,j.no);netState(true)}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
+  if(j.ok){LIadd({cid:s.cid,no:j.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j.no);netState(true);rvTop()}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
  catch(e){let j2=null;for(let i=0;i<2&&!j2;i++){await new Promise(r=>setTimeout(r,1200));try{const x=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});if(x&&x.ok)j2=x}catch(e2){}}
-  if(j2){done(snap,t,cash,j2.no);netState(true)}else{setQ(Q().concat([s]));netState(false);done(snap,t,cash,null)}}
+  if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no);netState(true)}else{const rn=rvTake("s");if(rn)s.no=rn;setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
 }
 function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:mode==="tr"?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
@@ -502,7 +525,7 @@ $("jdMine").addEventListener("click",e=>{const el=e.target.closest("[data-jm]");
 $("jdDone").onclick=()=>{toast("✓ الجرد محفوظ",2000);view(JD.back);if(JD.back==="open")setTimeout(()=>$("shFloat").focus(),50)};
 setInterval(()=>{if($("jdView").style.display!=="none")jdLoad()},15000);
 
-$("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فواتير ما أُرسلت بعد، انتظر شوي وجرّب";flush();return}
+$("scGo").onclick=async()=>{if(Q().length||!navigator.onLine){if(!Q().some(x=>x.type==="close"))setQ(Q().concat([{type:"close",at:Date.now()}]));$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent="انحفظ الإقفال في الجهاز — يُرسل للدفتر أول ما يرجع النت (بعد الفواتير اللي تنتظر)، وبعدها يسجّل خروجك";flush();return}
  $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
  if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",8000)}
  else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};
@@ -513,6 +536,6 @@ try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").ca
  $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
- render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},60000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush()})();
+ render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},60000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush();rvTop();setInterval(rvTop,60000)})();
 </script>
 </body></html>
