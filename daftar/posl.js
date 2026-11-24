@@ -442,11 +442,11 @@
     var c = document.getElementById("ztCard"); if (!c) { c = document.createElement("div"); c.id = "ztCard"; c.className = "card"; home.appendChild(c); }
     var j = ZT.d || {}, t = j.test, p = j.prod, S2 = j.seller || {};
     var rl = j.relay, rOn = rl && j.now - rl.at < 120000, run = (t && t.run) || (p && p.run);
-    var rh = '<div class="small" style="margin:4px 0 8px">وسيط الهيئة (لابتوب المحل): ' + (rOn ? '<b style="color:#15803d">متصل</b>' : '<b style="color:#c2410c">غير متصل</b>' + (rl ? " · آخر اتصال " + new Date(rl.at).getHours() + ":" + String(new Date(rl.at).getMinutes()).padStart(2, "0") : "")) + "</div>";
+    var rh = rOn ? '<div class="small" style="margin:4px 0 8px">الاتصال بالهيئة: <b style="color:#15803d">' + (rl.v === "page" ? "من الدفتر على الجهاز المفتوح" : "من لابتوب المحل") + "</b></div>" : '<div style="margin-bottom:8px"></div>';
     var st = j.linked ? '<b style="color:#15803d">مربوط بالهيئة</b>' : t && t.ok ? "التجربة نجحت — جاهز للربط الفعلي" : "غير مربوط";
     var bx = "display:block;width:100%;padding:16px 8px;border-radius:14px;font-size:16px";
     var h = '<h3 style="margin:0 0 4px">مبيعات — نقاط البيع</h3><div class="small muted">' + esc(S2.name || "") + " · " + esc(S2.vat || "") + "<br>" + esc((S2.bld || "") + " " + (S2.street || "") + "، " + (S2.dist || "") + "، " + (S2.city || "") + " " + (S2.zip || "")) + '</div><div style="margin:8px 0 0">الحالة: ' + st + "</div>" + rh +
-      (run ? '<div style="padding:14px;text-align:center"><b>' + (rOn ? "جاري الإرسال للهيئة عن طريق الوسيط…" : "بانتظار الوسيط — شغّل لابتوب المحل وكروم") + "</b></div>" : ZT.busy ? '<div style="padding:14px;text-align:center"><b>جاري الاتصال بالهيئة…</b></div>' :
+      (run ? '<div style="padding:14px;text-align:center"><b>' + (rOn ? "جاري الإرسال للهيئة عن طريق الوسيط…" : "جاري الاتصال بالهيئة من الدفتر…") + "</b></div>" : ZT.busy ? '<div style="padding:14px;text-align:center"><b>جاري الاتصال بالهيئة…</b></div>' :
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn ghost" data-zt="test" style="' + bx + '">تجربة الربط</button><button type="button" class="btn' + (t && t.ok ? "" : " ghost") + '" data-zt="prod" style="' + bx + '">الربط الفعلي</button></div>' +
       (t && t.ok && !j.linked ? '<input id="ztOtp" inputmode="numeric" maxlength="6" placeholder="رمز OTP من بوابة فاتورة (6 أرقام)" style="width:100%;margin-top:8px;padding:12px;font-size:16px;text-align:center">' : "")) +
       '<div id="ztMsg" class="small" style="color:#c2410c;margin-top:6px"></div>' + ztRes(t, "التجربة") + (p ? ztRes(p, "الربط الفعلي") : "");
