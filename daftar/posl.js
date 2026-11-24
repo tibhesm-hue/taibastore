@@ -394,7 +394,8 @@
     if (typeof S !== "undefined" && S.tab !== "home" && JX) jxSet("");
     [["j", "📦 الجرد"], ["p", "🖥️ نقاط البيع"]].forEach(function (t) {
       var b = v.querySelector('[data-jx="' + t[0] + '"]');
-      if (!b) { b = document.createElement("button"); b.type = "button"; b.dataset.jx = t[0]; b.textContent = t[1]; v.appendChild(b); }
+      if (!b) { b = document.createElement("button"); b.type = "button"; b.dataset.jx = t[0]; b.textContent = t[1]; }
+      var anc = t[0] === "j" ? v.querySelector('[data-sxv="c|sk"]') : null; if (anc) { if (anc.nextSibling !== b) anc.parentNode.insertBefore(b, anc.nextSibling); } else if (b.parentNode !== v) v.appendChild(b);
       var cls = "btn sm" + (JX === t[0] ? "" : " ghost"); if (b.className !== cls) b.className = cls;
     });
     [].forEach.call(v.querySelectorAll("[data-sxv]"), function (b) { if (JX && !b.classList.contains("ghost")) b.classList.add("ghost"); });
