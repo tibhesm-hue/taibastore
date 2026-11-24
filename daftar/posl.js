@@ -178,7 +178,7 @@
   function jdxDraw() {
     var c = jdxBox(), j = JDX.data; if (!c || !j) return; c.hidden = !JDX.show;
     var K = function (t, v, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + t + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + v + '</b></div>'; };
-    var h = '<h2>📦 الجرد</h2><button type="button" class="btn" data-jcgo="1" style="display:block;width:100%;margin:0 0 10px;padding:12px;font-weight:800">📋 جرّد بنفسك (نفس شاشة الكاشير)</button>';
+    var h = '<h2>📦 متابعة الجرد</h2>';
     if (!j.cur) { c.innerHTML = h + '<p class="small muted">ما فيه جرد للحين. يبدأ الجرد أول ما يضغط الكاشير «📋 الجرد» في تبويب الكاشير ويجرد أول صنف.</p>'; return; }
     var R = j.rows || [], cnt = R.filter(function (x) { return !x.nw; }), nw = R.filter(function (x) { return x.nw; }), rn = R.filter(function (x) { return x.rn; }), us = {};
     R.forEach(function (x) { for (var u in (x.by || {})) us[u] = (us[u] || 0) + 1; });
@@ -227,7 +227,7 @@
     var T = document.getElementById("tab-close"); if (T && T.dataset.cw && T.dataset.cw !== "menu") return;
     if (!JC.on && !M.querySelector("[data-jcgo]")) { var sk = M.querySelectorAll('[data-cwgo="sk"]'), last = sk[sk.length - 1]; var b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.setAttribute("data-jcgo", "1"); b.setAttribute("style", last ? (last.getAttribute("style") || "") : "display:block;width:100%;padding:16px 12px;margin:8px 0;border-radius:14px;font-size:1.15em;font-weight:800;text-align:center"); b.textContent = "📋 الجرد"; if (last) last.parentNode.insertBefore(b, last.nextSibling); else M.appendChild(b); }
   }
-  function jcBox() { var b = document.getElementById("jcBox"); if (JC.home) { if (b && b.parentNode && b.parentNode.id !== "tab-home") { b.remove(); b = null; } if (!b) { var H = document.getElementById("tab-home"), c = document.getElementById("jdxCard"); if (!H) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; H.insertBefore(b, c ? c.nextSibling : null); } return b; } if (b && b.parentNode && b.parentNode.id === "tab-home") { b.remove(); b = null; } if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
+  function jcBox() { var b = document.getElementById("jcBox"); if (JC.home) { if (b && b.parentNode && b.parentNode.id !== "tab-home") { b.remove(); b = null; } if (!b) { var H = document.getElementById("tab-home"), c = document.getElementById("sxV"); if (!H) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; H.insertBefore(b, c ? c.nextSibling : H.firstChild); } return b; } if (b && b.parentNode && b.parentNode.id === "tab-home") { b.remove(); b = null; } if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
   function jcOpen() {
     var b = jcBox(), M = document.getElementById("cwMenu"); if (!b) return; JC.on = true; if (M && !JC.home) M.style.display = "none"; document.body.classList.toggle("jcOn", !!JC.home); b.hidden = false;
     var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
@@ -375,17 +375,17 @@
     if (e.key !== "Enter" || !e.target || !e.target.id) return;
     if (e.target.id === "jcIn") { e.preventDefault(); jcFind(e.target.value); } else if (e.target.id === "jcN") { e.preventDefault(); jcSave(); } else if (e.target.id === "jcNameIn") { e.preventDefault(); document.getElementById("jcN").focus(); }
   });
-  function jcTick() { if (JC.on && JC.home) { var H = document.getElementById("tab-home"); if (!H || H.hidden || JX !== "j") jcClose(); return; } var T = document.getElementById("tab-close"); if (!T || T.hidden) { if (JC.on) jcClose(); return; } jcBtnInject(); if (JC.on) { var M = document.getElementById("cwMenu"); if (M && M.style.display !== "none") M.style.display = "none"; } }
+  function jcTick() { if (JC.on && JC.home) { var H = document.getElementById("tab-home"); if (!H || H.hidden || JX !== "j") { jcClose(); } return; } var T = document.getElementById("tab-close"); if (!T || T.hidden) { if (JC.on) jcClose(); return; } jcBtnInject(); if (JC.on) { var M = document.getElementById("cwMenu"); if (M && M.style.display !== "none") M.style.display = "none"; } }
 
   /* owner 24 Nov: «الجرد» and «نقاط البيع» are squares in the same top bar as المبيعات/الدرج/…, and open their card under it */
   var JXST = document.createElement("style");
-  JXST.textContent = "body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn #jdxCard{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
+  JXST.textContent = "body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
   document.head.appendChild(JXST);
   var JX = "";
   function jxSet(k) {
     JX = k; JDX.show = k === "j"; POSV.show = k === "p";
     document.body.classList.toggle("jxOn", !!k); document.body.classList.toggle("jxJ", k === "j"); document.body.classList.toggle("jxP", k === "p");
-    try { jdxBox(); if (k === "j") { jdxLoad(true); jdxDraw(); } else { var c = document.getElementById("jdxCard"); if (c) c.hidden = true; } } catch (e) { }
+    try { jdxBox(); if (k === "j") { jdxLoad(true); jdxDraw(); if (!JC.on) { JC.home = true; jcOpen(); } var jb = document.getElementById("jcBox"), sv = document.getElementById("sxV"); if (jb && sv && sv.nextSibling !== jb) sv.parentNode.insertBefore(jb, sv.nextSibling); } else { var c = document.getElementById("jdxCard"); if (c) c.hidden = true; } } catch (e) { }
     try { sales(); } catch (e) { }
   }
   function jxTiles() {
