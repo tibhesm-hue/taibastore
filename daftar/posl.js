@@ -233,7 +233,7 @@
     var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
     b.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📋 الجرد</h2><button type="button" class="btn sm ghost" data-jcback>رجوع</button></div>'
       + '<div class="small muted" id="jcProg" style="margin:6px 0 8px"></div>'
-      + '<button type="button" class="btn" data-jccam style="' + BS + '">📷 امسح الباركود بالكاميرا</button>'
+      + '<div style="display:flex;gap:8px"><button type="button" class="btn" data-jccam style="' + BS + ';flex:2">📷 امسح بالكاميرا</button><button type="button" class="btn ghost" data-jcphoto style="' + BS + ';flex:1">📸 صوّر</button></div>'
       + '<div id="jcCamW" hidden style="position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:8px"><video id="jcVid" playsinline muted style="width:100%;max-height:260px;object-fit:cover;display:block"></video><div style="position:absolute;left:12%;right:12%;top:45%;height:2px;background:#ef4444"></div></div>'
       + '<div style="display:flex;gap:6px"><input type="text" id="jcIn" placeholder="أو اكتب الباركود أو اسم الصنف" style="flex:1;min-width:0"><button type="button" class="btn sm" data-jcfind>بحث</button></div>'
       + '<div id="jcList"></div><div id="jcWarn" hidden style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px"></div>'
@@ -364,7 +364,7 @@
     var t = e.target; if (!t.closest) return;
     if (t.closest("[data-jcgo]")) { JC.home = !!t.closest("#jdxCard"); jcOpen(); return; }
     if (t.closest("[data-jcback]")) { jcClose(); return; }
-    if (t.closest("[data-jccam]")) { jcCam(); return; }
+    if (t.closest("[data-jccam]")) { jcCam(); return; } if (t.closest("[data-jcphoto]")) { jcCamStop(); var fi = document.getElementById("jcFile"); if (!fi) { fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.setAttribute("capture", "environment"); fi.id = "jcFile"; fi.style.display = "none"; document.body.appendChild(fi); fi.addEventListener("change", function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) jcRead(f); }); } fi.click(); return; }
     if (t.closest("[data-jcfind]")) { jcFind(document.getElementById("jcIn").value); return; }
     if (t.closest("[data-jcsave]")) { jcSave(); return; }
     if (t.closest("[data-jcren]")) { var a = document.getElementById("jcName"), b = document.getElementById("jcNameIn"); a.hidden = true; b.hidden = false; b.focus(); t.closest("[data-jcren]").hidden = true; return; }
