@@ -100,14 +100,16 @@ tr.last td{background:#f0fdf4}
   <button class="save" id="shGo">ابدأ البيع</button><div class="err" id="shErr"></div>
  </div></div>
 <div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
- <div class="card" style="width:440px;max-width:94vw;border:2px solid #dc2626">
+ <div class="card" style="width:460px;max-width:94vw;border:2px solid #dc2626">
   <div style="font-size:22px;font-weight:600;margin-bottom:12px;color:#991b1b">إقفال الوردية</div>
-  <div style="margin-bottom:6px">عدّ النقد اللي في الصندوق واكتبه</div>
-  <input id="scCash" class="uin" style="height:52px;font-size:20px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
-  <div style="margin:6px 0">مجموع الشبكة من إيصال جهاز المدى</div>
-  <input id="scCard" class="uin" style="height:52px;font-size:20px;border:2px solid #16a34a" inputmode="decimal" placeholder="0.00" dir="ltr">
-  <button class="save" id="scGo" style="background:#991b1b">إقفال وطباعة</button>
-  <button id="scBack" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px">رجوع للبيع</button>
+  <div id="scAsk"><div style="font-size:18px;font-weight:600;margin-bottom:8px">هل أنت متأكد من إقفال الوردية؟</div>
+  <div style="color:#5c6b78;margin-bottom:6px">بعد الإقفال ما تقدر تبيع على هذي الوردية.</div>
+  <div style="color:#5c6b78;margin-bottom:4px">وكمّل الإقفال من جوالك في الدفتر: عدّ الصندوق وصوّر إيصال المدى وحمّله.</div>
+  <button class="save" id="scGo" style="background:#991b1b">نعم، أقفل الوردية</button>
+  <button id="scBack" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px">رجوع للبيع</button></div>
+  <div id="scDone" style="display:none"><div style="font-size:20px;font-weight:600;color:#15803d;margin-bottom:8px">✓ انقفلت الوردية</div>
+  <div style="font-size:17px">الحين افتح <b>الدفتر من جوالك</b> وكمّل الإقفال: عدّ الصندوق، وصوّر إيصال المدى وحمّله.</div>
+  <div style="color:#5c6b78;margin-top:10px" id="scSum"></div></div>
   <div class="err" id="scErr"></div>
  </div></div>
 <div class="main" id="mainView">
@@ -428,15 +430,11 @@ let SHIFT=null;
 function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
 $("shGo").onclick=async()=>{const v=$("shFloat").value.trim();if(v===""||isNaN(+v)||+v<0){$("shErr").textContent="اكتب رصيد الصندوق (ولو صفر)";return}const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:+v})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية · العهدة "+f2(SHIFT.float))}else $("shErr").textContent="ما انفتحت: "+j.err};
 $("shFloat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("shGo").click()}});
-$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الإقفال",3000);return}$("scCash").value="";$("scCard").value="";$("scErr").textContent="";view("close");$("scCash").focus()};
+$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الإقفال",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";view("close");$("scBack").focus()};
 $("scBack").onclick=()=>view("main");
-$("scGo").onclick=async()=>{const c=$("scCash").value.trim(),d=$("scCard").value.trim();if(c===""||isNaN(+c)||d===""||isNaN(+d)){$("scErr").textContent="اكتب النقد والشبكة (ولو صفر)";return}
- if(Q().length){$("scErr").textContent="فيه فواتير ما أُرسلت بعد، انتظر شوي وجرّب";flush();return}
- $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cash:+c,card:+d})});
- if(j.ok){const s=j.shift,o=new Date(s.openAt),z=new Date(s.closeAt),hm=x=>x.toTimeString().slice(0,5),dd=x=>x.getDate()+"/"+(x.getMonth()+1)+"/"+x.getFullYear();
-  const R=(a,b)=>`<tr><td>${a}</td><td class="rv">${b}</td></tr>`;
-  $("rc").innerHTML=`<div class="c b" style="font-size:15px">${esc((ME.shop||{}).name||"أسواق طيبة")}</div><div class="c">${esc(ME.brName)}</div><div class="rbox c b" style="margin-top:3px">إقفال وردية</div><table class="kv">${R("الكاشير",esc(s.u))}${R("الفتح",dd(o)+" "+hm(o))}${R("الإقفال",dd(z)+" "+hm(z))}${R("العهدة",f2(s.float))}${R("النقد المعدود",f2(s.counted.cash))}${R("الشبكة",f2(s.counted.card))}${R("عدد الفواتير",s.n)}${R("المرتجعات",s.rn)}</table><div class="c" style="margin-top:14px">توقيع الكاشير: ................</div>`;
-  setTimeout(()=>{window.print();setTimeout(()=>location.href="/poslogout",800)},80)}
+$("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فواتير ما أُرسلت بعد، انتظر شوي وجرّب";flush();return}
+ $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+ if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",8000)}
  else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};
 (async()=>{ME=await api("/api/pos/me");if(!ME.ok)return;
  if(!ME.owner){$("scBtn").style.display="";const sj=await api("/api/pos/shift");SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
