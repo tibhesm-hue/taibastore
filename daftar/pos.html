@@ -145,7 +145,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 16</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 17</span><span>اختصارات: Enter إضافة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -320,7 +320,6 @@ async function printInv(){let L=LASTINV;if(!L){L=await lastFromServer();if(!L){t
   +`<table class="kv">`+(ME.vat?TR("الإجمالي غير شامل الضريبة",f2(net))+TR("ضريبة القيمة المضافة 15%",f2(L.vat||0)):"")
   +TR(L.ret?"المبلغ المردود":"المبلغ المستحق",f2(L.total)+" ر.س",1)+(L.cash?TR("نقدي",f2(L.cash)):"")+(L.card?TR("شبكة",f2(L.card)):"")+`</table>`
   +(qr?`<div style="margin-top:4px">${qr}</div>`:"")
-  +`<div style="margin:4px 4mm 0">${bc128(code,40)}</div><div class="c" style="font-size:10px;letter-spacing:1px">${code}</div>`
   +`<div class="c" style="margin-top:3px">شكراً لزيارتكم</div>`;
  setTimeout(()=>window.print(),80)}
 $("prnBtn").onclick=printInv;
