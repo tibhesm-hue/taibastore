@@ -186,10 +186,12 @@
   }
   function jdxBtn() {
     var bt = document.getElementById("jdxBtn"), j = JDX.data, c = document.getElementById("jdxCard"); if (!bt) return;
-    var t = "📦 الجرد", s = "";
-    if (j && j.cur) { var n = (j.rows || []).filter(function (x) { return !x.nw; }).length; s = (j.cur.st === "open" ? "جاري الجرد" : "آخر جرد معتمد") + " · انجرد " + n.toLocaleString("en-US") + " / " + (j.total || 0).toLocaleString("en-US"); }
-    else s = "ما فيه جرد للحين";
-    var h = t + '<br><span style="font-weight:400;font-size:13px;color:' + (j && j.cur && j.cur.st === "open" ? "#ea5b2b" : "#666") + '">' + s + (JDX.show ? " ▲" : " ▼") + '</span>';
+    var t = "📦 الجرد", s = "", open = !!(j && j.cur && j.cur.st === "open");
+    if (j && j.cur) {
+      var n = (j.rows || []).filter(function (x) { return !x.nw; }).length, nn = (j.rows || []).length - n, d = new Date(j.cur.at), hh = d.getHours(), dd = d.getDate() + "/" + (d.getMonth() + 1);
+      s = '<b style="color:' + (open ? "#ea5b2b" : "#666") + '">' + (open ? "جاري الجرد" : "آخر جرد معتمد") + '</b><br>بدأ ' + dd + " " + (hh % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + (hh < 12 ? " ص" : " م") + '<br>انجرد ' + n.toLocaleString("en-US") + ' صنف من ' + (j.total || 0).toLocaleString("en-US") + (nn ? " · وغير مسجل " + nn : "");
+    } else s = "ما فيه جرد للحين";
+    var h = t + '<br><span style="font-weight:400;font-size:13px;color:#444">' + s + " " + (JDX.show ? "▲" : "▼") + '</span>';
     if (bt.__h !== h) { bt.innerHTML = h; bt.__h = h; }
     if (c) c.hidden = !JDX.show;
   }
