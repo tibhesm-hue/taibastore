@@ -230,7 +230,7 @@ function beep(ok){playWav(ok);return;try{acOn();if(!AC)return;if(ok)tone(1050,0,
 async function loadCat(){
  const key="poscat_"+ME.br;let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
  if(c)setCat(c.rows);
- const j=await api("/api/pos/cat");if(j.ok){setCat(j.rows);try{localStorage.setItem(key,JSON.stringify({at:j.at,rows:j.rows}))}catch(e){}}
+ const j=await api("/api/pos/cat");if(j.ok){setCat(j.rows);window.CATAT=j.at;try{localStorage.setItem(key,JSON.stringify({at:j.at,rows:j.rows}))}catch(e){}}
 }
 function norm(s){return String(s).toLowerCase().replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim()}
 function setCat(rows){CAT=rows.map(r=>({c:r[0],n:r[1],p:r[2],k:norm(r[1])}));BY=new Map(CAT.map(x=>[x.c,x]))}
@@ -511,6 +511,6 @@ $("scGo").onclick=async()=>{if(Q().length){$("scErr").textContent="فيه فوا
  $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
- render();pendShow();heldShow();await loadCat();/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");const c=JSON.parse(localStorage.getItem("poscat_"+ME.br)||"null");if(v&&v.ok&&(!c||c.at!==v.at))await loadCat()}catch(e){}},60000);ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
+ render();pendShow();heldShow();await loadCat();/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},60000);ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
