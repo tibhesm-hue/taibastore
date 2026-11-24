@@ -225,7 +225,8 @@
   function jcBtnInject() {
     var M = document.getElementById("cwMenu"); if (!M) return;
     var T = document.getElementById("tab-close"); if (T && T.dataset.cw && T.dataset.cw !== "menu") return;
-    if (!JC.on && !M.querySelector("[data-jcgo]")) { var sk = M.querySelectorAll('[data-cwgo="sk"]'), last = sk[sk.length - 1]; var b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.setAttribute("data-jcgo", "1"); b.setAttribute("style", last ? (last.getAttribute("style") || "") : "display:block;width:100%;padding:16px 12px;margin:8px 0;border-radius:14px;font-size:1.15em;font-weight:800;text-align:center"); b.textContent = "📋 الجرد"; if (last) last.parentNode.insertBefore(b, last.nextSibling); else M.appendChild(b); }
+    var ob = M.querySelector("[data-jcgo]"); if (ob) ob.remove();
+    if (false) { var sk = M.querySelectorAll('[data-cwgo="sk"]'), last = sk[sk.length - 1]; var b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.setAttribute("data-jcgo", "1"); b.setAttribute("style", last ? (last.getAttribute("style") || "") : "display:block;width:100%;padding:16px 12px;margin:8px 0;border-radius:14px;font-size:1.15em;font-weight:800;text-align:center"); b.textContent = "📋 الجرد"; if (last) last.parentNode.insertBefore(b, last.nextSibling); else M.appendChild(b); }
   }
   function jcBox() { var b = document.getElementById("jcBox"); if (JC.home) { if (b && b.parentNode && b.parentNode.id !== "tab-home") { b.remove(); b = null; } if (!b) { var H = document.getElementById("tab-home"), c = document.getElementById("sxV"); if (!H) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; H.insertBefore(b, c ? c.nextSibling : H.firstChild); } return b; } if (b && b.parentNode && b.parentNode.id === "tab-home") { b.remove(); b = null; } if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
   function jcOpen() {
@@ -362,6 +363,7 @@
   }
   document.addEventListener("click", function (e) {
     var t = e.target; if (!t.closest) return;
+    if (JC.on && !JC.home && t.closest('nav.tabs [data-go="close"]')) { jcClose(); return; }
     if (t.closest("[data-jcgo]")) { JC.home = !!t.closest("#jdxCard"); jcOpen(); return; }
     if (t.closest("[data-jcback]")) { jcClose(); return; }
     if (t.closest("[data-jccam]")) { jcCam(); return; } if (t.closest("[data-jcphoto]")) { jcCamStop(); var fi = document.getElementById("jcFile"); if (!fi) { fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.setAttribute("capture", "environment"); fi.id = "jcFile"; fi.style.display = "none"; document.body.appendChild(fi); fi.addEventListener("change", function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) jcRead(f); }); } fi.click(); return; }
@@ -406,7 +408,22 @@
     if (JX && e.target.closest && (e.target.closest("[data-sxv]") || e.target.closest("nav.tabs"))) jxSet("");
   }, true);
   setInterval(function () { try { jxTiles(); } catch (e) { } }, 300);
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } }
+
+  /* owner 24 Nov: «الجرد» in the bottom bar, between «الكاشير» and «نقاط البيع» */
+  function jcNav() {
+    var w = document.querySelector("nav.tabs .wrap"), pt = document.getElementById("posTab"); if (!w || !pt) return;
+    var b = document.getElementById("jcNavB");
+    if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "jcNavB"; b.setAttribute("role", "tab"); b.innerHTML = '<span class="i">📋</span>الجرد';
+      b.addEventListener("click", function (e) { e.stopPropagation();
+        if (document.body.classList.contains("sxOwn")) { try { if (S.tab !== "home") go("home"); } catch (x) { } setTimeout(function () { jxSet("j"); jxTiles(); try { window.scrollTo({ top: 0 }); } catch (x) { } }, 150); return; }
+        try { if (S.tab !== "close") go("close"); } catch (x) { }
+        var n = 0, iv = setInterval(function () { if (document.getElementById("cwMenu") || ++n > 30) { clearInterval(iv); JC.home = false; if (!JC.on) jcOpen(); try { window.scrollTo({ top: 0 }); } catch (x) { } } }, 100);
+      }); }
+    if (pt.previousSibling !== b) w.insertBefore(b, pt);
+    var on = JC.on ? "true" : "false"; if (b.getAttribute("aria-selected") !== on) b.setAttribute("aria-selected", on);
+    if (JC.on) { var c = w.querySelector('[data-go="close"]'); if (c && c.getAttribute("aria-selected") === "true") c.setAttribute("aria-selected", "false"); }
+  }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();
