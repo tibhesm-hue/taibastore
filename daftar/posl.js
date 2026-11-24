@@ -126,7 +126,46 @@
       sel.addEventListener("change", function (e) { if (sel.value === "pos") { e.stopImmediatePropagation(); SV.on = true; svHide(true); svLoad(true); } else if (SV.on) { SV.on = false; svHide(false); } }, true); }
     if (SV.on) { if (sel.value !== "pos") sel.value = "pos"; svHide(true); svLoad(false); }
   }
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } }
+
+  /* price-link stats: counted by the server itself (visits on /p/ + orders that reach the POS) */
+  var PLX = { key: "", at: 0, busy: false, data: null };
+  function plxDays(n) { var a = [], t = new Date(Date.now() + 3 * 3600e3); for (var i = n - 1; i >= 0; i--) a.push(ymd(new Date(t.getTime() - i * 864e5))); return a; }
+  function dm(k) { return k.split("-").slice(1).reverse().map(function (x) { return +x; }).join("/"); }
+  function plxBox() {
+    var c = document.getElementById("plCard"); if (!c) return null; var b = document.getElementById("plNew");
+    if (!b) { b = document.createElement("div"); b.id = "plNew"; var cu = document.getElementById("plCust"); if (cu) cu.parentNode.insertBefore(b, cu.nextSibling); else c.appendChild(b); }
+    [].forEach.call(c.children, function (x) { if (x.tagName !== "H2" && x.id !== "plPer" && x.id !== "plCust" && x.id !== "plNew" && x.style.display !== "none") x.style.display = "none"; });
+    return b;
+  }
+  function plxDraw() {
+    var b = plxBox(), j = PLX.data; if (!b || !j) return; var R = PLX.r, T = { v: 0, vo: 0, o: 0, dl: 0, pk: 0, s: 0, sn: 0 }, old = false;
+    Object.keys(j.days).forEach(function (k) { if (k < R[0] || k > R[1]) return; var d = j.days[k]; T.v += d.v; T.vo += d.vo; T.o += d.o; T.dl += d.dl; T.pk += d.pk; T.s += d.s; if (d.old) old = true; else T.sn += d.o; });
+    var no = Math.max(0, T.v - T.vo), pc = T.v ? Math.round(T.vo / T.v * 1000) / 10 : 0;
+    var K = function (big, lbl, sub, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + lbl + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + big + '</b>' + (sub ? '<div style="font-size:11px;color:#666">' + sub + '</div>' : '') + '</div>'; };
+    var h = '<div class="grid2">' + K(T.v, "دخلوا الرابط", "كل جوال يُحسب مرة باليوم")
+      + K(T.o, "طلبوا", "توصيل " + T.dl + " · استلام " + T.pk, "#0f5c43")
+      + K(no, "دخلوا وما طلبوا", T.v ? "من كل 100 زائر طلب " + pc : "", "#b91c1c")
+      + K(f2(T.s) + " ر", "مجموع الطلبات", T.sn ? "متوسط الطلب " + f2(T.s / T.sn) + " ر" : "") + '</div>';
+    if (old) h += '<p class="small" style="margin:6px 0 0;color:#666">الزوار ومبالغ الطلبات تُحسب من 24/11؛ قبلها عدد الطلبات فقط.</p>';
+    var AR = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"], D7 = plxDays(7).reverse();
+    h += '<h3 style="margin:12px 0 4px;font-size:15px">آخر 7 أيام</h3><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:#666"><td>اليوم</td><td style="text-align:center">دخلوا</td><td style="text-align:center">طلبوا</td><td style="text-align:center">ما طلبوا</td></tr>'
+      + D7.map(function (k) { var d = j.days[k] || { v: 0, vo: 0, o: 0 }, z = new Date(k + "T12:00:00"); return '<tr style="border-top:1px solid var(--line,#e5e7eb)"><td style="padding:5px 0">' + AR[z.getDay()] + ' ' + dm(k) + '</td><td style="text-align:center">' + (d.old ? "—" : d.v) + '</td><td style="text-align:center;color:#0f5c43;font-weight:700">' + d.o + '</td><td style="text-align:center;color:#b91c1c">' + (d.old ? "—" : Math.max(0, d.v - d.vo)) + '</td></tr>'; }).join("") + '</table>';
+    var ST = function (o) { return o.st === "done" ? '<span style="color:#15803d">انتهى' + (o.u ? " · " + esc(o.u) : "") + '</span>' : o.st === "taken" ? '<span style="color:#1d4ed8">عند الكاشير ' + esc(o.u) + '</span>' : '<span style="color:#c2410c">جديد</span>'; };
+    var tm = function (t) { var x = +String(t).slice(0, 2); return (x % 12 || 12) + ":" + String(t).slice(3, 5) + (x < 12 ? " ص" : " م"); };
+    h += '<h3 style="margin:12px 0 4px;font-size:15px">طلبات اليوم <span class="small muted">(' + j.list.length + ')</span></h3>'
+      + (j.list.length ? j.list.map(function (o) { return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:13px"><span>طلب ' + esc(o.ono) + ' · ' + tm(o.t) + ' · ' + (o.dist === "pickup" ? "استلام" : "توصيل") + ' · ' + o.n + ' صنف<br>' + ST(o) + '</span><b style="white-space:nowrap">' + f2((+o.sub || 0) + (+o.fee || 0)) + '</b></div>'; }).join("") : '<p class="small muted" style="margin:4px 0">ما وصل طلب من الرابط اليوم.</p>');
+    h += '<p class="small muted" style="margin:8px 0 0">لحظي · يتحدث كل 20 ثانية</p>';
+    if (b.__h !== h) { b.innerHTML = h; b.__h = h; }
+  }
+  function plxTick() {
+    var c = document.getElementById("plCard"); if (!c || c.hidden || !c.offsetParent) return; plxBox();
+    var r; try { r = plRange(); } catch (e) { r = null; } if (!r || !r[0]) { var t = ymd(new Date(Date.now() + 3 * 3600e3)); r = [t, t]; }
+    var d7 = plxDays(7)[0], tod = plxDays(1)[0], f = r[0] < d7 ? r[0] : d7, t2 = r[1] > tod ? r[1] : tod, k = f + "|" + t2;
+    PLX.r = r; if (PLX.data && PLX.key === k) plxDraw();
+    if (PLX.busy || (PLX.key === k && Date.now() - PLX.at < 20000)) return; PLX.busy = true;
+    fetch("/api/pos/plstats?f=" + f + "&t=" + t2, { credentials: "same-origin", cache: "no-store" }).then(function (x) { return x.json(); }).then(function (j) { if (j && j.ok) { PLX.data = j; PLX.key = k; PLX.at = Date.now(); plxDraw(); } }).catch(function () { }).then(function () { PLX.busy = false; });
+  }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();
