@@ -533,10 +533,10 @@
   }
 
   /* owner 24 Nov: items taken off a sale before it was saved (line deleted, quantity lowered, basket emptied) — red counter on «نقاط البيع», list inside its card, «شفته» clears one */
-  var PV = { at: 0, d: null, busy: false };
+  var PV = { at: 0, d: null, e: null, busy: false };
   function pvLoad() {
     if (PV.busy || !document.body.classList.contains("sxOwn")) return; PV.busy = true;
-    fetch("/api/pos/voids", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { PV.d = j; pvDraw(); } }).catch(function () { }).then(function () { PV.busy = false; PV.at = Date.now(); });
+    fetch("/api/pos/itemlog", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) PV.e = j; }).catch(function () { }).then(function () { return fetch("/api/pos/voids", { credentials: "same-origin", cache: "no-store" }); }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { PV.d = j; pvDraw(); } }).catch(function () { }).then(function () { PV.busy = false; PV.at = Date.now(); });
   }
   function pvBadge(el, n) {
     if (!el) return; var b = el.querySelector(".pvB");
@@ -545,15 +545,32 @@
     if (b.textContent !== String(n)) b.textContent = n;
   }
   function pvDraw() {
-    var j = PV.d; if (!j) return; var n = j.unseen || 0;
+    var j = PV.d; if (!j) return; var n = (j.unseen || 0) + ((PV.e && PV.e.unseen) || 0);
     pvBadge(document.getElementById("posTab"), n); pvBadge(document.querySelector('[data-jx="p"]'), n);
     var card = document.getElementById("posSgCard"); if (!card) return;
     var box = document.getElementById("pvBox"); if (!box) { box = document.createElement("div"); box.id = "pvBox"; card.insertBefore(box, card.firstChild); }
     var L = (j.list || []).filter(function (x) { return !x.seen; }).slice(0, 40), K = { del: "حذف صنف", dec: "نقّص الكمية", clr: "فرّغ السلة" };
     var h = !L.length ? "" : '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><b style="color:#c2410c">حذوفات قبل الحفظ (' + L.length + ')</b><button type="button" class="btn sm ghost" data-pvall="1">شفتها كلها</button></div>' +
       L.map(function (x) { var d = x.day.split("-"), dd = (+d[2]) + "/" + (+d[1]); return '<div style="padding:8px 2px;border-top:1px solid var(--line,#e5e7eb)"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(x.u) + " · " + (K[x.kind] || "حذف") + '</b><b style="color:#c2410c">' + Number(x.amt).toFixed(2) + '</b></div><div class="small muted">' + dd + " · " + String(x.t || "").slice(0, 5) + " · " + (x.br === "del" ? "التوصيل" : "المبيعات") + '</div><div class="small">' + x.lines.map(function (l) { return esc(l[1]) + " × " + l[3]; }).join("، ") + '</div><button type="button" class="btn sm ghost" data-pvseen="' + esc(x.id) + '" style="margin-top:6px">شفته</button></div>'; }).join("") + "</div>";
+    h += ilHtml();
     if (box.__h !== h) { box.innerHTML = h; box.__h = h; }
   }
+  /* owner 25 Nov: item edits made by cashiers from the POS (name / price / new item) — applied at once; here the owner sees who changed what, as a red counter */
+  function ilHtml() {
+    var L = ((PV.e && PV.e.list) || []).filter(function (x) { return !x.seen; }).slice(0, 40); if (!L.length) return "";
+    var K = { price: "تغيير سعر", name: "تغيير اسم", "new": "صنف جديد" };
+    return '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><b style="color:#c2410c">تعديلات الأصناف من الكاشير (' + L.length + ')</b><button type="button" class="btn sm ghost" data-ilall="1">شفتها كلها</button></div>' +
+      L.map(function (x) {
+        var d = String(x.day || "").split("-"), dd = (+d[2]) + "/" + (+d[1]);
+        var ch = x.k === "price" ? esc(x.n0) + ": " + Number(x.p0).toFixed(2) + " ← <b>" + Number(x.p1).toFixed(2) + "</b>" : x.k === "name" ? esc(x.n0) + " ← <b>" + esc(x.n1) + "</b>" : "<b>" + esc(x.n1) + "</b> · " + Number(x.p1).toFixed(2) + " · تكلفته تُضاف";
+        return '<div style="padding:8px 2px;border-top:1px solid var(--line,#e5e7eb)"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(x.u) + " · " + (K[x.k] || "") + '</b><button type="button" class="btn sm ghost" data-ilseen="' + esc(x.id) + '">شفته</button></div><div class="small muted">' + dd + " · " + String(x.t || "").slice(0, 5) + " · " + (x.br === "del" ? "التوصيل" : "المبيعات") + " · " + esc(x.code) + '</div><div class="small">' + ch + "</div></div>";
+      }).join("") + "</div>";
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-ilseen],[data-ilall]"); if (!b) return;
+    var body = b.dataset.ilall ? { all: 1 } : { id: b.dataset.ilseen }; b.disabled = true;
+    fetch("/api/pos/itemlog/seen", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function () { PV.at = 0; pvLoad(); }).catch(function () { b.disabled = false; });
+  });
   document.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("[data-pvseen],[data-pvall]"); if (!b) return;
     var body = b.dataset.pvall ? { all: 1 } : { id: b.dataset.pvseen }; b.disabled = true;
