@@ -388,12 +388,12 @@
 
   /* owner 24 Nov: «الجرد» and «نقاط البيع» are squares in the same top bar as المبيعات/الدرج/…, and open their card under it */
   var JXST = document.createElement("style");
-  JXST.textContent = "body.jcFull nav.tabs button[aria-selected=true]:not(#jcNavB){color:var(--muted)!important;background:none!important}body.jcFull #jcNavB{color:var(--brand)!important;background:var(--brand-soft)!important}#jcView{display:none}body.jcFull #jcView{display:block}body.jcFull section[data-tab]{display:none!important}body.jcFull [data-jcback]{display:none!important}body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
+  JXST.textContent = "body.jcFull nav.tabs button[aria-selected=true]:not(#jcNavB){color:var(--muted)!important;background:none!important}body.jcFull #jcNavB{color:var(--brand)!important;background:var(--brand-soft)!important}#jcView{display:none}body.jcFull #jcView{display:block}body.jcFull section[data-tab]{display:none!important}body.jcFull [data-jcback]{display:none!important}body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox):not(#ztCard){display:none!important}#ztCard{display:none}body.jxZ #ztCard{display:block}body.jxZ #tab-home>#posSgCard,body.jxZ #tab-home>#jdxCard{display:none!important}body.jcOn [data-jcback]{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
   document.head.appendChild(JXST);
   var JX = "";
   function jxSet(k) {
     JX = k; JDX.show = k === "j"; POSV.show = k === "p";
-    document.body.classList.toggle("jxOn", !!k); document.body.classList.toggle("jxJ", k === "j"); document.body.classList.toggle("jxP", k === "p");
+    document.body.classList.toggle("jxOn", !!k); document.body.classList.toggle("jxJ", k === "j"); document.body.classList.toggle("jxP", k === "p"); document.body.classList.toggle("jxZ", k === "z"); if (k === "z") { try { ztLoad(); } catch (e) { } }
     try { jdxBox();  } catch (e) { }
     try { sales(); } catch (e) { }
   }
@@ -401,7 +401,7 @@
     var v = document.getElementById("sxV");
     if (!v || !document.body.classList.contains("sxOwn")) return;
     if (typeof S !== "undefined" && S.tab !== "home" && JX) jxSet("");
-    [["p", "🖥️ نقاط البيع"]].forEach(function (t) {
+    [["p", "🖥️ نقاط البيع"], ["z", "الربط مع الهيئة"]].forEach(function (t) {
       var b = v.querySelector('[data-jx="' + t[0] + '"]');
       if (!b) { b = document.createElement("button"); b.type = "button"; b.dataset.jx = t[0]; b.textContent = t[1]; }
       var anc = t[0] === "j" ? v.querySelector('[data-sxv="c|sk"]') : null; if (anc) { if (anc.nextSibling !== b) anc.parentNode.insertBefore(b, anc.nextSibling); } else if (b.parentNode !== v) v.appendChild(b);
@@ -415,6 +415,57 @@
     if (JX && e.target.closest && (e.target.closest("[data-sxv]") || e.target.closest("nav.tabs"))) jxSet("");
   }, true);
   setInterval(function () { try { jxTiles(); } catch (e) { } }, 300);
+
+  /* owner 24 Nov: «الربط مع الهيئة» — the shop branch's ZATCA (Fatoora phase 2) link: a test on ZATCA's test portal, then the real link with the OTP; owner only */
+  var ZT = { d: null, busy: false, at: 0 };
+  var ZTS = { csid: "طلب الشهادة", doc388: "فاتورة مبسطة", doc381: "إشعار دائن (مرتجع)", doc383: "إشعار مدين", pcsid: "شهادة الإنتاج" };
+  function ztLoad() {
+    if (ZT.busy) return;
+    fetch("/api/zatca/status", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { ZT.d = j; ZT.at = Date.now(); ztDraw(); } }).catch(function () { });
+  }
+  function ztErrs(r) { if (!r || r.ok) return 0; var n = 0; (r.log || []).forEach(function (x) { n += (x.err && x.err.length) || (x.status && x.status !== 200 && x.status !== 202 ? 1 : 0); }); return n || 1; }
+  function ztRes(r, ttl) {
+    if (!r) return '<div class="small muted" style="margin-top:8px">' + ttl + ': لم تُجرَّب بعد</div>';
+    var d = new Date(r.at), when = d.getDate() + "/" + (d.getMonth() + 1) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    var h = '<div style="margin-top:10px;border-top:1px solid var(--line,#e5e7eb);padding-top:8px"><b>' + ttl + " · " + when + ' · <span style="color:' + (r.ok ? "#15803d" : "#c2410c") + '">' + (r.ok ? "نجحت" : "لم تنجح") + "</span></b>";
+    (r.log || []).forEach(function (x) {
+      var good = (x.status === 200 || x.status === 202) && !(x.err && x.err.length);
+      h += '<div class="small" style="margin-top:6px"><b style="color:' + (good ? "#15803d" : "#c2410c") + '">' + (good ? "✓ " : "✗ ") + (ZTS[x.s] || x.s) + "</b>" + (x.rep ? " · " + esc(x.rep) : "") + (good ? "" : " · رمز " + x.status) + "</div>";
+      (x.err || []).forEach(function (m) { h += '<div class="small" style="color:#c2410c">' + esc(m.code || "") + " " + esc(m.message || "") + "</div>"; });
+      (x.warn || []).forEach(function (m) { h += '<div class="small muted">تنبيه: ' + esc(m.code || "") + " " + esc(m.message || "") + "</div>"; });
+      if (!good && x.t) h += '<div class="small muted" style="direction:ltr;text-align:left;word-break:break-all">' + esc(String(x.t).slice(0, 300)) + "</div>";
+    });
+    return h + "</div>";
+  }
+  function ztDraw() {
+    var home = document.getElementById("tab-home"); if (!home) return;
+    var c = document.getElementById("ztCard"); if (!c) { c = document.createElement("div"); c.id = "ztCard"; c.className = "card"; home.appendChild(c); }
+    var j = ZT.d || {}, t = j.test, p = j.prod, S2 = j.seller || {};
+    var st = j.linked ? '<b style="color:#15803d">مربوط بالهيئة</b>' : t && t.ok ? "التجربة نجحت — جاهز للربط الفعلي" : "غير مربوط";
+    var bx = "display:block;width:100%;padding:16px 8px;border-radius:14px;font-size:16px";
+    var h = '<h3 style="margin:0 0 4px">فرع المبيعات — نقاط البيع</h3><div class="small muted">' + esc(S2.name || "") + " · " + esc(S2.vat || "") + "<br>" + esc((S2.bld || "") + " " + (S2.street || "") + "، " + (S2.dist || "") + "، " + (S2.city || "") + " " + (S2.zip || "")) + '</div><div style="margin:8px 0">الحالة: ' + st + "</div>" +
+      (ZT.busy ? '<div style="padding:14px;text-align:center"><b>جاري الاتصال بالهيئة…</b></div>' :
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn ghost" data-zt="test" style="' + bx + '">تجربة الربط</button><button type="button" class="btn' + (t && t.ok ? "" : " ghost") + '" data-zt="prod" style="' + bx + '">الربط الفعلي</button></div>' +
+      (t && t.ok && !j.linked ? '<input id="ztOtp" inputmode="numeric" maxlength="6" placeholder="رمز OTP من بوابة فاتورة (6 أرقام)" style="width:100%;margin-top:8px;padding:12px;font-size:16px;text-align:center">' : "")) +
+      '<div id="ztMsg" class="small" style="color:#c2410c;margin-top:6px"></div>' + ztRes(t, "التجربة") + (p ? ztRes(p, "الربط الفعلي") : "");
+    if (c.__h !== h) { var ov = document.getElementById("ztOtp"); var keep = ov ? ov.value : ""; c.innerHTML = h; c.__h = h; var nv = document.getElementById("ztOtp"); if (nv && keep) nv.value = keep; }
+    var n = j.linked ? 0 : ztErrs(p && !p.ok ? p : t);
+    pvBadge(document.querySelector('[data-jx="z"]'), n);
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-zt]"); if (!b || ZT.busy) return;
+    var m = document.getElementById("ztMsg"), k = b.dataset.zt, body = {};
+    if (k === "prod") {
+      var t = ZT.d && ZT.d.test; if (!t || !t.ok) { if (m) m.textContent = "اضغط «تجربة الربط» أولاً، ولما تنجح يتفعّل الربط الفعلي."; return; }
+      var o = document.getElementById("ztOtp"), v = o ? o.value.replace(/\D/g, "") : ""; if (v.length !== 6) { if (m) m.textContent = "اكتب رمز OTP من بوابة فاتورة (6 أرقام)."; if (o) o.focus(); return; }
+      body.otp = v;
+    }
+    ZT.busy = true; ztDraw();
+    fetch(k === "prod" ? "/api/zatca/onboard" : "/api/zatca/test", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); }).catch(function () { return null; })
+      .then(function (j) { ZT.busy = false; if (!j || !j.ok) { ztLoad(); setTimeout(function () { var mm = document.getElementById("ztMsg"); if (mm) mm.textContent = "ما تم الاتصال، حاول مرة ثانية."; }, 400); return; } ztLoad(); });
+  });
+  function ztTick() { if (!document.body.classList.contains("sxOwn")) return; if (Date.now() - ZT.at > 60000) ztLoad(); }
 
   /* owner 24 Nov: «الجرد» in the bottom bar, between «الكاشير» and «نقاط البيع» */
   function jcNav() {
@@ -456,7 +507,7 @@
     fetch("/api/pos/voids/seen", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function () { PV.at = 0; pvLoad(); }).catch(function () { b.disabled = false; });
   });
   function pvTick() { if (Date.now() - PV.at > 30000) pvLoad(); else pvDraw(); }
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } try { pvTick(); } catch (e) { } }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } try { pvTick(); } catch (e) { } try { ztTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000);
 })();
