@@ -233,7 +233,7 @@
     var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
     b.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📋 الجرد</h2><button type="button" class="btn sm ghost" data-jcback>رجوع</button></div>'
       + '<div class="small muted" id="jcProg" style="margin:6px 0 8px"></div>'
-      + '<button type="button" class="btn" data-jccam style="' + BS + '">📷 امسح الباركود بالكاميرا</button>'
+      + '<button type="button" class="btn" data-jccam style="' + BS + '">📷 صوّر الباركود</button>'
       + '<div id="jcCamW" hidden style="position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:8px"><video id="jcVid" playsinline muted style="width:100%;max-height:260px;object-fit:cover;display:block"></video><div style="position:absolute;left:12%;right:12%;top:45%;height:2px;background:#ef4444"></div></div>'
       + '<div style="display:flex;gap:6px"><input type="text" id="jcIn" placeholder="أو اكتب الباركود أو اسم الصنف" style="flex:1;min-width:0"><button type="button" class="btn sm" data-jcfind>بحث</button></div>'
       + '<div id="jcList"></div><div id="jcWarn" hidden style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px"></div>'
@@ -271,30 +271,44 @@
     });
     return window.__zxp;
   }
+  /* owner 24 Nov: live video reading failed on the shop phones — take a photo instead and read it (phone reader, then ZXing, then the server reads the printed digits) */
+  function jcSt(t) { var e = document.getElementById("jcCamS"); if (!e) { var cw = document.getElementById("jcCamW"); if (!cw) return; e = document.createElement("div"); e.id = "jcCamS"; e.style.cssText = "margin:0 0 8px;font-weight:700"; cw.parentNode.insertBefore(e, cw.nextSibling); } e.textContent = t; }
   function jcCam() {
-    if (JC.cam || JC.zx) { jcCamStop(); return; }
-    var w = document.getElementById("jcCamW"), v = document.getElementById("jcVid"); w.hidden = false;
-    var st = function (t) { var e = document.getElementById("jcCamS"); if (!e) { e = document.createElement("div"); e.id = "jcCamS"; e.className = "small muted"; e.style.cssText = "margin:0 0 8px"; w.parentNode.insertBefore(e, w.nextSibling); } e.textContent = t; };
-    var hit = function (code) { code = String(code || "").trim(); if (!code) return; jcCamStop(); st(""); document.getElementById("jcIn").value = code; jcFind(code); };
-    var useZX = function () {
-      st("قارئ احتياطي: يحمّل…"); loadZX().then(function () {
-        st("قارئ احتياطي شغّال — ثبّت الباركود في المنتصف");
-        var h = new Map(); try { h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E, ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.QR_CODE]); h.set(ZXing.DecodeHintType.TRY_HARDER, true); } catch (e) { }
-        JC.zx = new ZXing.BrowserMultiFormatReader(h, 200);
-        return JC.zx.decodeFromConstraints({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } }, v, function (r) { if (r) hit(r.getText()); });
-      }).catch(function (e) { jcCamStop(); st("تعذّر تشغيل القارئ الاحتياطي (" + (e && e.name ? e.name : "تحميل المكتبة") + ") — اكتب الباركود"); });
+    var fi = document.getElementById("jcFile");
+    if (!fi) { fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.setAttribute("capture", "environment"); fi.id = "jcFile"; fi.style.display = "none"; document.body.appendChild(fi); fi.addEventListener("change", function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) jcRead(f); }); }
+    fi.click();
+  }
+  function jcRead(f) {
+    jcSt("⏳ يقرأ الباركود…");
+    var done = false, hit = function (code) { code = String(code || "").replace(/\s/g, ""); if (!code || done) return; done = true; jcSt(""); document.getElementById("jcIn").value = code; jcFind(code); };
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onerror = function () { jcSt("ما قدرت أفتح الصورة — صوّر مرة ثانية"); };
+    img.onload = function () {
+      var W = img.naturalWidth, H = img.naturalHeight, cv = function (mx) { var k = Math.min(1, mx / Math.max(W, H)), c = document.createElement("canvas"); c.width = Math.round(W * k); c.height = Math.round(H * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); return c; };
+      var server = function () {
+        if (done) return; jcSt("⏳ يقرأ الرقم من الصورة…");
+        var c = cv(1400), b64 = c.toDataURL("image/jpeg", 0.85).split(",")[1];
+        fetch(jcQ("/api/jard/read"), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ b64: b64 }) }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok && j.code && j.code.length >= 6) hit(j.code); else if (!done) jcSt("ما انقرأ — قرّب الباركود وصوّر مرة ثانية، أو اكتب الرقم اللي تحته"); }).catch(function () { if (!done) jcSt("ما انقرأ — تأكد من الإنترنت أو اكتب الرقم اللي تحت الباركود"); });
+      };
+      var zx = function () {
+        if (done) return;
+        loadZX().then(function () {
+          var h = new Map(); h.set(ZXing.DecodeHintType.TRY_HARDER, true);
+          var rd = new ZXing.MultiFormatReader(); rd.setHints(h);
+          var sizes = [1600, 1000, 2400];
+          for (var i = 0; i < sizes.length && !done; i++) {
+            var c = cv(sizes[i]), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data, L = new Uint8ClampedArray(c.width * c.height);
+            for (var p = 0, q = 0; p < L.length; p++, q += 4) L[p] = (d[q] * 299 + d[q + 1] * 587 + d[q + 2] * 114) / 1000;
+            var src = new ZXing.RGBLuminanceSource(L, c.width, c.height);
+            var tries = [src]; try { tries.push(src.rotateCounterClockwise()); } catch (e) { }
+            for (var t = 0; t < tries.length && !done; t++) { try { hit(rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(tries[t]))).getText()); } catch (e) { } }
+          }
+          server();
+        }).catch(server);
+      };
+      if ("BarcodeDetector" in window) { try { new BarcodeDetector().detect(img).then(function (r) { if (r && r[0] && r[0].rawValue) hit(r[0].rawValue); else zx(); }).catch(zx); } catch (e) { zx(); } } else zx();
     };
-    if ("BarcodeDetector" in window) {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (st0) {
-        JC.cam = st0; v.srcObject = st0; st("قارئ المتصفح شغّال — ثبّت الباركود في المنتصف"); v.play(); var bd, t0 = Date.now(), bad = 0, sw = function () { jcCamStop(); w.hidden = false; useZX(); };
-        try { bd = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"] }); } catch (e) { try { bd = new BarcodeDetector(); } catch (e2) { sw(); return; } }
-        var tick = function () {
-          if (!JC.cam) return;
-          if (Date.now() - t0 > 4000) { sw(); return; }
-          bd.detect(v).then(function (r) { if (r && r[0] && r[0].rawValue) hit(r[0].rawValue); else setTimeout(tick, 120); }).catch(function () { if (++bad > 3) sw(); else setTimeout(tick, 200); });
-        }; tick();
-      }).catch(function () { jcCamStop(); alert("ما سمحت للكاميرا — اسمح لها من إعدادات المتصفح أو اكتب الباركود"); });
-    } else useZX();
+    img.src = url;
   }
   function jcSave() {
     if (!JC.c || JC.busy) return; var g = function (id) { return document.getElementById(id); };
