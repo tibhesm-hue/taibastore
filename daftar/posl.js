@@ -446,12 +446,13 @@
     var st = j.linked ? '<b style="color:#15803d">مربوط بالهيئة</b>' : t && t.ok ? "التجربة نجحت — جاهز للربط الفعلي" : "غير مربوط";
     var bx = "display:block;width:100%;padding:16px 8px;border-radius:14px;font-size:16px";
     var h = '<h3 style="margin:0 0 4px">مبيعات — نقاط البيع</h3><div class="small muted">' + esc(S2.name || "") + " · " + esc(S2.vat || "") + "<br>" + esc((S2.bld || "") + " " + (S2.street || "") + "، " + (S2.dist || "") + "، " + (S2.city || "") + " " + (S2.zip || "")) + '</div><div style="margin:8px 0 0">الحالة: ' + st + "</div>" + rh +
+      (j.relayReq ? '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 10px"><b>جهاز يطلب أن يكون وسيط الهيئة</b><div class="small muted" style="margin:4px 0 8px">' + (/Windows/.test(j.relayReq.ua) ? "كمبيوتر ويندوز" : "جهاز") + " · " + (/Chrome/.test(j.relayReq.ua) ? "كروم" : "متصفح") + " · " + new Date(j.relayReq.at).getHours() + ":" + String(new Date(j.relayReq.at).getMinutes()).padStart(2, "0") + '</div><button type="button" class="btn" data-ztok="1" style="display:block;width:100%;padding:14px;border-radius:14px;font-size:16px">اعتماده (لابتوب المحل)</button></div>' : "") +
       (run ? '<div style="padding:14px;text-align:center"><b>' + (rOn ? "جاري الإرسال للهيئة عن طريق الوسيط…" : "بانتظار لابتوب المحل — يكون شغّال وكروم مفتوح") + "</b></div>" : ZT.busy ? '<div style="padding:14px;text-align:center"><b>جاري الاتصال بالهيئة…</b></div>' :
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" class="btn ghost" data-zt="test" style="' + bx + '">تجربة الربط</button><button type="button" class="btn' + (t && t.ok ? "" : " ghost") + '" data-zt="prod" style="' + bx + '">الربط الفعلي</button></div>' +
       (t && t.ok && !j.linked ? '<input id="ztOtp" inputmode="numeric" maxlength="6" placeholder="رمز OTP من بوابة فاتورة (6 أرقام)" style="width:100%;margin-top:8px;padding:12px;font-size:16px;text-align:center">' : "")) +
       '<div id="ztMsg" class="small" style="color:#c2410c;margin-top:6px"></div>' + ztRes(t, "التجربة") + (p ? ztRes(p, "الربط الفعلي") : "");
     if (c.__h !== h) { var ov = document.getElementById("ztOtp"); var keep = ov ? ov.value : ""; c.innerHTML = h; c.__h = h; var nv = document.getElementById("ztOtp"); if (nv && keep) nv.value = keep; }
-    var n = j.linked ? 0 : ztErrs(p && !p.ok ? p : t);
+    var n = j.relayReq ? 1 : j.linked ? 0 : ztErrs(p && !p.ok ? p : t);
     pvBadge(document.querySelector('[data-jx="z"]'), n);
   }
   document.addEventListener("click", function (e) {
@@ -481,6 +482,10 @@
         .then(function () { ZT.at = 0; });
     }).catch(function () { }).then(function () { ZR.busy = false; });
   }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-ztok]"); if (!b) return; b.disabled = true;
+    fetch("/api/zatca/approve", { method: "POST", credentials: "same-origin" }).then(function () { ZT.at = 0; ztLoad(); }).catch(function () { b.disabled = false; });
+  });
   function ztTick() { if (!document.body.classList.contains("sxOwn")) return; var d = ZT.d, run = d && ((d.test && d.test.run) || (d.prod && d.prod.run)); if (Date.now() - ZT.at > (run && document.body.classList.contains("jxZ") ? 5000 : 60000)) ztLoad(); }
 
   /* owner 24 Nov: «الجرد» in the bottom bar, between «الكاشير» and «نقاط البيع» */
