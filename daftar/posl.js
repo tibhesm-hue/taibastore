@@ -467,7 +467,21 @@
       .then(function (r) { return r.json(); }).catch(function () { return null; })
       .then(function (j) { ZT.busy = false; if (!j || !j.ok) { ztLoad(); setTimeout(function () { var mm = document.getElementById("ztMsg"); if (mm) mm.textContent = "ما تم الاتصال، حاول مرة ثانية."; }, 400); return; } ztLoad(); });
   });
-  function ztTick() { if (!document.body.classList.contains("sxOwn")) return; var d = ZT.d, run = d && ((d.test && d.test.run) || (d.prod && d.prod.run)); if (Date.now() - ZT.at > (run && document.body.classList.contains("jxZ") ? 5000 : 60000)) ztLoad(); }
+  /* owner 24 Nov: the ledger page itself tries to be the relay — it takes the queued ZATCA request and sends it from this phone/browser (Saudi internet); if the browser blocks it, ZATCA's answer is replaced by the reason */
+  var ZR = { busy: false };
+  function ztRelay() {
+    if (ZR.busy) return; ZR.busy = true;
+    fetch("/api/zrelay/next?v=page", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !j.job) return;
+      var job = j.job;
+      return fetch(job.url, { method: "POST", headers: job.headers, body: job.body, mode: "cors", credentials: "omit" })
+        .then(function (z) { return z.text().then(function (t) { return { status: z.status, text: t }; }); })
+        .catch(function (e) { return { status: 0, text: "المتصفح منع الاتصال بالهيئة من داخل الصفحة: " + (e && e.message || e) }; })
+        .then(function (o) { return fetch("/api/zrelay/done?v=page", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: job.id, status: o.status, text: String(o.text).slice(0, 20000) }) }); })
+        .then(function () { ZT.at = 0; });
+    }).catch(function () { }).then(function () { ZR.busy = false; });
+  }
+  function ztTick() { if (!document.body.classList.contains("sxOwn")) return; var d = ZT.d, run = d && ((d.test && d.test.run) || (d.prod && d.prod.run)); if (run && document.body.classList.contains("jxZ")) ztRelay(); if (Date.now() - ZT.at > (run && document.body.classList.contains("jxZ") ? 5000 : 60000)) ztLoad(); }
 
   /* owner 24 Nov: «الجرد» in the bottom bar, between «الكاشير» and «نقاط البيع» */
   function jcNav() {
