@@ -178,7 +178,7 @@
   function jdxDraw() {
     var c = jdxBox(), j = JDX.data; if (!c || !j) return; c.hidden = !JDX.show;
     var K = function (t, v, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + t + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + v + '</b></div>'; };
-    var h = '<h2>📦 الجرد</h2>';
+    var h = '<h2>📦 الجرد</h2><button type="button" class="btn" data-jcgo="1" style="display:block;width:100%;margin:0 0 10px;padding:12px;font-weight:800">📋 جرّد بنفسك (نفس شاشة الكاشير)</button>';
     if (!j.cur) { c.innerHTML = h + '<p class="small muted">ما فيه جرد للحين. يبدأ الجرد أول ما يضغط الكاشير «📋 الجرد» في تبويب الكاشير ويجرد أول صنف.</p>'; return; }
     var R = j.rows || [], cnt = R.filter(function (x) { return !x.nw; }), nw = R.filter(function (x) { return x.nw; }), rn = R.filter(function (x) { return x.rn; }), us = {};
     R.forEach(function (x) { for (var u in (x.by || {})) us[u] = (us[u] || 0) + 1; });
@@ -217,7 +217,7 @@
 
   /* cashier tab: «📋 الجرد» — scan with the phone camera (or type), write the count, save */
   var JC = { on: false, c: null, set: false, mine: [], cam: null, zx: null, t: null, busy: false };
-  function jcWho() { try { return (typeof curCashier === "function" && curCashier()) || ""; } catch (e) { return ""; } }
+  function jcWho() { var w = ""; try { w = (typeof curCashier === "function" && curCashier()) || ""; } catch (e) { } return w || (document.body.classList.contains("sxOwn") ? "المالك" : ""); }
   function jcQ(p) { return p + (p.indexOf("?") < 0 ? "?" : "&") + "who=" + encodeURIComponent(jcWho()); }
   function jcGet(p) { return fetch(jcQ(p), { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }); }
   var JCW = (function () { function w(parts) { var sr = 22050, n = 0; parts.forEach(function (p) { n += Math.round(p[1] * sr); }); var b = new DataView(new ArrayBuffer(44 + n * 2)), s = function (o, t) { for (var i = 0; i < t.length; i++) b.setUint8(o + i, t.charCodeAt(i)); }; s(0, "RIFF"); b.setUint32(4, 36 + n * 2, true); s(8, "WAVEfmt "); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true); b.setUint32(24, sr, true); b.setUint32(28, sr * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); s(36, "data"); b.setUint32(40, n * 2, true); var o = 44; parts.forEach(function (p) { var m = Math.round(p[1] * sr); for (var i = 0; i < m; i++) { var v = p[0] ? (Math.sin(2 * Math.PI * p[0] * i / sr) > 0 ? 0.6 : -0.6) : 0; b.setInt16(o, v * 32767, true); o += 2; } }); var u = new Uint8Array(b.buffer), str = ""; for (var i = 0; i < u.length; i++) str += String.fromCharCode(u[i]); return "data:audio/wav;base64," + btoa(str); } return { ok: w([[1050, .12]]), bad: w([[380, .22], [0, .08], [380, .22], [0, .08], [260, .5]]) }; })();
@@ -227,9 +227,9 @@
     var T = document.getElementById("tab-close"); if (T && T.dataset.cw && T.dataset.cw !== "menu") return;
     if (!JC.on && !M.querySelector("[data-jcgo]")) { var sk = M.querySelectorAll('[data-cwgo="sk"]'), last = sk[sk.length - 1]; var b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.setAttribute("data-jcgo", "1"); b.setAttribute("style", last ? (last.getAttribute("style") || "") : "display:block;width:100%;padding:16px 12px;margin:8px 0;border-radius:14px;font-size:1.15em;font-weight:800;text-align:center"); b.textContent = "📋 الجرد"; if (last) last.parentNode.insertBefore(b, last.nextSibling); else M.appendChild(b); }
   }
-  function jcBox() { var b = document.getElementById("jcBox"); if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
+  function jcBox() { var b = document.getElementById("jcBox"); if (JC.home) { if (b && b.parentNode && b.parentNode.id !== "tab-home") { b.remove(); b = null; } if (!b) { var H = document.getElementById("tab-home"), c = document.getElementById("jdxCard"); if (!H) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; H.insertBefore(b, c ? c.nextSibling : null); } return b; } if (b && b.parentNode && b.parentNode.id === "tab-home") { b.remove(); b = null; } if (!b) { var M = document.getElementById("cwMenu"); if (!M) return null; b = document.createElement("div"); b.id = "jcBox"; b.hidden = true; M.parentNode.insertBefore(b, M.nextSibling); } return b; }
   function jcOpen() {
-    var b = jcBox(), M = document.getElementById("cwMenu"); if (!b) return; JC.on = true; M.style.display = "none"; b.hidden = false;
+    var b = jcBox(), M = document.getElementById("cwMenu"); if (!b) return; JC.on = true; if (M && !JC.home) M.style.display = "none"; document.body.classList.toggle("jcOn", !!JC.home); b.hidden = false;
     var BS = 'display:block;width:100%;padding:14px 12px;margin:8px 0;border-radius:14px;font-size:1.1em;font-weight:800;text-align:center';
     b.innerHTML = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📋 الجرد</h2><button type="button" class="btn sm ghost" data-jcback>رجوع</button></div>'
       + '<div class="small muted" id="jcProg" style="margin:6px 0 8px"></div>'
@@ -245,7 +245,7 @@
       + '<h3 style="margin:14px 0 4px;font-size:15px">آخر ما جردت <span class="small muted">(اضغط الصنف لتصحيح عدده)</span></h3><div id="jcMine"></div></div>';
     jcLoad();
   }
-  function jcClose() { jcCamStop(); JC.on = false; JC.c = null; var b = document.getElementById("jcBox"), M = document.getElementById("cwMenu"); if (b) b.hidden = true; if (M) M.style.display = ""; }
+  function jcClose() { jcCamStop(); JC.on = false; JC.c = null; document.body.classList.remove("jcOn"); var b = document.getElementById("jcBox"), M = document.getElementById("cwMenu"); if (b) b.hidden = true; if (M) M.style.display = ""; }
   function jcShow(code, name, isNew, set, q) {
     JC.c = { c: code, n: name || "", nw: !!isNew }; JC.set = !!set; jcCamStop();
     var g = function (id) { return document.getElementById(id); };
@@ -295,7 +295,7 @@
   }
   document.addEventListener("click", function (e) {
     var t = e.target; if (!t.closest) return;
-    if (t.closest("[data-jcgo]")) { jcOpen(); return; }
+    if (t.closest("[data-jcgo]")) { JC.home = !!t.closest("#jdxCard"); jcOpen(); return; }
     if (t.closest("[data-jcback]")) { jcClose(); return; }
     if (t.closest("[data-jccam]")) { jcCam(); return; }
     if (t.closest("[data-jcfind]")) { jcFind(document.getElementById("jcIn").value); return; }
@@ -308,11 +308,11 @@
     if (e.key !== "Enter" || !e.target || !e.target.id) return;
     if (e.target.id === "jcIn") { e.preventDefault(); jcFind(e.target.value); } else if (e.target.id === "jcN") { e.preventDefault(); jcSave(); } else if (e.target.id === "jcNameIn") { e.preventDefault(); document.getElementById("jcN").focus(); }
   });
-  function jcTick() { var T = document.getElementById("tab-close"); if (!T || T.hidden) { if (JC.on) jcClose(); return; } jcBtnInject(); if (JC.on) { var M = document.getElementById("cwMenu"); if (M && M.style.display !== "none") M.style.display = "none"; } }
+  function jcTick() { if (JC.on && JC.home) { var H = document.getElementById("tab-home"); if (!H || H.hidden || JX !== "j") jcClose(); return; } var T = document.getElementById("tab-close"); if (!T || T.hidden) { if (JC.on) jcClose(); return; } jcBtnInject(); if (JC.on) { var M = document.getElementById("cwMenu"); if (M && M.style.display !== "none") M.style.display = "none"; } }
 
   /* owner 24 Nov: «الجرد» and «نقاط البيع» are squares in the same top bar as المبيعات/الدرج/…, and open their card under it */
   var JXST = document.createElement("style");
-  JXST.textContent = "body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard){display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
+  JXST.textContent = "body.jxOn #tab-home>:not(#sxV):not(#jdxCard):not(#posSgCard):not(#jcBox){display:none!important}body.jcOn #jdxCard{display:none!important}body.jxJ #tab-home>#posSgCard{display:none!important}body.jxP #tab-home>#jdxCard{display:none!important}";
   document.head.appendChild(JXST);
   var JX = "";
   function jxSet(k) {
