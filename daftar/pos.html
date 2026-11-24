@@ -76,6 +76,7 @@ tr.last td{background:#f0fdf4}
 .uin{width:100%;height:44px;border:1px solid #cfd8df;border-radius:10px;padding:0 12px;font-size:15px;margin-bottom:8px;outline:none}.small2{font-size:12px;color:#6b7884;margin-bottom:8px}.usave{flex:1;height:44px;border-radius:10px;background:#14532d;color:#fff;font-weight:600}.ucan{height:44px;padding:0 16px;border-radius:10px;border:1px solid #cfd8df}.ur .ed{color:#16a34a;font-size:13px;border:1px solid #16a34a;border-radius:8px;padding:6px 10px}
 .tb{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px;font-size:14px}
 .hb{border:1.5px solid #d97706;background:#fffbeb;border-radius:12px;padding:10px 12px;text-align:right;color:#92400e;cursor:pointer}.hb b{display:block;font-size:15px}.hb small{display:block;font-size:12px;margin-top:2px}.hb .t{font-size:17px;font-weight:600;margin-top:4px}
+.ob{border:1.5px solid #16a34a;background:#fff;border-radius:12px;padding:10px 12px;text-align:right;cursor:pointer}.ob b{display:block;font-size:15px}.ob small{display:block;font-size:12.5px;color:#4a5866;margin-top:2px}.ob.mine{background:#f0fdf4}
 .foot{background:#fff;border-top:1px solid #dfe5ea;display:flex;flex-wrap:wrap;align-items:center;padding:8px 20px;gap:6px 22px;font-size:13px;color:#6b7884}
 .dot{width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;margin-inline-end:6px}
 .dot.off{background:#dc2626}
@@ -117,6 +118,8 @@ tr.last td{background:#f0fdf4}
    <div class="drop" id="drop"></div>
   </div>
   <div id="warn" style="display:none;background:#b91c1c;color:#fff;border-radius:12px;padding:14px 18px;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-size:20px;font-weight:600">الصنف لم يُضف</div><div style="font-size:15px;margin-top:2px">الباركود <b id="warnCode" dir="ltr"></b> غير مسجّل في البرنامج</div></div><button id="warnOk" style="border:1px solid rgba(255,255,255,.7);border-radius:9px;padding:8px 18px;font-size:16px;color:#fff">حسناً</button></div>
+  <div id="ordBox" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>🛵 طلبات رابط الأسعار <span id="ordN" style="background:#dc2626;color:#fff;border-radius:10px;padding:0 8px;font-size:13px"></span></b><span class="small2" style="margin:0">اضغط الطلب ينزل في السلة</span></div><div id="ordL" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px"></div></div>
+  <div id="ordCur" style="display:none;background:#ecfdf3;border:1.5px solid #16a34a;border-radius:12px;padding:10px 14px"></div>
   <div id="held" style="display:none"><div style="font-size:14px;color:#5c6b78;margin-bottom:6px" id="heldT"></div><div id="heldL" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px"></div></div>
   <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
   <div class="cart" id="cart"></div>
@@ -174,7 +177,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 21</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 22</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -266,10 +269,31 @@ function HL(){try{return JSON.parse(localStorage.getItem("posheld")||"[]")}catch
 function setHL(a){try{localStorage.setItem("posheld",JSON.stringify(a))}catch(e){}heldShow()}
 function heldShow(){const a=HL();$("held").style.display=a.length?"block":"none";$("heldT").textContent="فواتير معلّقة ("+a.length+") — اضغط عليها لاسترجاعها";
  $("heldL").innerHTML=a.map((h,i)=>{const t=h.lines.reduce((s,l)=>r2(s+r2(l.p*l.q)),0),d=new Date(h.at);return`<button class="hb" data-h="${i}"><b>معلّقة ${i+1} · ${d.toTimeString().slice(0,5)}</b><small>${esc(h.lines.slice(0,2).map(l=>l.n).join("، "))}${h.lines.length>2?"…":""} (${h.lines.length} أصناف)</small><div class="t">${f2(t)}</div></button>`}).join("")}
-function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart});setHL(a);cart=[];lastCode=null;$("cashIn").value="";setMode("cash");render();toast("عُلّقت الفاتورة");$("q").focus()}
-function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
- cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;render();$("q").focus()}
+function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});setHL(a);cart=[];lastCode=null;CUR_ORD=null;ordCurDraw();if(isDel())dlvReset();$("cashIn").value="";setMode("cash");render();toast("عُلّقت الفاتورة");$("q").focus()}
+function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
+ cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;CUR_ORD=h.ord||null;if(isDel()&&h.dlv){DLV=Object.assign({fee:null,n:0,lv:0},h.dlv)}ordCurDraw();render();$("q").focus()}
 $("holdBtn").onclick=hold;
+/* orders from the price page */
+let CUR_ORD=null,ORDS=[],ORD_SEEN=null;
+const PAYL={cash:"نقدي",card:"شبكة",both:"نقدي + شبكة"};
+function ordTone(){try{acOn();if(AC){tone(880,0,.15,"sine",.7);tone(1320,.2,.25,"sine",.7)}}catch(e){}}
+async function ordLoad(){if(!(isDel()||ME.owner))return;try{const j=await api("/api/pos/orders");if(!j.ok)return;ORDS=j.orders||[];
+ const ids=ORDS.filter(o=>o.st==="new").map(o=>o.id);if(ORD_SEEN&&ids.some(id=>!ORD_SEEN.has(id)))ordTone();ORD_SEEN=new Set(ids);ordDraw()}catch(e){}}
+function ordDraw(){const L=ORDS.filter(o=>o.id!==(CUR_ORD&&CUR_ORD.id));$("ordBox").style.display=L.length?"block":"none";$("ordN").textContent=L.length;
+ $("ordL").innerHTML=L.map((o,i)=>`<button class="ob${o.st==="taken"?" mine":""}" data-ord="${esc(o.id)}"><b>طلب #${esc(o.ono)} · ${o.t.slice(0,5)}${o.edit?' <span style="color:#b45309">(تعديل)</span>':""}${o.st==="taken"?' <span style="color:#15803d">(معك)</span>':""}</b><small>${o.items.length} صنف · ${f2(o.sub)} · توصيل ${f2(o.fee)}</small><small>${PAYL[o.pay]||""}${o.loc?" · 📍 موقع":""}</small></button>`).join("")}
+async function ordOpen(id){const j=await api("/api/pos/orders/take",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+ if(!j.ok){toast(j.err==="taken"?"الطلب مع "+(j.u||"كاشير ثاني"):"الطلب ما عاد موجود",3000);ordLoad();return}
+ if(cart.length)hold();const o=j.order,miss=[];cart=[];
+ for(const it of o.items){const x=it[3]&&BY.get(it[3]);if(x)cart.push({c:x.c,n:x.n,p:x.p,q:it[1]});else miss.push(it[0]+" × "+it[1])}
+ CUR_ORD=o;if(isDel()){DLV.fee=o.dist==="pickup"?0:o.fee;$("feeIn").value=""}
+ if(o.pay==="card")setMode("card");else if(o.pay==="both"&&o.cash>0){setMode("mix");$("cashIn").value=o.cash}else setMode("cash");
+ ordCurDraw(miss);render();ordDraw();$("q").focus()}
+function ordCurDraw(miss){const o=CUR_ORD;if(!o){$("ordCur").style.display="none";return}$("ordCur").style.display="block";
+ $("ordCur").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>طلب #${esc(o.ono)} من رابط الأسعار · ${o.t.slice(0,5)}</b><span style="display:flex;gap:6px">${o.loc?`<a class="tb" style="color:#14532d;border-color:#16a34a" target="_blank" href="https://maps.google.com/?q=${o.loc.lat},${o.loc.lng}">📍 الموقع</a>`:""}<button class="tb" style="color:#991b1b;border-color:#dc2626" id="ordBack">إرجاع للقائمة</button></span></div>`
+ +`<div class="small2" style="margin:4px 0 0">الدفع: ${PAYL[o.pay]||"—"}${o.pay==="both"?" (نقدي "+f2(o.cash)+")":""}${o.cg&&o.cg!=="0"?" · معه "+esc(o.cg==="exact"?"المبلغ مضبوط":o.cg+" ريال"):""} · رسوم التوصيل في الرابط ${f2(o.fee)}</div>`
+ +((miss&&miss.length)?`<div style="color:#b91c1c;margin-top:4px;font-weight:600">ما لقيت هالأصناف، أضفها بالقارئ: ${miss.map(esc).join("، ")}</div>`:"")}
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-ord]");if(b){ordOpen(b.dataset.ord);return}
+ if(e.target.closest("#ordBack")){const id=CUR_ORD&&CUR_ORD.id;await api("/api/pos/orders/back",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});CUR_ORD=null;cart=[];if(isDel())dlvReset();render();ordCurDraw();ordLoad()}});
 document.addEventListener("click",e=>{const f=e.target.closest("[data-fee]");if(f){DLV.fee=+f.dataset.fee;$("feeIn").value="";render();return}const d=e.target.closest("[data-drv]");if(d){DLV.n=+d.dataset.drv;dlvDraw();return}const l=e.target.closest("[data-lv]");if(l){DLV.lv=+l.dataset.lv;dlvDraw()}});
 $("feeIn").addEventListener("input",()=>{const v=$("feeIn").value.trim();DLV.fee=v===""?null:(isNaN(+v)?null:r2(+v));render()});
 let RINV=null,RHOW="cash";
@@ -328,13 +352,14 @@ async function save(){
  if(isDel()&&(DLV.fee==null||!DLV.n||!DLV.lv)&&!save.warned){save.warned=1;$("err").textContent="انتبه: ما اخترت "+[DLV.fee==null?"رسوم التوصيل":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean).join(" و")+". اضغط حفظ مرة ثانية إذا تبي تحفظ كذا.";beep(false);return}save.warned=0;
  const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};
  if(isDel()){const dr=(ME.drivers||[]).find(x=>x.n===DLV.n);s.dlv={fee:DLV.fee||0,n:DLV.n,lv:DLV.lv,name:dr?dr.name:""}}
+ if(CUR_ORD)s.ord=CUR_ORD.id;
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
  try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
   if(j.ok){done(snap,t,cash,j.no);netState(true)}else{$("err").textContent=j.err==="item"?("صنف غير معروف: "+j.code):"لم تُحفظ: "+j.err}}
  catch(e){setQ(Q().concat([s]));netState(false);done(snap,t,cash,null)}
  saving=false;$("saveBtn").disabled=false;
 }
-function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no){LASTINV={no,lines:snap,total:t,cash,card:r2(t-cash),mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("cash");render();toast(no?("حُفظت الفاتورة رقم "+no+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 document.addEventListener("keydown",e=>{if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F8"){e.preventDefault();hold()}});
 
@@ -417,6 +442,6 @@ $("scGo").onclick=async()=>{const c=$("scCash").value.trim(),d=$("scCard").value
  if(!ME.owner){$("scBtn").style.display="";const sj=await api("/api/pos/shift");SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");setTimeout(()=>$("shFloat").focus(),50)}}
  $("brName").textContent=ME.brName;if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
- render();pendShow();heldShow();await loadCat();loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
+ render();pendShow();heldShow();await loadCat();ordLoad();setInterval(ordLoad,8000);loadDay();setInterval(loadDay,ME.owner?4000:20000);flush()})();
 </script>
 </body></html>
