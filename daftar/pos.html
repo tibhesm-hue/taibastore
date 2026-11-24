@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 24</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 25</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -237,7 +237,7 @@ function setCat(rows){CAT=rows.map(r=>({c:r[0],n:r[1],p:r[2],k:norm(r[1])}));BY=
 
 function search(t){
  t=t.trim();if(!t)return[];
- if(/^\d+$/.test(t)){const ex=BY.get(t);const L=ex?[ex]:[];for(const x of CAT){if(L.length>=8)break;if(x!==ex&&x.c.startsWith(t))L.push(x)}return L}
+ if(/^\d+$/.test(t)){const ex=BY.get(t);const L=ex?[ex]:[];/* owner 24 Nov: part of the barcode finds it anywhere (like Smart Life): starts with, then ends with, then contains */for(const f of [c=>c.startsWith(t),c=>c.endsWith(t),c=>c.includes(t)]){for(const x of CAT){if(L.length>=8)break;if(!L.includes(x)&&f(x.c))L.push(x)}}return L}
  const w=norm(t).split(" ");const L=[];for(const x of CAT){if(w.every(a=>x.k.includes(a)||x.c.includes(a))){L.push(x);if(L.length>=8)break}}return L;
 }
 function showDrop(){const d=$("drop");const t=$("q").value.trim();if(!t){d.classList.remove("show");return}
