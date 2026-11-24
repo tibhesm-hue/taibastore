@@ -202,7 +202,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
-<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 31</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
+<div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 32</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -443,7 +443,7 @@ async function printInv(){let L=LASTINV;if(!L){L=await lastFromServer();if(!L){t
   +`<table class="it"><tr><th>الإجمالي</th><th>الكمية</th><th>السعر</th></tr>`+L.lines.map(l=>`<tr><td colspan="3" class="nm">${esc(l.n)}</td></tr><tr><td>${f2(l.p*l.q)}</td><td>${l.q}</td><td>${f2(l.p)}</td></tr>`).join("")+`</table>`
   +`<table class="kv">`+(L.fee>0?TR("رسوم التوصيل",f2(L.fee)):"")+(ME.vat?TR("الإجمالي غير شامل الضريبة",f2(net))+TR("ضريبة القيمة المضافة 15%",f2(L.vat||0)):"")
   +TR(L.ret?"المبلغ المردود":"المبلغ المستحق",f2(L.total)+" ر.س",1)+(L.cash?TR("نقدي",f2(L.cash)):"")+(L.card?TR("شبكة",f2(L.card)):"")+(L.tr?TR("تحويل",f2(L.tr)):"")+`</table>`
-  +(qr?`<div style="margin-top:4px">${qr}</div>`:(L.no?`<div style="margin:6px 4mm 0">${bc128(code,40)}</div><div class="c" style="letter-spacing:2px">${code}</div>`:""))
+  +(qr?`<div style="margin-top:4px">${qr}</div>`:(L.no?`<div style="margin-top:4px">${qrSvg(code)}</div><div class="c" style="letter-spacing:2px">${code}</div>`:""))
   +`<div class="c" style="margin-top:3px">شكراً لزيارتكم</div>`;
  setTimeout(()=>window.print(),80)}
 $("prnBtn").onclick=printInv;
