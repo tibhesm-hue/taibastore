@@ -10,12 +10,12 @@ if not defined C (
   exit /b 1
 )
 mkdir "C:\TaibaDaftar" >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\TaibaDaftar.lnk'); $s.TargetPath='%C%'; $s.Arguments='--user-data-dir=C:\TaibaDaftar --app=https://tibhesm-hue.github.io/taibastore/daftar/'; $s.IconLocation='%C%,0'; $s.Save()"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\TaibaDaftar.lnk'); $s.TargetPath='%C%'; $s.Arguments='--user-data-dir=C:\TaibaDaftar --app=https://daftar.tibh-esm.workers.dev/'; $s.IconLocation='%C%,0'; $s.Save()"
 if errorlevel 1 (
   echo Could not create the shortcut.
   pause
   exit /b 1
 )
-start "" "%C%" --user-data-dir=C:\TaibaDaftar --app=https://tibhesm-hue.github.io/taibastore/daftar/
+start "" "%C%" --user-data-dir=C:\TaibaDaftar --app=https://daftar.tibh-esm.workers.dev/
 echo Done. Use the TaibaDaftar icon on the Desktop from now on.
 timeout /t 5 >nul
