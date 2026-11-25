@@ -266,7 +266,7 @@ $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
  else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
- else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(cart.length&&!e.repeat&&enterOk())save();return}const ex=byCode(t);
+ else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(!e.repeat)enterSave();return}const ex=byCode(t);
   /* owner 24 Nov: Enter adds a listed item only when the list on screen was made for exactly this text — a scanned code that is not found never picks another item */
   if(ex)add(ex);else if(HQ===t&&$("drop").classList.contains("show")&&sel>=0&&hits[sel]&&!(/^\d{7,}$/.test(t)&&!hits[sel].c.includes(t)))add(hits[sel]);else{warn(t);$("q").value="";$("drop").classList.remove("show")}}
  else if(e.key==="Escape"){$("q").value="";showDrop()}});
@@ -295,7 +295,9 @@ function edDraw(){const b=$("edBox");if(!ED){b.style.display="none";b.innerHTML=
   $("edYes").disabled=true;try{const j=await api("/api/pos/item",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(j&&j.ok){if(j.row)upCat(j.row);ED=null;edDraw();render();$("q").focus()}else{m.textContent="ما تم التغيير، حاول مرة ثانية";$("edYes").disabled=false}}catch(e){m.textContent="ما تم التغيير، حاول مرة ثانية";$("edYes").disabled=false}}}
 $("cart").addEventListener("click",e=>{const b=e.target.closest("button[data-ed]");if(b)edOpen(+b.dataset.i,b.dataset.ed)});
 $("warnOk").onclick=()=>{warnOff();$("q").focus()};
-let LADD=0,LSAVE=0;function enterOk(){const n=performance.now();return n-LADD>1500&&n-LSAVE>3000&&$('warn').style.display!=='block'}
+let LADD=-1e9,LSAVE=-1e9,LMODE=-1e9;function enterOk(){const n=performance.now();return n-LADD>1500&&n-LSAVE>3000&&$('warn').style.display!=='block'}
+/* owner 25 Nov: Enter saves only when the payment method was chosen AFTER the last item was added — an item added later cancels the old confirmation, so a stray Enter while the cashier is still adding never saves or prints */
+function enterSave(){if(!cart.length)return;if(!mode){$("err").textContent="اختر طريقة الدفع: نقدي أو شبكة";beep(false);return}if(LMODE<LADD){$("err").textContent="أُضيف صنف بعد اختيار الدفع، اضغط طريقة الدفع من جديد ثم Enter";beep(false);return}if(enterOk())save()}
 function add(x,q){if(!x)return;LADD=performance.now();warnOff();const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
  lastCode=x.c;beep(true);$("q").value="";$("drop").classList.remove("show");render();$("q").focus()}
 let DLV={fee:null,n:0,lv:0};
@@ -414,7 +416,7 @@ function ajDraw(){const q=ajNorm($("ajQ").value),L=AJ.list.filter(c=>!q||ajNorm(
 function ajTopDraw(){const b=$("ajTop"),c=AJ.list.find(x=>x[0]===AJ.cust);if(mode==="aj"&&c){b.textContent="آجل على: "+c[0];b.style.display="block"}else b.style.display="none"}
 document.addEventListener("click",e=>{const r=e.target.closest&&e.target.closest("[data-aj]");if(r){AJ.cust=r.dataset.aj;ajDraw()}});
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()});
-function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;LMODE=performance.now();document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
 document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
 $("cashIn").addEventListener("input",mixCalc);
@@ -473,7 +475,7 @@ async function save(){
 function done(snap,t,cash,no,zqr){LSAVE=performance.now();LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
-document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();if(!enterOk())return;try{t.blur&&t.blur()}catch(x){}save()},true);
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}enterSave()},true);
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-fee],button[data-drv],button[data-lv],button[data-m=cash],button[data-m=card],button[data-m=tr]");if(b)setTimeout(()=>{try{if(!$("cashIn")||document.activeElement!==$("cashIn"))$("q").focus()}catch(x){}},0)});
 document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.repeat&&/^F\d+$/.test(e.key)){e.preventDefault();return}if(e.key==="F2"){e.preventDefault();setMode("cash");if(enterOk())save()}else if(e.key==="F3"){e.preventDefault();setMode("card");if(enterOk())save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();setMode("tr");if(enterOk())save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
@@ -596,5 +598,10 @@ try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").ca
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
  render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},8000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush();rvTop();setInterval(rvTop,60000)})();
+</script>
+<script>
+/* owner 25 Nov: a POS window left open all day picks up a new version by itself — only while the invoice is empty and nothing is being saved */
+(function(){let h0=null;const hs=async()=>{try{const r=await fetch(location.pathname,{cache:"no-store"});if(!r.ok)return null;const t=await r.text();if(t.indexOf('id="scGo"')<0)return null;let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return h}catch(e){return null}};
+hs().then(h=>{h0=h});setInterval(async()=>{if(h0==null){h0=await hs();return}try{if(typeof cart==="undefined"||cart.length||saving)return}catch(e){return}const h=await hs();if(h!=null&&h!==h0)location.reload()},120000)})();
 </script>
 </body></html>
