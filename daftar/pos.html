@@ -137,6 +137,7 @@ tr.last td{background:#f0fdf4}
  </div></div>
 <div class="main" id="mainView">
  <div class="left">
+  <div id="ajTop" style="display:none;background:#fef3c7;border:2px solid #d97706;color:#92400e;border-radius:12px;padding:12px;text-align:center;font-size:24px;font-weight:700"></div>
   <div class="search">
    <div class="box"><i class="ti ti-scan"></i><input id="q" autocomplete="off" placeholder="الباركود أو اسم الصنف" autofocus></div>
    <button class="cam" id="camBtn"><i class="ti ti-camera"></i><span>قراءة بالكاميرا</span></button>
@@ -149,6 +150,7 @@ tr.last td{background:#f0fdf4}
   <div id="held" style="display:none"><div style="font-size:14px;color:#5c6b78;margin-bottom:6px" id="heldT"></div><div id="heldL" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px"></div></div>
   <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
   <div class="cart" id="cart"></div>
+  <div id="totBar" style="background:#0f2a43;color:#fff;border-radius:14px;padding:14px 22px;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:22px">الإجمالي</span><b style="font-size:46px;font-weight:700"><span id="total2">0.00</span> <small style="font-size:20px;font-weight:400">ر.س</small></b></div>
   <div class="card" id="retBox" style="display:none;border:2px solid #dc2626">
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:19px;color:#991b1b">مرتجع</b><button id="retX" style="border:1px solid #cfd8df;border-radius:8px;padding:6px 14px">رجوع للبيع</button></div>
    <div style="display:flex;gap:10px;margin-bottom:10px"><input id="retNo" class="uin" style="margin:0;height:50px;font-size:18px;border:2px solid #dc2626" inputmode="numeric" placeholder="رقم الفاتورة"><button id="retGet" style="padding:0 22px;border-radius:10px;background:#991b1b;color:#fff;font-weight:600;white-space:nowrap">جلب الفاتورة</button></div>
@@ -316,7 +318,7 @@ function render(){try{cartKeep()}catch(e){}
  if(!cart.length)c.innerHTML=`<div class="empty">امسح باركود أو اكتب اسم الصنف لبدء الفاتورة</div>`;
  else c.innerHTML=`<table><tr><th class="n">#</th><th>الصنف</th><th style="width:100px">السعر</th><th style="width:150px">الكمية</th><th style="width:110px">المجموع</th><th style="width:44px"></th></tr>`+
   cart.map((l,i)=>`<tr class="${l.c===lastCode?"last":""}"><td class="n">${i+1}</td><td>${esc(l.n)}<button class="ed" data-ed="nm" data-i="${i}" aria-label="تغيير الاسم"><i class="ti ti-pencil"></i></button><span class="code">${esc(l.c)}</span></td><td>${f2(l.p)}<button class="ed" data-ed="pr" data-i="${i}" aria-label="تغيير السعر"><i class="ti ti-tag"></i></button></td><td><span class="q"><button data-a="-" data-i="${i}">−</button><input data-i="${i}" value="${l.q}" inputmode="decimal"><button data-a="+" data-i="${i}">+</button></span></td><td><b>${f2(l.p*l.q)}</b></td><td><button class="del" data-a="x" data-i="${i}"><i class="ti ti-trash"></i></button></td></tr>`).reverse().join("")+`</table>`;
- const{t,n}=totals();$("total").textContent=f2(t);dlvDraw();$("cnt").textContent=cart.length+" أصناف · "+(Math.round(n*1000)/1000)+" قطع";
+ const{t,n}=totals();$("total").textContent=f2(t);$("total2").textContent=f2(t);dlvDraw();$("cnt").textContent=cart.length+" أصناف · "+(Math.round(n*1000)/1000)+" قطع";
  const v=ME&&ME.vat?r2(t*15/115):0;$("vat").textContent=f2(v);$("net").textContent=f2(t-v);
  mixCalc();
 }
@@ -408,10 +410,11 @@ async function ajLoad(){try{const j=await api("/api/pos/custs");if(j.ok){AJ.list
 function ajNorm(x){return String(x||"").replace(/\s+/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")}
 function ajDraw(){const q=ajNorm($("ajQ").value),L=AJ.list.filter(c=>!q||ajNorm(c[0]).includes(q)).slice(0,40);
  $("ajList").innerHTML=L.map(c=>`<div data-aj="${esc(c[0])}" style="display:flex;justify-content:space-between;padding:9px 6px;border-bottom:1px solid #eef1f4;cursor:pointer;${AJ.cust===c[0]?"background:#e7f0ff;border-radius:8px;font-weight:600":""}"><span>${esc(c[0])}${AJ.cust===c[0]?" ✓":""}</span></div>`).join("")||'<div class="small2">ما فيه عميل بهذا الاسم</div>';
- const c=AJ.list.find(x=>x[0]===AJ.cust);$("ajSel").innerHTML=c?`آجل على: <b>${esc(c[0])}</b>`:""}
+ const c=AJ.list.find(x=>x[0]===AJ.cust);$("ajSel").innerHTML=c?`آجل على: <b>${esc(c[0])}</b>`:"";ajTopDraw()}
+function ajTopDraw(){const b=$("ajTop"),c=AJ.list.find(x=>x[0]===AJ.cust);if(mode==="aj"&&c){b.textContent="آجل على: "+c[0];b.style.display="block"}else b.style.display="none"}
 document.addEventListener("click",e=>{const r=e.target.closest&&e.target.closest("[data-aj]");if(r){AJ.cust=r.dataset.aj;ajDraw()}});
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()});
-function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
 document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
 $("cashIn").addEventListener("input",mixCalc);
