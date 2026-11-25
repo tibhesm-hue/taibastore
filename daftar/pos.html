@@ -418,6 +418,9 @@ document.addEventListener("click",e=>{const r=e.target.closest&&e.target.closest
 /* owner 25 Nov: a scanned code must never land on a button or on nothing (that is what let a stray Enter save a credit invoice before its items were in): printable keys with no field focused go to the barcode field */
 document.addEventListener("keydown",e=>{if(e.key.length!==1||e.ctrlKey||e.altKey||e.metaKey)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;try{if($("jdView").style.display!=="none"||$("retBox").style.display==="block"||$("mainView").style.display==="none")return;$("q").focus()}catch(x){}},true);
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()});
+let aT=[],aTm=null;
+$("ajQ").addEventListener("keydown",e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(!$("ajQ").value)aT=[];aT.push(performance.now())}},true);
+$("ajQ").addEventListener("input",()=>{clearTimeout(aTm);aTm=setTimeout(()=>{const t=$("ajQ").value.trim();if(t.length<4||aT.length<4)return;for(let i=1;i<aT.length;i++)if(aT[i]-aT[i-1]>45)return;const x=byCode(t);if(x){$("ajQ").value="";aT=[];ajDraw();add(x)}else if(/^\d{6,}$/.test(t)){$("ajQ").value="";aT=[];ajDraw();warn(t)}},120)});
 function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;LMODE=performance.now();document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
 document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
