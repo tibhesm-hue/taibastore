@@ -264,7 +264,7 @@ $("q").addEventListener("input",()=>{clearTimeout(dropT);clearTimeout(scanT);$("
 $("q").addEventListener("keydown",e=>{
  if(e.key==="ArrowDown"&&hits.length){sel=(sel+1)%hits.length;hl();e.preventDefault()}
  else if(e.key==="ArrowUp"&&hits.length){sel=(sel-1+hits.length)%hits.length;hl();e.preventDefault()}
- else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(cart.length&&!e.repeat)save();return}const ex=byCode(t);
+ else if(e.key==="Enter"){e.preventDefault();const t=$("q").value.trim();if(!t){if(cart.length&&!e.repeat&&enterOk())save();return}const ex=byCode(t);
   /* owner 24 Nov: Enter adds a listed item only when the list on screen was made for exactly this text — a scanned code that is not found never picks another item */
   if(ex)add(ex);else if(HQ===t&&$("drop").classList.contains("show")&&sel>=0&&hits[sel]&&!(/^\d{7,}$/.test(t)&&!hits[sel].c.includes(t)))add(hits[sel]);else{warn(t);$("q").value="";$("drop").classList.remove("show")}}
  else if(e.key==="Escape"){$("q").value="";showDrop()}});
@@ -293,7 +293,8 @@ function edDraw(){const b=$("edBox");if(!ED){b.style.display="none";b.innerHTML=
   $("edYes").disabled=true;try{const j=await api("/api/pos/item",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(j&&j.ok){if(j.row)upCat(j.row);ED=null;edDraw();render();$("q").focus()}else{m.textContent="ما تم التغيير، حاول مرة ثانية";$("edYes").disabled=false}}catch(e){m.textContent="ما تم التغيير، حاول مرة ثانية";$("edYes").disabled=false}}}
 $("cart").addEventListener("click",e=>{const b=e.target.closest("button[data-ed]");if(b)edOpen(+b.dataset.i,b.dataset.ed)});
 $("warnOk").onclick=()=>{warnOff();$("q").focus()};
-function add(x,q){if(!x)return;warnOff();const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
+let LADD=0,LSAVE=0;function enterOk(){const n=performance.now();return n-LADD>1500&&n-LSAVE>3000&&$('warn').style.display!=='block'}
+function add(x,q){if(!x)return;LADD=performance.now();warnOff();const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
  lastCode=x.c;beep(true);$("q").value="";$("drop").classList.remove("show");render();$("q").focus()}
 let DLV={fee:null,n:0,lv:0};
 function isDel(){return ME&&ME.br==="del"}
@@ -466,12 +467,12 @@ async function save(){
   if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no,j2.zqr);netState(true)}else{const rn=rvTake("s");if(rn){s.no=rn;s.dev=DEV}setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
 }
-function done(snap,t,cash,no,zqr){LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no,zqr){LSAVE=performance.now();LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
-document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}save()},true);
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();if(!enterOk())return;try{t.blur&&t.blur()}catch(x){}save()},true);
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-fee],button[data-drv],button[data-lv],button[data-m=cash],button[data-m=card],button[data-m=tr]");if(b)setTimeout(()=>{try{if(!$("cashIn")||document.activeElement!==$("cashIn"))$("q").focus()}catch(x){}},0)});
-document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.key==="F2"){e.preventDefault();setMode("cash");save()}else if(e.key==="F3"){e.preventDefault();setMode("card");save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();setMode("tr");save()}else if(e.key==="F8"){e.preventDefault();hold()}});
+document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.repeat&&/^F\d+$/.test(e.key)){e.preventDefault();return}if(e.key==="F2"){e.preventDefault();setMode("cash");if(enterOk())save()}else if(e.key==="F3"){e.preventDefault();setMode("card");if(enterOk())save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();setMode("tr");if(enterOk())save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
  return{fee:(d.dlv&&d.dlv.fee)||0,zqr:(d.z&&d.z.qr)||"",aj:Math.abs(d.aj||0),cust:d.cust||"",ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),tr:Math.abs(d.tr||0),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
