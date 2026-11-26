@@ -179,6 +179,7 @@ tr.last td{background:#f0fdf4}
   <div class="card" id="dlvCard" style="display:none">
    <div class="ttl"><span>🛵 التوصيل</span><span id="dlvSum" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
    <div id="locBar"></div>
+   <div style="display:flex;gap:6px;margin-bottom:8px"><input id="locIn" class="pm" style="flex:1;min-width:0;text-align:right;padding:0 8px;font-family:inherit;height:34px;font-size:13px" placeholder="الصق رابط موقع العميل هنا"><button type="button" class="pm" id="locAdd" style="height:34px;font-size:13px;flex:0 0 70px">إضافة</button></div>
    <div id="manDl"><div class="small2" style="margin-bottom:4px">رسوم التوصيل على الزبون (من رابط الأسعار)</div>
    <div class="pms" style="grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.6fr);margin-bottom:8px" id="feeBtns"><button class="pm" data-fee="0">0</button><button class="pm" data-fee="2">2</button><button class="pm" data-fee="3">3</button><button class="pm" data-fee="4">4</button><button class="pm" data-fee="5">5</button><input id="feeIn" class="pm" style="text-align:center;padding:0 4px;width:100%;min-width:0;font-family:inherit" inputmode="decimal" placeholder="غيره"></div>
    </div>
@@ -189,6 +190,7 @@ tr.last td{background:#f0fdf4}
   </div>
   <div class="card">
    <div id="xfBar"></div><div id="escBar"></div>
+   <div style="display:flex;gap:6px;margin-bottom:6px"><button type="button" class="pm" id="xfPick" style="height:34px;font-size:13px;flex:1">أضف صورة إيصال تحويل</button><input type="file" id="xfFile" accept="image/*" style="display:none"></div>
    <div class="pms" id="pmRow" style="grid-template-columns:repeat(5,minmax(0,1fr))"><button class="pm" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button><button class="pm" data-m="aj" id="ajBtn">آجل</button></div>
    <div id="ajBox" style="display:none;margin-top:8px">
     <input class="in" id="ajQ" placeholder="ابحث باسم العميل" style="width:100%;margin-bottom:6px">
@@ -520,6 +522,11 @@ $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}enterSave()},true);
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-fee],button[data-drv],button[data-lv],button[data-m=cash],button[data-m=card],button[data-m=tr]");if(b)setTimeout(()=>{try{if(!$("cashIn")||document.activeElement!==$("cashIn"))$("q").focus()}catch(x){}},0)});
+async function shareSend(fd){try{const r=await fetch("/app/share",{method:"POST",body:fd,credentials:"same-origin"});const t=await r.text(),d=new DOMParser().parseFromString(t,"text/html"),ok=t.indexOf("&#10003;")>=0||t.indexOf("\u2713")>=0,m=((d.body&&d.body.innerText)||"").replace(/\s+/g," ").replace(/رجوع\s*$/,"").replace(/^[\u2713\u2717\s]+/,"").trim();toast((ok?"":"لم يُسجّل: ")+m.slice(0,90),4500);if(!ok)beep(false);await xfLoad();return ok}catch(e){toast("تعذّر الإرسال — تأكد من النت",4000);return false}}
+function shrink(f){return new Promise(res=>{const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);res(b||f)},"image/jpeg",.85)};im.onerror=()=>res(f);im.src=u})}
+$("xfPick").onclick=()=>$("xfFile").click();
+$("xfFile").onchange=async()=>{const f=$("xfFile").files[0];$("xfFile").value="";if(!f)return;$("xfPick").disabled=true;const b=await shrink(f),fd=new FormData();fd.append("img",b,"r.jpg");await shareSend(fd);$("xfPick").disabled=false};
+$("locAdd").onclick=async()=>{const v=$("locIn").value.trim();if(!v)return;$("locAdd").disabled=true;const fd=new FormData();fd.append("text",v);const ok=await shareSend(fd);if(ok)$("locIn").value="";$("locAdd").disabled=false};
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-esc]");if(!b)return;if(b.dataset.esc==="l"){ESCL=b.dataset.r;$("err").textContent="";render()}else{XESC=b.dataset.r;ASKX=false;$("err").textContent="";setMode("tr");xfDraw()}});
 document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.repeat&&/^F\d+$/.test(e.key)){e.preventDefault();return}if(e.key==="F2"){e.preventDefault();setMode("cash");if(enterOk())save()}else if(e.key==="F3"){e.preventDefault();setMode("card");if(enterOk())save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();if(setMode("tr")!==false&&enterOk())save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
