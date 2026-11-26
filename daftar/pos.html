@@ -90,7 +90,7 @@ tr.last td{background:#f0fdf4}
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
- <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="scBtn" style="display:none;background:#991b1b;border-color:#991b1b">إقفال الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
+ <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="scBtn" style="display:none;background:#3C3489;border-color:#3C3489">تسليم الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
 </div>
 <div id="shOpen" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:420px;max-width:94vw">
@@ -100,15 +100,16 @@ tr.last td{background:#f0fdf4}
   <button class="save" id="shGo">ابدأ البيع</button><div class="err" id="shErr"></div>
  </div></div>
 <div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
- <div class="card" style="width:460px;max-width:94vw;border:2px solid #dc2626">
-  <div style="font-size:22px;font-weight:600;margin-bottom:12px;color:#991b1b">إقفال الوردية</div>
-  <div id="scAsk"><div style="font-size:18px;font-weight:600;margin-bottom:8px">هل أنت متأكد من إقفال الوردية؟</div>
-  <div style="color:#5c6b78;margin-bottom:6px">بعد الإقفال ما تقدر تبيع على هذي الوردية.</div>
-  <div style="color:#5c6b78;margin-bottom:4px">وكمّل الإقفال من جوالك في الدفتر: عدّ الصندوق وصوّر إيصال المدى وحمّله.</div>
-  <button class="save" id="scGo" style="background:#991b1b">نعم، أقفل الوردية</button>
+ <div class="card" style="width:460px;max-width:94vw">
+  <div style="font-size:22px;font-weight:600;margin-bottom:12px;color:#3C3489">تسليم الوردية</div>
+  <div id="scAsk"><div style="font-size:18px;font-weight:600;margin-bottom:8px">متأكد تسلّم الوردية؟</div>
+  <div style="color:#5c6b78;margin-bottom:6px">الموازنة تسويها بعدين من جوالك: كم النقد في الدرج، وصورة إيصال المدى.</div>
+  <button class="save" id="scGo" style="background:#3C3489">نعم، سلّم الوردية</button>
   <button id="scBack" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px">رجوع للبيع</button></div>
-  <div id="scDone" style="display:none"><div style="font-size:20px;font-weight:600;color:#15803d;margin-bottom:8px">✓ انقفلت الوردية</div>
-  <div style="font-size:17px">الحين افتح <b>الدفتر من جوالك</b> وكمّل الإقفال: عدّ الصندوق، وصوّر إيصال المدى وحمّله.</div>
+  <div id="scDone" style="display:none"><div style="font-size:20px;font-weight:600;color:#15803d;margin-bottom:8px">✓ سلّمت الوردية</div>
+  <div style="font-size:17px;margin-bottom:12px">افتح <b>الدفتر من جوالك</b> وسوّ الموازنة.</div>
+  <div style="background:#efede6;border-radius:12px;padding:12px;font-size:16px">الكاشير اللي بعدك: سجّل دخولك باسمك، وتنفتح ورديتك على طول.</div>
+  <a href="/poslogout" class="save" style="display:block;text-align:center;line-height:52px;text-decoration:none;color:#fff;margin-top:12px">دخول الكاشير التالي</a>
   <div style="color:#5c6b78;margin-top:10px" id="scSum"></div></div>
   <div class="err" id="scErr"></div>
  </div></div>
@@ -546,10 +547,26 @@ $("ufCan").onclick=ufReset;
 $("ufSave").onclick=async()=>{$("ufErr").textContent="";const j=await api("/api/pos/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:UF.email,name:$("ufName").value,username:$("ufUser").value,pw:$("ufPw").value,br:UF.br})});
  if(j.ok){toast("تم الحفظ");const self=UF.email===ME.email;ufReset();loadBr();if(self)setTimeout(()=>location.reload(),800)}else $("ufErr").textContent=UERR[j.err]||("لم يُحفظ: "+j.err)};
 let SHIFT=null;
+/* owner 26 Nov: each shop computer has a fixed name (جهاز 1، جهاز 2…) kept in this browser; the float follows the drawer of that computer */
+function posDev(){try{return localStorage.getItem("posdev")||""}catch(e){return ""}}
+try{const m=location.search.match(/[?&]devname=([^&]+)/);if(m){localStorage.setItem("posdev",decodeURIComponent(m[1]).slice(0,24));history.replaceState(null,"","/pos/")}}catch(e){}
+/* owner 26 Nov: the float the next cashier received — a fixed bar on top, the amount hidden until he asks (customers can see the screen) */
+let FL={d:null,show:0};
+async function flLoad(){if(!ME||ME.owner||!SHIFT)return;try{const j=await api("/api/pos/float");if(j&&j.ok){FL.d=j;flDraw()}}catch(e){}}
+function flDraw(){if(FL.ask)return;let b=$("flBan");if(!b){b=document.createElement("div");b.id="flBan";const t=document.querySelector(".top");t.parentNode.insertBefore(b,t.nextSibling)}const d=FL.d;
+ if(!d||d.st==="none"){b.style.display="none";return}b.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;font-size:17px;font-weight:600;"+(d.st==="wait"?"background:#fff3e0;color:#b45309":"background:#E1F5EE;color:#085041");
+ if(d.st==="wait"){b.innerHTML="<span>العهدة: بانتظار عدّ "+esc(d.from||"")+"…</span>";return}
+ const sh=d.short?'<span style="font-size:14px;color:#991b1b">بلّغت إنها ناقصة ('+Number(d.short.amt).toFixed(2)+')</span>':'<button type="button" id="flShort" style="background:#fff;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:7px 14px;font-size:15px">العهدة ناقصة</button>';
+ b.innerHTML=(FL.show>Date.now()?"<span>العهدة من "+esc(d.from||"")+": "+Number(d.amt).toFixed(2)+" ريال</span>":"<span>✓ استلمت العهدة من "+esc(d.from||"")+"</span>")+'<span style="display:flex;gap:8px"><button type="button" id="flShow" style="background:'+(FL.show>Date.now()?'#085041;color:#fff':'#fff;color:#085041')+';border:1px solid #9FE1CB;border-radius:10px;padding:7px 14px;font-size:15px">'+(FL.show>Date.now()?"إخفاء":"اعرض المبلغ")+"</button>"+sh+"</span>"}
+document.addEventListener("click",async e=>{const t=e.target;if(t.id==="flShow"){FL.show=FL.show>Date.now()?0:Date.now()+5000;flDraw();if(FL.show)setTimeout(flDraw,5100);return}
+ if(t.id==="flShort"){FL.ask=1;const b=$("flBan");b.innerHTML='<span>'+esc(FL.d.from||"")+' كتب العهدة '+Number(FL.d.amt).toFixed(2)+' — كم لقيت في الدرج؟</span><span style="display:flex;gap:8px"><input id="flIn" inputmode="decimal" style="width:130px;height:40px;border:1px solid #cfd8df;border-radius:10px;font-size:17px;text-align:center"><button type="button" id="flSend" style="background:#991b1b;color:#fff;border-radius:10px;padding:7px 14px;font-size:15px">أرسل لصاحب المحل</button><button type="button" id="flNo" style="background:#fff;border:1px solid #cfd8df;border-radius:10px;padding:7px 14px;font-size:15px">رجوع</button></span>';$("flIn").focus();return}
+ if(t.id==="flNo"){FL.ask=0;flDraw();return}
+ if(t.id==="flSend"){const n=Number(String($("flIn").value).replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/[^\d.]/g,""));if(!($("flIn").value.trim())||!(n>=0)){toast("اكتب رقم صحيح",2500);return}const j=await api("/api/pos/float/short",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amt:n})});if(j&&j.ok){FL.ask=0;toast("وصل لصاحب المحل",2500);flLoad()}else toast("ما انرسل، جرّب مرة ثانية",2500)}});;
+setInterval(()=>{if(SHIFT)flLoad()},30000);
 function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("jdView").style.display=v==="jard"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
-$("shGo").onclick=async()=>{const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:0})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية")}else $("shErr").textContent="ما انفتحت: "+j.err};
+$("shGo").onclick=async()=>{const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:0,dev:posDev()})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية");flLoad()}else $("shErr").textContent="ما انفتحت: "+j.err};
 $("shFloat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("shGo").click()}});
-$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل الإقفال",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";view("close");$("scBack").focus()};
+$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل التسليم",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";view("close");$("scBack").focus()};
 $("scBack").onclick=()=>view("main");
 /* stocktake (الجرد): scan → count → Enter; unknown barcode → name + count; name fix kept for the owner */
 let JD={c:null,set:false,back:"main",kT:[],t:null,hits:[]};
@@ -591,15 +608,15 @@ $("jdMine").addEventListener("click",e=>{const el=e.target.closest("[data-jm]");
 $("jdDone").onclick=()=>{toast("✓ الجرد محفوظ",2000);view(JD.back);if(JD.back==="open")setTimeout(()=>$("shFloat").focus(),50)};
 setInterval(()=>{if($("jdView").style.display!=="none")jdLoad()},15000);
 
-$("scGo").onclick=async()=>{if(Q().length||!navigator.onLine){if(!Q().some(x=>x.type==="close"))setQ(Q().concat([{type:"close",at:Date.now()}]));$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent="انحفظ الإقفال في الجهاز — يُرسل للدفتر أول ما يرجع النت (بعد الفواتير اللي تنتظر)، وبعدها يسجّل خروجك";flush();return}
+$("scGo").onclick=async()=>{if(Q().length||!navigator.onLine){if(!Q().some(x=>x.type==="close"))setQ(Q().concat([{type:"close",at:Date.now()}]));$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent="انحفظ التسليم في الجهاز — يُرسل أول ما يرجع النت، وبعدها يسجّل خروجك";flush();return}
  $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
- if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",8000)}
+ if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",20000)}
  else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};
 /* owner 24 Nov: offline start — the last sign-in and shift are kept in this browser */
 try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{})}catch(e){}
 (async()=>{let OFF=false;try{ME=await api("/api/pos/me");if(ME&&ME.ok)try{localStorage.setItem("posme",JSON.stringify(ME))}catch(e){}}catch(e){OFF=true;try{ME=JSON.parse(localStorage.getItem("posme")||"null")}catch(x){ME=null}if(!ME){document.body.insertAdjacentHTML("afterbegin",'<div style="padding:30px;text-align:center;font-size:20px">ما فيه إنترنت — افتح نقاط البيع مرة وحدة والنت شغّال عشان تشتغل بعدها بدون نت</div>');return}netState(false)}if(!ME||!ME.ok)return;
  if(!ME.owner){$("scBtn").style.display="";let sj=null;try{sj=await api("/api/pos/shift");try{localStorage.setItem("posshift_"+ME.email,JSON.stringify(sj.shift||null))}catch(e){}}catch(e){let s0=null;try{s0=JSON.parse(localStorage.getItem("posshift_"+ME.email)||"null")}catch(x){}sj={shift:s0||{offline:1}}}SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");if(!OFF)$("shGo").click()}}
- $("brName").textContent=ME.brName;if(isDel()){$("ajBtn").style.display="none";$("pmRow").style.gridTemplateColumns="repeat(4,minmax(0,1fr))"}if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
+ $("brName").textContent=ME.brName+(posDev()?" · "+posDev():"");if(SHIFT)flLoad();if(isDel()){$("ajBtn").style.display="none";$("pmRow").style.gridTemplateColumns="repeat(4,minmax(0,1fr))"}if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
  cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
  render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},8000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush();rvTop();setInterval(rvTop,60000)})();
