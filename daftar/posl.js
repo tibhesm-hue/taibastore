@@ -175,12 +175,39 @@
     [].forEach.call(c.children, function (x) { if (x.tagName !== "H2" && x.id !== "plPer" && x.id !== "plCust" && x.id !== "plNew" && x.style.display !== "none") x.style.display = "none"; });
     return b;
   }
+  /* owner 27 Nov: link-orders the cashiers never invoiced (older than 12 hours) — red counter on «طلبات الرابط», and here each one with the invoice that fits it */
+  var PLU = { n: 0, at: 0, busy: false, list: [], ok2: "" };
+  window.plUnCnt = function () { return PLU.n; };
+  function pluLoad(force) {
+    if (PLU.busy || !document.body.classList.contains("sxOwn") || (!force && Date.now() - PLU.at < 60000)) return; PLU.busy = true;
+    fetch("/api/pos/orders/stale", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { PLU.list = j.orders || []; PLU.n = PLU.list.length; PLU.at = Date.now(); try { plxDraw(); } catch (e) { } } }).catch(function () { }).then(function () { PLU.busy = false; });
+  }
+  function pluHtml() {
+    if (!PLU.list.length) return "";
+    var tm = function (t) { var x = +String(t).slice(0, 2); return (x % 12 || 12) + ":" + String(t).slice(3, 5) + (x < 12 ? " ص" : " م"); };
+    var bs = "display:block;width:100%;padding:10px;border-radius:12px;font-weight:700;font-size:14px;margin-top:6px;cursor:pointer;";
+    return '<div style="border:2px solid #dc2626;border-radius:14px;padding:10px;margin:0 0 12px"><h3 style="margin:0 0 4px;font-size:15px;color:#b91c1c">طلبات لم تُفوتر <span style="background:#dc2626;color:#fff;border-radius:999px;padding:0 8px">' + PLU.n + '</span></h3><p class="small muted" style="margin:0 0 6px">مضى عليها أكثر من 12 ساعة، فاختفت من شاشة الكاشير.</p>'
+      + PLU.list.map(function (o) {
+        var c = o.cand, k = PLU.ok2 === o.id;
+        return '<div style="border-top:1px solid var(--line,#e5e7eb);padding:8px 0;font-size:13px"><b>طلب ' + esc(o.ono) + ' · ' + dm(o.day) + ' ' + tm(o.t) + ' · ' + f2(o.sub) + '</b><br><span class="small muted">' + (o.items || []).length + ' صنف · ' + (o.st === "taken" ? "فتحه " + esc(o.u) + " وما فوتره" : "ما فتحه أحد") + (o.misInv ? " · فُتح وحُفظت بدله فاتورة " + o.misInv + " لا تشبهه" : "") + '</span>'
+          + '<div class="small" style="margin-top:4px">' + (o.items || []).slice(0, 8).map(function (x) { return esc(x[0]) + " × " + x[1]; }).join("، ") + ((o.items || []).length > 8 ? "…" : "") + '</div>'
+          + (c ? '<button type="button" data-plu="link" data-id="' + esc(o.id) + '" data-day="' + esc(c.day) + '" data-cid="' + esc(c.cid) + '" style="' + bs + 'background:#0f5c43;color:#fff;border:0">اربطه بفاتورة ' + c.no + ' · ' + f2(c.total) + ' · ' + tm(c.t) + ' · ' + esc(c.u) + '</button>' : '<div class="small" style="color:#b91c1c;margin-top:4px">ما لقيت فاتورة تشبهه</div>')
+          + '<button type="button" data-plu="close" data-id="' + esc(o.id) + '" style="' + bs + 'background:#fff;color:#b91c1c;border:2px solid #dc2626">' + (k ? "اضغط مرة ثانية للتأكيد" : "أقفله بلا فاتورة") + '</button></div>';
+      }).join("") + '</div>';
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-plu]"); if (!b) return;
+    var id = b.dataset.id, act = b.dataset.plu;
+    if (act === "close" && PLU.ok2 !== id) { PLU.ok2 = id; plxDraw(); setTimeout(function () { if (PLU.ok2 === id) { PLU.ok2 = ""; plxDraw(); } }, 4000); return; }
+    PLU.ok2 = ""; b.disabled = true; b.textContent = "⏳";
+    fetch("/api/pos/orders/fix", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, act: act, day: b.dataset.day, cid: b.dataset.cid }) }).then(function (r) { return r.json(); }).catch(function () { }).then(function () { pluLoad(true); });
+  });
   function plxDraw() {
     var b = plxBox(), j = PLX.data; if (!b || !j) return; var R = PLX.r, T = { v: 0, vo: 0, o: 0, dl: 0, pk: 0, s: 0, sn: 0 }, old = false;
     Object.keys(j.days).forEach(function (k) { if (k < R[0] || k > R[1]) return; var d = j.days[k]; T.v += d.v; T.vo += d.vo; T.o += d.o; T.dl += d.dl; T.pk += d.pk; T.s += d.s; if (d.old) old = true; else T.sn += d.o; });
     var no = Math.max(0, T.v - T.vo), pc = T.v ? Math.round(T.vo / T.v * 1000) / 10 : 0;
     var K = function (big, lbl, sub, col) { return '<div style="background:#f4f3ee;border-radius:10px;padding:8px 10px"><div style="font-size:12px;color:#666">' + lbl + '</div><b style="display:block;font-size:20px;line-height:1.4' + (col ? ';color:' + col : '') + '">' + big + '</b>' + (sub ? '<div style="font-size:11px;color:#666">' + sub + '</div>' : '') + '</div>'; };
-    var h = '<div class="grid2">' + K(T.v, "دخلوا الرابط", "كل جوال يُحسب مرة باليوم")
+    var h = pluHtml() + '<div class="grid2">' + K(T.v, "دخلوا الرابط", "كل جوال يُحسب مرة باليوم")
       + K(T.o, "طلبوا", "توصيل " + T.dl + " · استلام " + T.pk, "#0f5c43")
       + K(no, "دخلوا وما طلبوا", T.v ? "من كل 100 زائر طلب " + pc : "", "#b91c1c")
       + K(f2(T.s) + " ر", "مجموع الطلبات", T.sn ? "متوسط الطلب " + f2(T.s / T.sn) + " ر" : "") + '</div>';
@@ -615,7 +642,7 @@
     fetch("/api/pos/voids/seen", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function () { PV.at = 0; pvLoad(); }).catch(function () { b.disabled = false; });
   });
   function pvTick() { if (Date.now() - PV.at > 30000) pvLoad(); else pvDraw(); }
-  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } try { pvTick(); } catch (e) { } try { ztTick(); } catch (e) { } }
+  function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { pluLoad(false); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } try { pvTick(); } catch (e) { } try { ztTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
   setInterval(tick, 1000); tick(); var tk0 = setInterval(tick, 150); setTimeout(function () { clearInterval(tk0); }, 8000);
 })();
