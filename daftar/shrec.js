@@ -1,12 +1,13 @@
 /* owner 26 Nov («ابنه»): the POS handover closing. The cashier hands the shift over in the POS with one tap; on his phone the ledger shows «موازنة ورديتك»: one number (the drawer cash), a photo of the mada slip, his drawer invoices to confirm, save, the result (reason if there is a difference), send to the group. The POS figures come live from the server, nothing is pulled from Smart Life. The old closing form is gone from the menu. */
 (function(){try{
 var st=document.createElement('style');st.textContent='[data-cwgo="close"]{display:none!important}#shRec .srSq{background:#efede6;color:#222;border-radius:14px;padding:12px;text-align:center;font-size:15px;cursor:pointer;border:0;font-family:inherit;width:100%}#shRec .srPur{background:#3C3489;color:#fff;border-radius:14px;padding:14px;text-align:center;font-weight:600;font-size:17px;border:0;width:100%;font-family:inherit;cursor:pointer}#shRec .srPur[disabled]{opacity:.5}#shRec .srR{display:flex;justify-content:space-between;gap:8px;padding:5px 0}#shRec .srR span:first-child{color:var(--muted)}#shRec .srIn{font-size:26px;font-weight:700;text-align:center;width:100%;padding:12px;border:2px solid #D3D1C7;border-radius:12px;background:#fff;font-family:inherit}#shRec .srG{display:grid;grid-template-columns:1fr 1fr;gap:8px}';document.head.appendChild(st);
-var SR={list:null,at:0,busy:false,open:null,photo:null,ack:false,res:null,err:''};
+var SR={list:null,at:0,busy:false,open:null,photo:null,ack:false,res:null,err:'',rej:[],rerr:''};
 function nm(u){return String(u||'').replace(/\s+(مبيعات|توصيل)$/,'').trim()}
 function shL(br){return br==='del'?'توصيل':'مبيعات'}
 function hm(t){try{var d=new Date(t+3*3600e3);return (d.getUTCDate())+'/'+(d.getUTCMonth()+1)+' '+String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')}catch(e){return ''}}
 function mine(){if(!SR.list)return [];if(S.owner)return SR.list;var me=curCashier();return SR.list.filter(function(x){return nm(x.u)===me})}
-async function load(f){if(!S.db||SR.busy)return;if(!f&&Date.now()-SR.at<45000)return;SR.busy=true;try{var r=await fetch('/api/shift/pending',{credentials:'same-origin',cache:'no-store'}),j=await r.json();if(j&&j.ok){SR.list=j.list||[];SR.at=Date.now()}}catch(e){}SR.busy=false;draw()}
+async function load(f){if(!S.db||SR.busy)return;if(!f&&Date.now()-SR.at<20000)return;SR.busy=true;try{var r=await fetch('/api/shift/pending',{credentials:'same-origin',cache:'no-store'}),j=await r.json();if(j&&j.ok){SR.list=j.list||[];SR.at=Date.now()}}catch(e){}try{var r2_=await fetch('/api/shift/rejects',{credentials:'same-origin',cache:'no-store'}),j2=await r2_.json();if(j2&&j2.ok)SR.rej=j2.list||[]}catch(e){}SR.busy=false;draw()}
+function myRej(){return (SR.rej||[]).filter(function(x){return S.owner||nm(x.pred.u)===curCashier()})}
 function host(){var c=$('tab-close');if(c&&!c.hidden)return c;var h=$('tab-home');if(S.owner&&h&&!h.hidden)return h;return null}
 function vals(x){/* the drawer entries of this cashier for this shift type, as the old closing counted them */
   var who=nm(x.u),sh=shL(x.br),cs=$('cShift'),old=cs?cs.value:'',date=bizDayISO();if(cs)cs.value=sh;var ps=[],rs=[],dp=[],dr=[],cdc=[];
@@ -15,11 +16,13 @@ function vals(x){/* the drawer entries of this cashier for this shift type, as t
   var e=x.exp||{},fl=x.pred&&x.pred.cash!=null?+x.pred.cash:null;
   return {who:who,sh:sh,date:date,ps:ps,cashPs:cashPs,rs:rs,dp:dp,dr:dr,cdc:cdc,inv:inv,other:r2(ps.filter(function(y){return !isCash(y)}).reduce(function(a,y){return a+(+y.amount||0)},0)),added:added,float:fl,cash:+e.cash||0,card:+e.card||0,tr:+e.tr||0,aj:+e.aj||0,n:e.n||0,rn:e.rn||0}}
 function draw(){var h=host(),el=$('shRec');var L=mine();
-  if(!h||(!L.length&&!SR.res)){if(el)el.remove();return}
+  var RJ=myRej();
+  if(!h||(!L.length&&!SR.res&&!RJ.length)){if(el)el.remove();return}
   if(!el){el=document.createElement('div');el.id='shRec';el.className='card';}
   var anc=h.id==='tab-home'?$('sxV'):null;if(el.parentNode!==h||(anc&&el.previousSibling!==anc)){if(anc&&anc.nextSibling)h.insertBefore(el,anc.nextSibling);else h.insertBefore(el,h.firstChild)}
   var H;
-  if(SR.res){H=resHTML()}
+  if(RJ.length&&!SR.open&&!SR.res){H=RJ.map(function(x){return '<div style="margin-bottom:10px"><h2 style="margin:0;color:#991b1b!important">'+esc(nm(x.u))+' رفض العهدة ('+esc(x.why||'')+')</h2><div class="small muted">أنت كتبت '+fmt(x.pred.cash)+'. عدّوها مع بعض الحين، واكتب الرقم الصحيح.</div><input class="srIn" data-rjin="'+esc(x.pred.id)+'" inputmode="decimal" autocomplete="off" placeholder="0.00" style="margin-top:8px"><button class="srPur" type="button" data-rjsave="'+esc(x.pred.id)+'" style="margin-top:8px">حفظ الرقم الصحيح</button></div>'}).join('')+(SR.rerr?'<div class="err">'+esc(SR.rerr)+'</div>':'')}
+  else if(SR.res){H=resHTML()}
   else if(!SR.open){H=L.map(function(x){return '<div style="margin-bottom:10px"><h2 style="margin:0">موازنة ورديتك جاهزة</h2><div class="small muted">'+esc(nm(x.u))+' · '+(x.br==='del'?'التوصيل':'المبيعات')+' · من '+hm(x.openAt)+' إلى '+hm(x.closeAt)+(x.dev?' · '+esc(x.dev):'')+'</div><button class="srPur" type="button" data-srgo="'+esc(x.id)+'" style="margin-top:8px">ابدأ الموازنة</button></div>'}).join('')}
   else{var x=L.find(function(y){return y.id===SR.open});if(!x){SR.open=null;return draw()}var v=vals(x);
     H='<h2 style="margin:0">موازنة ورديتك</h2><div class="small muted">'+esc(v.who)+' · '+(x.br==='del'?'التوصيل':'المبيعات')+' · سلّمت الوردية '+hm(x.closeAt)+'</div>'
@@ -75,7 +78,13 @@ document.addEventListener('click',async function(e){var t=e.target;if(!t.closest
   if(t.closest('[data-srsave]')){save();return}
   var w=t.closest('[data-srwhy]');if(w&&SR.res){var d=SR.res.c.diff,o=(NR_OPT[d<0?'s':'o']||[])[+w.dataset.srwhy];if(!o)return;try{await S.db.doc('months/'+SR.res.month+'/closings/'+SR.res.id).update({note:o[0],reasonAt:Date.now(),reasonKind:o[1]||null,needReason:null});SR.res.note=o[0];SR.res.c.note=o[0]}catch(x){toast('ما انحفظ السبب، جرّب مرة ثانية')}el0();return}
   if(t.closest('[data-srsend]')){setTimeout(async function(){try{await S.db.doc('months/'+SR.res.month+'/closings/'+SR.res.id).update({sent:true,sentAt:Date.now()})}catch(x){}SR.res.sent=true;el0()},800);return}
-  if(t.closest('[data-srdone]')){SR.res=null;el0();return}});
+  if(t.closest('[data-srdone]')){SR.res=null;el0();return}
+  var rs=t.closest('[data-rjsave]');if(rs){var pid=rs.dataset.rjsave,x=(SR.rej||[]).find(function(y){return y.pred.id===pid}),inp=document.querySelector('[data-rjin="'+pid+'"]'),nv=toNum(inp&&inp.value);SR.rerr='';
+    if(!x||!(nv>=0)||String(inp.value).trim()===''){SR.rerr='اكتب الرقم الصحيح.';el0();return}rs.disabled=true;
+    try{var rr=await fetch('/api/shift/recfix',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:pid,cash:nv})});var jj=await rr.json();if(!jj||!jj.ok){SR.rerr='ما انحفظ: '+((jj&&jj.err)||'');rs.disabled=false;el0();return}
+      var cid=x.pred.closingId,c=cid&&[].concat(S.closings||[],PM('closings')||[]).find(function(y){return y&&y.id===cid});
+      if(c&&c.date){var dlt=r2(nv-(+c.counted||0)),cd=r2((+c.cashDiff||0)+dlt);var up={counted:nv,leave:nv,cashDiff:cd,diff:r2((+c.diff||0)+dlt),floatFix:{prev:+c.counted||0,now:nv,at:Date.now(),by:nm(x.u),why:x.why||''}};if(Math.abs(up.diff)>=1&&!(c.note||'').trim())up.needReason={at:Date.now(),diff:up.diff};try{await S.db.doc('months/'+c.date.slice(0,7)+'/closings/'+cid).update(up)}catch(e){}}
+      SR.rej=(SR.rej||[]).filter(function(y){return y.pred.id!==pid});toast('✓ انحفظ — تطلع العهدة الجديدة عند '+nm(x.u));SR.at=0;load(true)}catch(e){SR.rerr='ما انحفظ، جرّب مرة ثانية';rs.disabled=false}el0();return}});
 document.addEventListener('change',async function(e){if(e.target&&e.target.id==='srPh'){var f=e.target.files&&e.target.files[0];if(!f)return;try{SR.photo=typeof shrink==='function'?await shrink(f,true):f}catch(x){SR.photo=f}SR.err='';el0()}});
 setInterval(function(){try{if(typeof S==='undefined'||!S.db)return;load(false);draw()}catch(e){}},1500);
 }catch(e){}})();
