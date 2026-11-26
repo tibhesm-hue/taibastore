@@ -19,7 +19,7 @@
     var sg = document.getElementById("sgCard"); if (!sg) return;
     if (!card) {
       card = document.createElement("div"); card.className = "card"; card.id = "posSgCard"; card.hidden = true;
-      card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">نقاط البيع</h2><span class="small muted" id="posSgDay"></span><a class="btn sm ghost" href="/pos/" style="margin-inline-start:auto">فتح نقاط البيع</a></div><div id="posSgBody" style="margin-top:8px"><p class="small muted">يحمّل…</p></div>';
+      card.innerHTML = '<div id="posSgBody"></div>';
       sg.parentNode.insertBefore(card, sg.nextSibling);
     }
     var vis = POSV.show || posInSales(); card.hidden = !vis;
@@ -29,10 +29,12 @@
     busy = true; last = Date.now();
     fetch("/api/pos/day", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
       if (!j || !j.ok) return;
-      document.getElementById("posSgDay").textContent = "لحظي · " + j.day.split("-").reverse().map(function (x) { return +x; }).join("/");
       var box = function (k) { var s = j.sum[k] || { n: 0, total: 0, cash: 0, card: 0 }; return '<div style="flex:1;min-width:0;background:var(--brand-soft,#eef6f1);border-radius:12px;padding:10px"><div class="small muted">' + BRN[k] + '</div><div style="font-size:1.35em;font-weight:800;color:var(--brand,#0e5a3c)">' + f2(s.total) + '</div><div class="small muted">' + s.n + ' فاتورة' + (s.rn ? ' · ' + s.rn + ' مرتجع' : '') + '</div><div class="small muted">نقدي ' + f2(s.cash) + ' · شبكة ' + f2(s.card) + '</div></div>'; };
       var inv = (j.inv || []).slice(0, 8).map(function (d) { return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:.92em' + (d.kind === 'ret' ? ';color:#b91c1c' : '') + '"><span>' + (d.kind === 'ret' ? 'مرتجع ' + fmtNo(d.no) + ' عن ' + fmtNo(d.refNo) : fmtNo(d.no)) + ' · ' + esc(d.u) + ' · ' + (d.br === "del" ? "التوصيل" : "المبيعات") + ' · ' + String(d.t || "").slice(0, 5) + ' · ' + (d.mode === "cash" ? "نقدي" : d.mode === "card" ? "شبكة" : "نقدي + شبكة") + '</span><b>' + f2(d.total) + '</b></div>'; }).join("");
-      document.getElementById("posSgBody").innerHTML = '<div style="display:flex;gap:8px">' + box("shop") + box("del") + '</div>' + '<div style="font-weight:700;margin:10px 0 4px">آخر الفواتير</div>' + (inv || '<p class="small muted">لا توجد فواتير اليوم</p>');
+      /* owner 26 Nov: the two branches (with cash / card) sit inside the sales card under its title; the «آخر الفواتير» list is dropped (the sales card already covers it) */
+      var sgc = document.getElementById("sgCard"); if (sgc) { var pb = document.getElementById("posBr"); if (!pb) { pb = document.createElement("div"); pb.id = "posBr"; } if (pb.parentNode !== sgc) sgc.insertBefore(pb, sgc.children[1] || null);
+        var bh = '<div style="display:flex;gap:8px">' + box("shop") + box("del") + '</div><div style="display:flex;justify-content:flex-end;margin-top:6px"><a class="btn sm ghost" href="/pos/">فتح نقاط البيع</a></div>'; if (pb.__h !== bh) { pb.innerHTML = bh; pb.__h = bh; } }
+      document.getElementById("posSgBody").innerHTML = "";
       fetch("/api/pos/shifts", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (s) {
         if (!s || !s.ok) return; var el = document.getElementById("posSgSh"); if (!el) { el = document.createElement("div"); el.id = "posSgSh"; document.getElementById("posSgBody").appendChild(el); }
         var hm = function (x) { var d = new Date(x); return d.toTimeString().slice(0, 5); }, col = function (v) { return Math.abs(v) < 0.01 ? "color:#15803d" : "color:#b91c1c"; };
