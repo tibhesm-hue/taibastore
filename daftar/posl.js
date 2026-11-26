@@ -113,12 +113,12 @@
     if (!j) { if (!pb.__h) pb.innerHTML = '<p class="empty">⏳ يحمّل…</p>'; return; }
     var z = { n: 0, total: 0, cash: 0, card: 0, rn: 0, ret: 0 }, a = A === "all" ? j.all : (j.br[A] || z), sh = j.br.shop || z, dl = j.br.del || z;
     var lbl = one ? (R.f === td ? "مبيعات اليوم" : "مبيعات " + svDm(R.f)) : "المبيعات";
-    var h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    var h = '<div class="small muted" style="margin:0 0 6px">محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
       + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card))
       + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
       + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""), "shop", A === "shop")
       + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : ""), "del", A === "del")
-      + '</div><div class="small muted" style="margin-top:6px">محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><a class="btn sm ghost" href="/pos/" style="display:block;margin-top:8px;text-align:center">فتح نقاط البيع</a>';
+      + '</div><a class="btn sm ghost" href="/pos/" style="display:block;margin-top:8px;text-align:center">فتح نقاط البيع</a>';
     if (pb.__h !== h) { pb.innerHTML = h; pb.__h = h; }
     svChart();
   }
@@ -157,7 +157,7 @@
     Promise.all(P).then(function (A) { if (SV.key !== k) return; if (A[0] && A[0].ok) { SV.data = A[0]; SV.got = Date.now(); } if (A[1] && A[1].ok) { SV.hr = A[1].inv || []; SV.hk = R.f; } svDraw(); }).catch(function () { }).then(function () { SV.busy = false; });
   }
   function svTick() {
-    var c = document.getElementById("sgCard"); if (!c || c.offsetParent === null || !(typeof S !== "undefined" && S.owner)) return;
+    var c = document.getElementById("sgCard"); if (!c || c.offsetParent === null || !((typeof S !== "undefined" && S.owner) || document.documentElement.classList.contains("ownV"))) return;
     var pb = document.getElementById("posBr"); if (!pb) { pb = document.createElement("div"); pb.id = "posBr"; pb.style.margin = "8px 0"; } /* owner 26 Nov («أمس وتصفح المبيعات، السطرين هذه حطهم فوق»): the numbers sit under the period and browse rows */
     var sb = document.getElementById("sbOpen"), row = sb; while (row && row.parentElement !== c) row = row.parentElement; if (row) { if (row.nextElementSibling !== pb) row.parentNode.insertBefore(pb, row.nextSibling); } else if (pb.parentNode !== c) c.insertBefore(pb, c.children[1] || null);
     ["sgSum", "dayCap", "dayChart", "sgAtL", "sgNow", "sgUser"].forEach(function (id) { var x = document.getElementById(id); if (x && x.style.display !== "none") x.style.display = "none"; });
@@ -617,5 +617,5 @@
   function pvTick() { if (Date.now() - PV.at > 30000) pvLoad(); else pvDraw(); }
   function tick() { try { tab(); sales(); } catch (e) { } try { svTick(); } catch (e) { } try { plxTick(); } catch (e) { } try { jdxTick(); } catch (e) { } try { jcTick(); } catch (e) { } try { jcNav(); } catch (e) { } try { pvTick(); } catch (e) { } try { ztTick(); } catch (e) { } }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tick); else tick();
-  setInterval(tick, 1000);
+  setInterval(tick, 1000); tick(); var tk0 = setInterval(tick, 150); setTimeout(function () { clearInterval(tk0); }, 8000);
 })();
