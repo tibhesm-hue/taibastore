@@ -548,14 +548,16 @@
     if (b.textContent !== String(n)) b.textContent = n;
   }
   function pvDraw() {
-    var j = PV.d; if (!j) return; var n = (j.unseen || 0) + ((PV.e && PV.e.unseen) || 0);
+    var j = PV.d; if (!j) return; var n = j.unseen || 0;
+    /* owner 26 Nov («وش علاقتها بالمبيعات»): cashier item edits (price / name / new item) live in «الأسعار» with their own counter; «المبيعات» keeps only the items taken off a sale */
     pvBadge(document.getElementById("posTab"), n); pvBadge(document.querySelector('#sxV [data-sxv="h|sales"]'), n);
+    pvBadge(document.querySelector('#sxV [data-sxv="h|prices"]'), (PV.e && PV.e.unseen) || 0);
+    var pz = document.getElementById("pzCard"); if (pz) { var ib = document.getElementById("ilBox"); if (!ib) { ib = document.createElement("div"); ib.id = "ilBox"; } if (ib.parentNode !== pz) pz.insertBefore(ib, pz.firstChild); var ih = ilHtml(); if (ib.__h !== ih) { ib.innerHTML = ih; ib.__h = ih; } }
     var card = document.getElementById("posSgCard"); if (!card) return;
     var box = document.getElementById("pvBox"); if (!box) { box = document.createElement("div"); box.id = "pvBox"; card.insertBefore(box, card.firstChild); }
     var L = (j.list || []).filter(function (x) { return !x.seen; }).slice(0, 40), K = { del: "حذف صنف", dec: "نقّص الكمية", clr: "فرّغ السلة" };
     var h = !L.length ? "" : '<div style="border:2px solid #c2410c;border-radius:14px;padding:10px;margin:0 0 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><b style="color:#c2410c">حذوفات قبل الحفظ (' + L.length + ')</b><button type="button" class="btn sm ghost" data-pvall="1">شفتها كلها</button></div>' +
       L.map(function (x) { var d = x.day.split("-"), dd = (+d[2]) + "/" + (+d[1]); return '<div style="padding:8px 2px;border-top:1px solid var(--line,#e5e7eb)"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(x.u) + " · " + (K[x.kind] || "حذف") + '</b><b style="color:#c2410c">' + Number(x.amt).toFixed(2) + '</b></div><div class="small muted">' + dd + " · " + String(x.t || "").slice(0, 5) + " · " + (x.br === "del" ? "التوصيل" : "المبيعات") + '</div><div class="small">' + x.lines.map(function (l) { return esc(l[1]) + " × " + l[3]; }).join("، ") + '</div><button type="button" class="btn sm ghost" data-pvseen="' + esc(x.id) + '" style="margin-top:6px">شفته</button></div>'; }).join("") + "</div>";
-    h += ilHtml();
     if (box.__h !== h) { box.innerHTML = h; box.__h = h; }
   }
   /* owner 25 Nov: item edits made by cashiers from the POS (name / price / new item) — applied at once; here the owner sees who changed what, as a red counter */
