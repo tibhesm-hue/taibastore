@@ -1,7 +1,7 @@
 /* owner 26 Nov («ابنه»): the POS handover closing. The cashier hands the shift over in the POS with one tap; on his phone the ledger shows «موازنة ورديتك»: one number (the drawer cash), a photo of the mada slip, his drawer invoices to confirm, save, the result (reason if there is a difference), send to the group. The POS figures come live from the server, nothing is pulled from Smart Life. The old closing form is gone from the menu. */
 (function(){try{
 var st=document.createElement('style');st.textContent='[data-cwgo="close"]{display:none!important}#shRec .srSq{background:#efede6;color:#222;border-radius:14px;padding:12px;text-align:center;font-size:15px;cursor:pointer;border:0;font-family:inherit;width:100%}#shRec .srPur{background:#3C3489;color:#fff;border-radius:14px;padding:14px;text-align:center;font-weight:600;font-size:17px;border:0;width:100%;font-family:inherit;cursor:pointer}#shRec .srPur[disabled]{opacity:.5}#shRec .srR{display:flex;justify-content:space-between;gap:8px;padding:5px 0}#shRec .srR span:first-child{color:var(--muted)}#shRec .srIn{font-size:26px;font-weight:700;text-align:center;width:100%;padding:12px;border:2px solid #D3D1C7;border-radius:12px;background:#fff;font-family:inherit}#shRec .srG{display:grid;grid-template-columns:1fr 1fr;gap:8px}';document.head.appendChild(st);
-var SR={list:null,at:0,busy:false,open:null,photo:null,rd:null,hash:null,ack:false,res:null,err:'',rej:[],rerr:''};
+var SR={ps:[],list:null,at:0,busy:false,open:null,photo:null,rd:null,hash:null,ack:false,res:null,err:'',rej:[],rerr:''};
 function nm(u){return String(u||'').replace(/\s+(مبيعات|توصيل)$/,'').trim()}
 function shL(br){return br==='del'?'توصيل':'مبيعات'}
 function hm(t){try{var d=new Date(t+3*3600e3);return (d.getUTCDate())+'/'+(d.getUTCMonth()+1)+' '+String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')}catch(e){return ''}}
@@ -15,20 +15,25 @@ function vals(x){/* the drawer entries of this cashier for this shift type, as t
   var cashPs=ps.filter(isCash),inv=r2(cashPs.reduce(function(a,y){return a+(+y.amount||0)},0)),added=r2(rs.reduce(function(a,y){return a+(+y.amount||0)},0)+cdc.reduce(function(a,y){return a+(+y.amount||0)},0));
   var e=x.exp||{},fl=x.pred&&x.pred.cash!=null?+x.pred.cash:null;
   return {left:x.left!=null?+x.left:null,leftAll:!!x.leftAll,who:who,sh:sh,date:date,ps:ps,cashPs:cashPs,rs:rs,dp:dp,dr:dr,cdc:cdc,inv:inv,other:r2(ps.filter(function(y){return !isCash(y)}).reduce(function(a,y){return a+(+y.amount||0)},0)),added:added,float:fl,cash:+e.cash||0,card:+e.card||0,tr:+e.tr||0,trx:e.trx!=null?+e.trx:null,trb:+e.trb||0,trm:+e.trm||0,esc:+e.esc||0,aj:+e.aj||0,n:e.n||0,rn:e.rn||0}}
-function slipUI(){if(!SR.photo)return '';var r=SR.rd,h='';
-  if(!r||r.busy)h='<div class="small muted" style="margin-top:6px">⏳ أقرأ الإيصال…</div>';
-  else if(r.read)h='<div class="small" style="margin-top:6px;color:#085041"><b>قريت الإيصال: '+fmt(r.total)+'</b>'+(r.schemes&&r.schemes.length?' ('+r.schemes.map(function(y){return esc(y.name)+' '+fmt(y.amount)}).join(' · ')+')':'')+'</div>'+(r.sure===false?'<div class="err">القراءة ما تطابقت مجاميعها — قارنها بالإيصال.</div>':'')+(r.dateOff?'<div class="err">تاريخ الإيصال '+esc(r.dateISO)+' — تأكد إنه إيصال اليوم.</div>':'')+(r.dup?'<div class="err">هذي نفس صورة إيصال سابق — صوّر إيصال موازنتك أنت.</div>':'');
-  else h='<div class="err" style="margin-top:6px">'+(r.notSlip?'الصورة ما هي إيصال موازنة — صوّره من جديد.':'ما قدرت أقرأ الإيصال — اكتب الرقم من الإيصال بنفسك.')+'</div>';
-  return h+'<div style="font-size:16px;margin-top:6px">مجموع الشبكة في الإيصال</div><input class="srIn" id="srSlip" inputmode="decimal" autocomplete="off" placeholder="0.00"'+(r&&r.read&&!r.busy?' value="'+r.total+'"':'')+'><div class="small muted">راجع الرقم مع الورقة، وصحّحه لو غلط.</div>'}
-async function readSlip(blob){var my=SR.rd={busy:true};
-  try{var b64=await new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(',')[1]||'')};fr.onerror=rej;fr.readAsDataURL(blob)});
-    try{var d=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());SR.hash=Array.from(new Uint8Array(d)).slice(0,12).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){SR.hash=null}
+function agg(){var L=SR.ps||[],o={n:L.length,busy:L.some(function(p){return !p.rd||p.rd.busy}),dup:L.some(function(p){return p.rd&&p.rd.dup})};o.all=L.length&&L.every(function(p){return p.rd&&p.rd.read&&!p.rd.busy});o.total=o.all?r2(L.reduce(function(a,p){return a+(+p.rd.total||0)},0)):null;return o}
+function slipUI(){var L=SR.ps||[];if(!L.length)return '';var h='';
+  L.forEach(function(p,i){var r=p.rd,t='';
+    if(!r||r.busy)t='<div class="small muted">⏳ أقرأ الإيصال…</div>';
+    else if(r.read)t='<div class="small" style="color:#085041"><b>قريت: '+fmt(r.total)+'</b>'+(r.schemes&&r.schemes.length?' ('+r.schemes.map(function(y){return esc(y.name)+' '+fmt(y.amount)}).join(' · ')+')':'')+'</div>'+(r.sure===false?'<div class="err">القراءة ما تطابقت مجاميعها — قارنها بالإيصال.</div>':'')+(r.dateOff?'<div class="err">تاريخ الإيصال '+esc(r.dateISO)+' — تأكد إنه إيصال اليوم.</div>':'')+(r.dup?'<div class="err">هذي نفس صورة إيصال سابق — احذفها وصوّر إيصال موازنتك أنت.</div>':'');
+    else t='<div class="err">'+(r.notSlip?'الصورة ما هي إيصال موازنة — احذفها وصوّره من جديد.':'ما قدرت أقرأ الإيصال — اكتب المجموع بنفسك.')+'</div>';
+    h+='<div style="margin-top:8px;padding:8px;border:1px solid #e2dfd6;border-radius:12px"><img src="'+p.u+'" data-srzoom="1" style="display:block;width:100%;max-height:170px;object-fit:contain;border-radius:10px;background:#eee"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px"><div>'+(L.length>1?'<b>إيصال '+(i+1)+'</b> ':'')+t+'</div><button class="btn sm ghost" type="button" data-srdel="'+i+'">حذف</button></div></div>'});
+  var g=agg();
+  return h+'<div style="font-size:16px;margin-top:8px">مجموع الشبكة'+(L.length>1?' في كل الإيصالات':' في الإيصال')+'</div><input class="srIn" id="srSlip" inputmode="decimal" autocomplete="off" placeholder="0.00"'+(g.all?' value="'+g.total+'"':'')+'><div class="small muted">راجع الرقم مع الورق، وصحّحه لو غلط.</div>'}
+async function readSlip(p){var my=p.rd={busy:true};
+  try{var blob=p.b,b64=await new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(',')[1]||'')};fr.onerror=rej;fr.readAsDataURL(blob)});
+    try{var d=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());p.hash=Array.from(new Uint8Array(d)).slice(0,12).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){p.hash=null}
     var j=null;for(var t=0;t<2&&!j;t++){try{var r=await fetch('/api/shift/slip',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({b64:b64})});j=await r.json()}catch(e){await new Promise(function(z){setTimeout(z,1200)})}}
-    if(SR.rd!==my)return;
-    if(!j||!j.ok)SR.rd={read:false};else if(!j.read)SR.rd={read:false,notSlip:!!j.notSlip};else{var rd=j;try{var td=bizDayISO();if(rd.dateISO&&Math.abs(Math.round((new Date(td)-new Date(rd.dateISO))/864e5))>1)rd.dateOff=true}catch(e){}
-      try{var all=[].concat(S.closings||[],PM('closings')||[]);if(SR.hash&&all.some(function(c){return c&&c.madaSlip&&c.madaSlip.hash===SR.hash}))rd.dup=true}catch(e){}SR.rd=rd}
-  }catch(e){if(SR.rd===my)SR.rd={read:false}}
+    if(p.rd!==my)return;
+    if(!j||!j.ok)p.rd={read:false};else if(!j.read)p.rd={read:false,notSlip:!!j.notSlip};else{var rd=j;try{var td=bizDayISO();if(rd.dateISO&&Math.abs(Math.round((new Date(td)-new Date(rd.dateISO))/864e5))>1)rd.dateOff=true}catch(e){}
+      try{var all=[].concat(S.closings||[],PM('closings')||[]);if(p.hash&&(all.some(function(c){var m=c&&c.madaSlip;return m&&(m.hash===p.hash||(m.hashes||[]).indexOf(p.hash)>=0)})||(SR.ps||[]).some(function(q){return q!==p&&q.hash===p.hash})))rd.dup=true}catch(e){}p.rd=rd}
+  }catch(e){if(p.rd===my)p.rd={read:false}}
   el0()}
+function psClear(){(SR.ps||[]).forEach(function(p){try{URL.revokeObjectURL(p.u)}catch(e){}});SR.ps=[]}
 function draw(){var h=host(),el=$('shRec');var L=mine();
   var RJ=myRej();
   if(!h||(!L.length&&!SR.res&&!RJ.length)){if(el)el.remove();return}
@@ -42,14 +47,14 @@ function draw(){var h=host(),el=$('shRec');var L=mine();
     H='<h2 style="margin:0">موازنة ورديتك</h2><div class="small muted">'+esc(v.who)+' · '+(x.br==='del'?'التوصيل':'المبيعات')+' · سلّمت الوردية '+hm(x.closeAt)+'</div>'
      +(v.float==null?'<div class="srSq" style="background:#fff3e0;color:#b45309;cursor:default">العهدة بانتظار عدّ '+esc(nm(x.pred&&x.pred.u))+' — ما تقدر تحفظ لين يحفظ موازنته.</div>':'')
      +(v.left!=null?'<div class="srR" style="font-size:16px;margin-top:6px"><span style="color:#222">'+(v.leftAll?'سلّمت النقد كامل في الدرج':'سلّمت في الدرج')+'</span><b>'+fmt(v.left)+'</b></div>'+(v.leftAll?'':'<div style="font-size:16px;margin-top:6px">كم معك نقد؟</div><input class="srIn" id="srCash" inputmode="decimal" autocomplete="off" placeholder="0.00"><div class="small muted">عدّ الفلوس اللي أخذتها معك واكتب المجموع.</div>'):'<div style="font-size:16px;margin-top:6px">كم النقد اللي في الدرج الحين؟</div><input class="srIn" id="srCash" inputmode="decimal" autocomplete="off" placeholder="0.00"><div class="small muted">عدّ الفلوس اللي في الدرج كلها (مع العهدة) واكتب المجموع.</div>')
-     +'<div style="font-size:16px;margin-top:10px">صوّر إيصال موازنة المدى</div><label class="srSq" style="display:block;font-weight:600">'+(SR.photo?'✓ انصوّر الإيصال — اضغط لتغييره':'📷 صوّر الإيصال')+'<input type="file" accept="image/*" capture="environment" id="srPh" style="display:none"></label>'+slipUI()
+     +'<div style="font-size:16px;margin-top:10px">صوّر إيصال موازنة المدى</div><label class="srSq" style="display:block;font-weight:600">'+((SR.ps||[]).length?'+ صوّر إيصال ثاني (شبكة ثانية)':'📷 صوّر الإيصال')+'<input type="file" accept="image/*" capture="environment" id="srPh" style="display:none"></label>'+slipUI()
      +'<div style="font-size:16px;margin-top:10px">الفواتير اللي دفعتها من الدرج</div>'
      +(v.cashPs.length?'<div style="background:#efede6;border-radius:14px;padding:4px 12px">'+v.cashPs.map(function(p,i){return '<div class="srR"'+(i?' style="border-top:1px solid #e2dfd6"':'')+'><span style="color:#222">'+esc(p.title||'')+' · '+tm(p.at).replace('🕒 ','')+'</span><b>'+fmt(p.amount)+'</b></div>'}).join('')+'</div>':'<div class="small muted">ما دفعت فواتير من الدرج.</div>')
      +'<div class="srG"><button class="srSq" type="button" data-srpay="1">+ فاتورة نسيتها</button><button class="srSq" type="button" data-srack="1" style="'+(SR.ack?'background:#E1F5EE;color:#085041;font-weight:600':'')+'">'+(SR.ack?'☑':'☐')+' هذي كل فواتيري</button></div>'
      +(SR.err?'<div class="err" style="margin-top:6px">'+esc(SR.err)+'</div>':'')
      +'<button class="srPur" type="button" data-srsave="1" style="margin-top:10px"'+(v.float==null?' disabled':'')+'>حفظ الموازنة</button><div class="small muted">بعد الحفظ ما تقدر تغيّر الرقم.</div>'
      +'<button class="btn sm ghost" type="button" data-srback="1" style="margin-top:6px">رجوع</button>'}
-  if(el.__h!==H){var keep=$('srCash')?$('srCash').value:null,k2=$('srSlip')?$('srSlip').value:null,rdn=SR.rd&&SR.rd.read?String(SR.rd.total):null;el.innerHTML=H;el.__h=H;if(keep!=null&&$('srCash'))$('srCash').value=keep;if(k2!=null&&$('srSlip')&&!(k2===''&&rdn))$('srSlip').value=k2}}
+  if(el.__h!==H){var keep=$('srCash')?$('srCash').value:null,k2=$('srSlip')?$('srSlip').value:null,rdn=agg().all?String(agg().total):null;el.innerHTML=H;el.__h=H;if(keep!=null&&$('srCash'))$('srCash').value=keep;if(k2!=null&&$('srSlip')&&!(k2===''&&rdn))$('srSlip').value=k2}}
 function resHTML(){var c=SR.res.c,k=closingCalc(c),d=r2(k.diff),big=Math.abs(d)>=1;
   var R=function(a,b){return '<div class="srR"><span>'+a+'</span><span>'+b+'</span></div>'};
   var pill=Math.abs(d)<0.01?'<span class="pill zero">مطابق ✓</span>':!S.owner?'<span class="pill bad">فيه فرق</span>':d<0?'<span class="pill bad">عجز '+fmt(-d)+'</span>':'<span class="pill good">فايض '+fmt(d)+'</span>';
@@ -66,23 +71,23 @@ function resHTML(){var c=SR.res.c,k=closingCalc(c),d=r2(k.diff),big=Math.abs(d)>
   return h}
 async function save(){var L=mine(),x=L.find(function(y){return y.id===SR.open});if(!x)return;var v=vals(x);SR.err='';
   var took=null,cash;if(v.left!=null&&v.leftAll){took=0;cash=v.left}else{var cv=toNum(($('srCash')||{}).value);if(!(cv>=0)||String(($('srCash')||{}).value).trim()===''){SR.err=v.left!=null?'اكتب كم معك نقد.':'اكتب النقد اللي في الدرج.';el0();return}if(v.left!=null){took=cv;cash=r2(cv+v.left)}else cash=cv}
-  if(!SR.photo){SR.err='صوّر إيصال موازنة المدى.';el0();return}
-  var sv=toNum(($('srSlip')||{}).value);if(String(($('srSlip')||{}).value||'').trim()===''||!(sv>=0)){SR.err=SR.rd&&SR.rd.busy?'انتظر لين أقرأ الإيصال.':'اكتب مجموع الشبكة من الإيصال.';el0();return}
-  if(SR.rd&&SR.rd.dup){SR.err='هذي نفس صورة إيصال سابق — صوّر إيصال موازنتك أنت.';el0();return}
+  if(!(SR.ps||[]).length){SR.err='صوّر إيصال موازنة المدى.';el0();return}var G=agg();
+  var sv=toNum(($('srSlip')||{}).value);if(String(($('srSlip')||{}).value||'').trim()===''||!(sv>=0)){SR.err=G.busy?'انتظر لين أقرأ الإيصال.':'اكتب مجموع الشبكة من الإيصال.';el0();return}
+  if(G.dup){SR.err='فيه صورة إيصال مكررة — احذفها وصوّر إيصال موازنتك أنت.';el0();return}
   if(!SR.ack){SR.err='اضغط «هذي كل فواتيري» بعد ما تتأكد منها.';el0();return}
   if(v.float==null){SR.err='العهدة بانتظار عدّ الكاشير اللي قبلك.';el0();return}
   var b=document.querySelector('[data-srsave]');if(b)b.disabled=true;
   try{
-    photos.t=[SR.photo];var ph=await uploadPhoto('t');photos.t=[];if(!ph){SR.err='ما انرفعت صورة الإيصال — تأكد من الإنترنت وجرّب مرة ثانية.';if(b)b.disabled=false;el0();return}
+    photos.t=SR.ps.map(function(p){return p.b});var ph=await uploadPhoto('t');photos.t=[];if(!ph){SR.err='ما انرفعت صورة الإيصال — تأكد من الإنترنت وجرّب مرة ثانية.';if(b)b.disabled=false;el0();return}
     var cashSales=r2(v.float+v.cash),expd=r2(v.added+cashSales-v.inv),cd=r2(cash-expd);
-    var rec={incl:true,pos:{shift:x.id,openAt:x.openAt,closeAt:x.closeAt,dev:x.dev||null,exp:x.exp||null,pred:x.pred||null},date:v.date,cashier:v.who,shift:v.sh,float:v.float,leave:v.left!=null?v.left:cash,took:took,leftAll:v.left!=null?v.leftAll:null,floatFrom:null,added:v.added,card:v.card,cashSales:cashSales,refunds:0,invoices:v.inv,invoiceCount:v.cashPs.length,transfer:v.trx!=null?v.trx:v.tr,trb:v.trb,trm:v.trm,esc:v.esc,otherPaid:v.other,addedCount:v.rs.length+v.cdc.length,delAdded:r2(v.dr.reduce(function(a,y){return a+(+y.amount||0)},0)),delAddedCount:v.dr.length,delInv:r2(v.dp.reduce(function(a,y){return a+(+y.amount||0)},0)),delInvCount:v.dp.length,sales:r2(v.card+v.cash),counted:cash,cardTerm:sv,cashDiff:cd,cardDiff:r2(sv-v.card),diff:r2(cd+(sv-v.card)),note:'',madaPhoto:ph,madaSlip:{read:SR.rd&&SR.rd.read?SR.rd.total:null,typed:sv,manual:!(SR.rd&&SR.rd.read&&Math.abs(SR.rd.total-sv)<0.005),hash:SR.hash||null,dateISO:SR.rd&&SR.rd.dateISO||null,time:SR.rd&&SR.rd.time||null,terminalId:SR.rd&&SR.rd.terminalId||null,schemes:SR.rd&&SR.rd.schemes||null},invAck:{at:Date.now(),n:v.cashPs.length},needSend:true};
+    var rec={incl:true,pos:{shift:x.id,openAt:x.openAt,closeAt:x.closeAt,dev:x.dev||null,exp:x.exp||null,pred:x.pred||null},date:v.date,cashier:v.who,shift:v.sh,float:v.float,leave:v.left!=null?v.left:cash,took:took,leftAll:v.left!=null?v.leftAll:null,floatFrom:null,added:v.added,card:v.card,cashSales:cashSales,refunds:0,invoices:v.inv,invoiceCount:v.cashPs.length,transfer:v.trx!=null?v.trx:v.tr,trb:v.trb,trm:v.trm,esc:v.esc,otherPaid:v.other,addedCount:v.rs.length+v.cdc.length,delAdded:r2(v.dr.reduce(function(a,y){return a+(+y.amount||0)},0)),delAddedCount:v.dr.length,delInv:r2(v.dp.reduce(function(a,y){return a+(+y.amount||0)},0)),delInvCount:v.dp.length,sales:r2(v.card+v.cash),counted:cash,cardTerm:sv,cashDiff:cd,cardDiff:r2(sv-v.card),diff:r2(cd+(sv-v.card)),note:'',madaPhoto:ph,madaSlip:(function(){var P=SR.ps,f=P[0].rd||{};return {read:G.total,typed:sv,manual:!(G.all&&Math.abs(G.total-sv)<0.005),hash:P[0].hash||null,hashes:P.map(function(p){return p.hash}).filter(Boolean),dateISO:f.dateISO||null,time:f.time||null,terminalId:P.map(function(p){return p.rd&&p.rd.terminalId}).filter(Boolean).join(',')||null,schemes:[].concat.apply([],P.map(function(p){return p.rd&&p.rd.schemes||[]})),slips:P.map(function(p){var r=p.rd||{};return {read:r.read?r.total:null,dateISO:r.dateISO||null,time:r.time||null,terminalId:r.terminalId||null}})}})(),invAck:{at:Date.now(),n:v.cashPs.length},needSend:true};
     var ref=await addTo('months/'+v.date.slice(0,7)+'/closings',rec);
     var Lk=[];v.dp.forEach(function(y){Lk.push(['months/'+y.date.slice(0,7)+'/dels/'+y.id,{closingId:ref.id}])});v.dr.forEach(function(y){Lk.push(['months/'+y.date.slice(0,7)+'/receipts/'+y.id,{closingId:ref.id}])});v.rs.forEach(function(y){Lk.push(['months/'+(y.date||v.date).slice(0,7)+'/receipts/'+y.id,{closingId:ref.id}])});v.cdc.forEach(function(y){Lk.push(['sdisc/'+y.id,{closingId:ref.id}])});
     v.ps.forEach(function(y){if(y.kind==='exp')Lk.push(['months/'+(y.date||v.date).slice(0,7)+'/expenses/'+y.id,{closingId:ref.id}]);else (y.pair?S.ledger.filter(function(l){return l.pair===y.pair}):S.ledger.filter(function(l){return l.id===y.id})).forEach(function(l){Lk.push(['ledger/'+l.id,{closingId:ref.id}])})});
     var fail=[];for(var t=0;t<4;t++){fail=[];for(var i=0;i<Lk.length;i++){try{await S.db.doc(Lk[i][0]).update(Lk[i][1])}catch(e){fail.push(Lk[i])}}if(!fail.length)break;Lk=fail;await new Promise(function(r){setTimeout(r,1500*(t+1))})}
     if(fail.length){try{await S.db.doc('months/'+v.date.slice(0,7)+'/closings/'+ref.id).update({linkFail:fail.map(function(f){return f[0]})})}catch(e){}}
     var ok=false;for(var t2=0;t2<4&&!ok;t2++){try{var rr=await fetch('/api/shift/rec',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:x.id,cash:cash,closingId:ref.id})});var jj=await rr.json();ok=!!(jj&&(jj.ok||jj.err==='done'))}catch(e){}if(!ok)await new Promise(function(r){setTimeout(r,1500)})}
-    rec.id=ref.id;SR.res={c:rec,id:ref.id,month:v.date.slice(0,7),from:nm(x.pred&&x.pred.u),aj:v.aj,note:'',sent:false};SR.open=null;SR.photo=null;SR.rd=null;SR.hash=null;SR.ack=false;
+    rec.id=ref.id;SR.res={c:rec,id:ref.id,month:v.date.slice(0,7),from:nm(x.pred&&x.pred.u),aj:v.aj,note:'',sent:false};SR.open=null;psClear();SR.ack=false;
     if(Math.abs(rec.diff)>=1){try{await S.db.doc('months/'+SR.res.month+'/closings/'+ref.id).update({needReason:{at:Date.now(),diff:rec.diff}})}catch(e){}}
     SR.list=(SR.list||[]).filter(function(y){return y.id!==x.id});
   }catch(e){SR.err='ما انحفظت: '+(e&&e.message||e);if(b)b.disabled=false}
@@ -92,7 +97,9 @@ function slipImg(c){return new Promise(function(res){var L=closeText(c).replace(
   cv.toBlob(res,'image/png')})}
 function el0(){var el=$('shRec');if(el)el.__h=null;draw()}
 document.addEventListener('click',async function(e){var t=e.target;if(!t.closest||!t.closest('#shRec'))return;
-  var g=t.closest('[data-srgo]');if(g){SR.open=g.dataset.srgo;SR.err='';SR.ack=false;SR.photo=null;SR.rd=null;SR.hash=null;el0();return}
+  var g=t.closest('[data-srgo]');if(g){SR.open=g.dataset.srgo;SR.err='';SR.ack=false;psClear();el0();return}
+  var dl=t.closest('[data-srdel]');if(dl){var k=+dl.dataset.srdel,q=SR.ps[k];if(q){try{URL.revokeObjectURL(q.u)}catch(x){}SR.ps.splice(k,1)}SR.err='';el0();return}
+  var zm=t.closest('[data-srzoom]');if(zm){zm.style.maxHeight=zm.style.maxHeight==='none'?'170px':'none';return}
   if(t.closest('[data-srback]')){SR.open=null;el0();return}
   if(t.closest('[data-srack]')){SR.ack=!SR.ack;el0();return}
   if(t.closest('[data-srpay]')){var p=document.querySelector('[data-cwgo="pay"]');if(p)p.click();else toast('سجّل الفاتورة من «فاتورة دفعتها من الدرج»');return}
@@ -108,7 +115,7 @@ document.addEventListener('click',async function(e){var t=e.target;if(!t.closest
       var cid=x.pred.closingId,c=cid&&[].concat(S.closings||[],PM('closings')||[]).find(function(y){return y&&y.id===cid});
       if(c&&c.date){var nc=c.took!=null?r2(+c.took+nv):nv,dlt=r2(nc-(+c.counted||0)),cd=r2((+c.cashDiff||0)+dlt);var up={counted:nc,leave:nv,cashDiff:cd,diff:r2((+c.diff||0)+dlt),floatFix:{prev:+c.counted||0,now:nv,at:Date.now(),by:nm(x.u),why:x.why||''}};if(Math.abs(up.diff)>=1&&!(c.note||'').trim())up.needReason={at:Date.now(),diff:up.diff};try{await S.db.doc('months/'+c.date.slice(0,7)+'/closings/'+cid).update(up)}catch(e){}}
       SR.rej=(SR.rej||[]).filter(function(y){return y.pred.id!==pid});toast('✓ انحفظ — تطلع العهدة الجديدة عند '+nm(x.u));SR.at=0;load(true)}catch(e){SR.rerr='ما انحفظ، جرّب مرة ثانية';rs.disabled=false}el0();return}});
-document.addEventListener('change',async function(e){if(e.target&&e.target.id==='srPh'){var f=e.target.files&&e.target.files[0];if(!f)return;try{SR.photo=typeof shrink==='function'?await shrink(f,true):f}catch(x){SR.photo=f}SR.err='';SR.rd=null;el0();readSlip(SR.photo)}});
+document.addEventListener('change',async function(e){if(e.target&&e.target.id==='srPh'){var f=e.target.files&&e.target.files[0];if(!f)return;var b0;try{b0=typeof shrink==='function'?await shrink(f,true):f}catch(x){b0=f}var p={b:b0,rd:null,hash:null,u:URL.createObjectURL(b0)};SR.ps=SR.ps||[];SR.ps.push(p);SR.err='';el0();readSlip(p)}});
 setInterval(function(){try{if(typeof S==='undefined'||!S.db)return;load(false);draw()}catch(e){}},1500);
 /* owner 27 Nov: the old closing form (and its menu entry) is hidden from cashiers; they close from the waiting shift card only. The owner keeps it. */
 function hideOld(){try{if(typeof S==='undefined'||S.owner)return;var c=$('closeCard');if(c&&c.style.display!=='none')c.style.display='none';
