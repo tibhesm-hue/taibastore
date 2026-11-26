@@ -36,9 +36,10 @@
         var bh = '<div style="display:flex;gap:8px">' + box("shop") + box("del") + '</div><div style="display:flex;justify-content:flex-end;margin-top:6px"><a class="btn sm ghost" href="/pos/">فتح نقاط البيع</a></div>'; if (pb.__h !== bh) { pb.innerHTML = bh; pb.__h = bh; } }
       document.getElementById("posSgBody").innerHTML = "";
       /* owner 26 Nov («وردية أحمد وينها»): a shift opened yesterday and still open shows too (the server lists one day only) */
-      var yd = new Date(Date.parse(j.day + "T12:00:00Z") - 864e5).toISOString().slice(0, 10);
-      fetch("/api/pos/shifts?f=" + yd + "&t=" + j.day, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (s) {
-        if (!s || !s.ok) return; s.shifts = (s.shifts || []).filter(function (h) { return h.day === j.day || h.st !== "closed"; }); var el = document.getElementById("posSgSh"); if (!el) { el = document.createElement("div"); el.id = "posSgSh"; document.getElementById("posSgBody").appendChild(el); }
+      /* owner 26 Nov («كلها تعرض الورديات المفتوحة سواء اليوم او قبل سنة»): every shift still open, however old, plus today's closed ones */
+      var openQ = (typeof S !== "undefined" && S.db) ? S.db.collection("posshift").where("st", "==", "open").get().then(function (sn) { return sn.docs.map(function (d) { return Object.assign({}, d.data(), { id: d.id }); }); }).catch(function () { return []; }) : Promise.resolve([]);
+      Promise.all([fetch("/api/pos/shifts", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }), openQ]).then(function (R) {
+        var s = R[0]; if (!s || !s.ok) return; var seen = {}; s.shifts = (s.shifts || []).concat(R[1]).filter(function (h) { if (!h || seen[h.id]) return false; seen[h.id] = 1; return h.day === j.day || h.st !== "closed"; }).sort(function (x, y) { return (y.openAt || 0) - (x.openAt || 0); }); var el = document.getElementById("posSgSh"); if (!el) { el = document.createElement("div"); el.id = "posSgSh"; document.getElementById("posSgBody").appendChild(el); }
         var hm = function (x) { var d = new Date(x); return d.toTimeString().slice(0, 5); }, col = function (v) { return Math.abs(v) < 0.01 ? "color:#15803d" : "color:#b91c1c"; };
         el.innerHTML = '<div style="font-weight:700;margin:12px 0 4px">ورديات اليوم</div>' + (s.shifts.length ? s.shifts.map(function (h) {
           var top = '<div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(h.u) + ' · ' + (h.br === "del" ? "التوصيل" : "المبيعات") + '</b><span class="small muted">' + hm(h.openAt) + (h.closeAt ? ' – ' + hm(h.closeAt) : ' · مفتوحة') + '</span></div>';
