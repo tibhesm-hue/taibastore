@@ -56,6 +56,12 @@ tr.last td{background:#f0fdf4}
 .pms{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
 .pm{min-width:0;height:46px;font-size:16px;border-radius:10px;border:1px solid #cfd8df;font-size:15px;color:#4a5866}
 .pm.on{background:#16a34a;color:#fff;border-color:#16a34a;font-weight:600}
+.pm.dim{opacity:.4}.pm.lock{opacity:.35;background:#eceff1}.pm.hot{border-color:#0e5a3c;box-shadow:0 0 0 2px #0e5a3c55;font-weight:700}
+#xfBar{display:none;margin:0 0 6px;padding:6px 8px;border:1px solid #0e5a3c;border-radius:10px;background:#eef7f2}
+#xfBar .xh{font-size:13px;color:#0e5a3c;font-weight:700;margin-bottom:4px}
+#xfBar .xl{display:flex;flex-direction:column;gap:4px;max-height:132px;overflow:auto}
+.xfc{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #cfd8df;border-radius:8px;background:#fff;font-size:14px;cursor:pointer}
+.xfc.on{border-color:#0e5a3c;background:#d9f0e4;font-weight:700}.xfc b{min-width:76px}.xfc span{flex:1;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.xfc a{color:#0e5a3c;font-size:13px}
 .fl{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:15px;color:#4a5866}
 .in{width:170px;height:46px;border:2px solid #16a34a;border-radius:10px;padding:0 14px;font-size:20px;font-weight:600;color:#1b2430;outline:none;text-align:left;direction:ltr}
 .in[readonly]{border:1px solid #cfd8df;background:#f6f8fa}
@@ -180,6 +186,7 @@ tr.last td{background:#f0fdf4}
    <div class="pms" style="margin-bottom:0" id="lvBtns"><button class="pm" data-lv="1">قريب</button><button class="pm" data-lv="2">متوسط</button><button class="pm" data-lv="3">بعيد</button></div>
   </div>
   <div class="card">
+   <div id="xfBar"></div>
    <div class="pms" id="pmRow" style="grid-template-columns:repeat(5,minmax(0,1fr))"><button class="pm" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button><button class="pm" data-m="aj" id="ajBtn">آجل</button></div>
    <div id="ajBox" style="display:none;margin-top:8px">
     <input class="in" id="ajQ" placeholder="ابحث باسم العميل" style="width:100%;margin-bottom:6px">
@@ -423,7 +430,19 @@ document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()}
 let aT=[],aTm=null;
 $("ajQ").addEventListener("keydown",e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(!$("ajQ").value)aT=[];aT.push(performance.now())}},true);
 $("ajQ").addEventListener("input",()=>{clearTimeout(aTm);aTm=setTimeout(()=>{const t=$("ajQ").value.trim();if(t.length<4||aT.length<4)return;for(let i=1;i<aT.length;i++)if(aT[i]-aT[i-1]>45)return;const x=byCode(t);if(x){$("ajQ").value="";aT=[];ajDraw();add(x)}else if(/^\d{6,}$/.test(t)){$("ajQ").value="";aT=[];ajDraw();warn(t)}},120)});
-function setMode(m){if(m==="aj"&&isDel())m="cash";mode=m;LMODE=performance.now();document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+let XF=[],XSEL="";
+async function xfLoad(){try{const j=await api("/api/pos/xfer");if(j&&j.ok){XF=(j.list||[]).filter(x=>x.free);xfDraw()}}catch(e){}}
+function xfDraw(){if(!ME)return;const bar=$("xfBar"),tb=document.querySelector('.pm[data-m="tr"]');if(!bar||!tb)return;let t=0;try{t=totals().t}catch(e){}
+ if(XSEL&&!XF.some(x=>x.id===XSEL))XSEL="";
+ if(!XSEL&&t>0){const m=XF.filter(x=>Math.abs(x.amt-t)<=0.5);if(m.length)XSEL=m[0].id}
+ tb.classList.toggle("lock",!ME.owner&&!XF.length);tb.classList.toggle("hot",XF.length>0);
+ document.querySelectorAll('.pm[data-m="cash"],.pm[data-m="card"],.pm[data-m="mix"]').forEach(b=>b.classList.toggle("dim",XF.length>0));
+ if(!XF.length){if(bar.innerHTML)bar.innerHTML="";bar.style.display="none";return}
+ const h='<div class="xh">'+(XF.length===1?"وصل تحويل":"وصلت "+XF.length+" تحويلات")+' · اختر إيصال هذه الفاتورة ثم «تحويل»</div><div class="xl">'+XF.map(x=>'<div class="xfc'+(x.id===XSEL?" on":"")+'" data-x="'+x.id+'"><b>'+x.amt.toFixed(2)+'</b><span>'+esc((x.t||"").slice(0,5)+(x.sender?" · "+x.sender:"")+(x.bank?" · "+x.bank:""))+'</span><a href="/api/pos/xfimg?id='+x.id+'" target="_blank" data-v="1">عرض</a></div>').join("")+'</div>';
+ if(bar.dataset.h!==h){bar.dataset.h=h;bar.innerHTML=h;bar.querySelectorAll(".xfc").forEach(c=>c.onclick=e=>{if(e.target.dataset.v)return;XSEL=c.dataset.x;xfDraw()})}
+ bar.style.display="block"}
+setInterval(()=>{if(ME)xfLoad()},8000);setInterval(()=>{if(ME)xfDraw()},1500);
+function setMode(m){if(m==="aj"&&isDel())m="cash";if(m==="tr"&&ME&&!ME.owner&&!XF.length){$("err").textContent="«تحويل» يتفعّل لما يوصل إيصال العميل: شاركه من الواتساب إلى «دفتر طيبة»";beep(false);return false}if(m==="tr")$("err").textContent="";mode=m;LMODE=performance.now();document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
 document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
 $("cashIn").addEventListener("input",mixCalc);
@@ -469,7 +488,9 @@ async function save(){
  if(mode==="aj"&&!AJ.cust){$("err").textContent="اختر العميل للآجل";$("ajQ").focus();return}
  if(mode==="mix"&&(cash<=0||cash>=t)){$("err").textContent="اكتب المبلغ النقدي (أقل من الإجمالي)";$("cashIn").focus();return}
  if(isDel()&&(DLV.fee==null||!DLV.n||!DLV.lv)&&!save.warned){save.warned=1;$("err").textContent="انتبه: ما اخترت "+[DLV.fee==null?"رسوم التوصيل":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean).join(" و")+". اضغط حفظ مرة ثانية إذا تبي تحفظ كذا.";beep(false);return}save.warned=0;
- const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};if(mode==="aj")s.cust=AJ.cust;
+ if(mode==="tr"&&!ME.owner){if(!XSEL&&XF.length===1)XSEL=XF[0].id;if(!XSEL){$("err").textContent="اختر إيصال التحويل من القائمة";beep(false);xfDraw();return}}
+ if(mode==="tr"&&XSEL&&!save.xw){const xr=XF.find(x=>x.id===XSEL);if(xr&&Math.abs(xr.amt-t)>0.5){save.xw=1;$("err").textContent="مبلغ الإيصال "+xr.amt.toFixed(2)+" لا يطابق الفاتورة "+t.toFixed(2)+". اضغط حفظ مرة ثانية لو هذا الإيصال الصحيح.";beep(false);return}}save.xw=0;
+ const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};if(mode==="tr"&&XSEL)s.xf=XSEL;const usedXf=s.xf;if(mode==="aj")s.cust=AJ.cust;
  if(isDel()){const dr=(ME.drivers||[]).find(x=>x.n===DLV.n);s.dlv={fee:DLV.fee||0,n:DLV.n,lv:DLV.lv,name:dr?dr.name:""}}
  if(CUR_ORD)s.ord=CUR_ORD.id;
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
@@ -478,13 +499,14 @@ async function save(){
  catch(e){let j2=null;for(let i=0;i<2&&!j2;i++){await new Promise(r=>setTimeout(r,1200));try{const x=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});if(x&&x.ok)j2=x}catch(e2){}}
   if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no,j2.zqr);netState(true)}else{const rn=rvTake("s");if(rn){s.no=rn;s.dev=DEV}setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
+ if(usedXf){XF=XF.filter(x=>x.id!==usedXf);XSEL="";xfDraw();xfLoad()}
 }
 function done(snap,t,cash,no,zqr){LSAVE=performance.now();LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}enterSave()},true);
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-fee],button[data-drv],button[data-lv],button[data-m=cash],button[data-m=card],button[data-m=tr]");if(b)setTimeout(()=>{try{if(!$("cashIn")||document.activeElement!==$("cashIn"))$("q").focus()}catch(x){}},0)});
-document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.repeat&&/^F\d+$/.test(e.key)){e.preventDefault();return}if(e.key==="F2"){e.preventDefault();setMode("cash");if(enterOk())save()}else if(e.key==="F3"){e.preventDefault();setMode("card");if(enterOk())save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();setMode("tr");if(enterOk())save()}else if(e.key==="F8"){e.preventDefault();hold()}});
+document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.repeat&&/^F\d+$/.test(e.key)){e.preventDefault();return}if(e.key==="F2"){e.preventDefault();setMode("cash");if(enterOk())save()}else if(e.key==="F3"){e.preventDefault();setMode("card");if(enterOk())save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();if(setMode("tr")!==false&&enterOk())save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
  return{fee:(d.dlv&&d.dlv.fee)||0,zqr:(d.z&&d.z.qr)||"",aj:Math.abs(d.aj||0),cust:d.cust||"",ret:d.kind==="ret",refNo:d.refNo,no:d.no,lines:d.lines.map(l=>({n:l[1],p:l[2],q:Math.abs(l[3])})),total:Math.abs(d.total),cash:Math.abs(d.cash),card:Math.abs(d.card),tr:Math.abs(d.tr||0),mode:d.mode,at:new Date(d.at),vat:Math.abs(d.vat||0)}}catch(e){return null}}
@@ -631,7 +653,7 @@ try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").ca
  if(!ME.owner){$("scBtn").style.display="";let sj=null;try{sj=await api("/api/pos/shift");try{localStorage.setItem("posshift_"+ME.email,JSON.stringify(sj.shift||null))}catch(e){}}catch(e){let s0=null;try{s0=JSON.parse(localStorage.getItem("posshift_"+ME.email)||"null")}catch(x){}sj={shift:s0||{offline:1}}}SHIFT=sj.shift;if(!SHIFT){$("shWho").textContent=ME.name+" · "+ME.brName;view("open");if(!OFF)$("shGo").click()}}
  $("brName").textContent=ME.brName+(posDev()?" · "+posDev():"");if(SHIFT)flLoad();if(isDel()){$("ajBtn").style.display="none";$("pmRow").style.gridTemplateColumns="repeat(4,minmax(0,1fr))"}if(isDel()){$("drvBtns").innerHTML=(ME.drivers||[]).map(x=>`<button class="pm" data-drv="${x.n}">${esc(x.name)}</button>`).join("");dlvDraw()}$("uName").textContent=ME.name;$("vatRows").style.display=ME.vat?"block":"none";
  if(ME.owner){$("toLedger").style.display="";$("ownCard").style.display="block";$("brCard").style.display="block";$("lastTtl").textContent="آخر الفواتير";loadBr()}
- cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
+ xfLoad();cartBack();try{if(isDel())dlvDraw()}catch(e){}try{ordCurDraw()}catch(e){}
  render();pendShow();heldShow();try{await loadCat()}catch(e){}/* owner 24 Nov: a price changed anywhere reaches this screen within a minute */setInterval(async()=>{try{const v=await api("/api/pos/catv");if(v&&v.ok&&window.CATAT!==v.at)await loadCat()}catch(e){}},8000);try{ordLoad()}catch(e){}setInterval(()=>{try{ordLoad()}catch(e){}},8000);try{loadDay()}catch(e){}setInterval(loadDay,ME.owner?4000:20000);flush();rvTop();setInterval(rvTop,60000)})();
 </script>
 <script>

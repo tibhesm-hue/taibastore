@@ -1,1 +1,43 @@
-{"name":"دفتر أسواق طيبة","short_name":"دفتر طيبة","lang":"ar","dir":"rtl","id":"/app/","start_url":"/app/","scope":"/app/","display":"standalone","background_color":"#f4f6f5","theme_color":"#0e5a3c","icons":[{"src":"/i192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"/i512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+ "name": "دفتر أسواق طيبة",
+ "short_name": "دفتر طيبة",
+ "lang": "ar",
+ "dir": "rtl",
+ "id": "/app/",
+ "start_url": "/app/",
+ "scope": "/app/",
+ "display": "standalone",
+ "background_color": "#f4f6f5",
+ "theme_color": "#0e5a3c",
+ "icons": [
+  {
+   "src": "/i192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any maskable"
+  },
+  {
+   "src": "/i512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ],
+ "share_target": {
+  "action": "/app/share",
+  "method": "POST",
+  "enctype": "multipart/form-data",
+  "params": {
+   "title": "title",
+   "text": "text",
+   "files": [
+    {
+     "name": "img",
+     "accept": [
+      "image/*"
+     ]
+    }
+   ]
+  }
+ }
+}
