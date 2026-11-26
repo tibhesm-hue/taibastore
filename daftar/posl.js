@@ -35,8 +35,10 @@
       var sgc = document.getElementById("sgCard"); if (sgc) { var pb = document.getElementById("posBr"); if (!pb) { pb = document.createElement("div"); pb.id = "posBr"; } if (pb.parentNode !== sgc) sgc.insertBefore(pb, sgc.children[1] || null);
         var bh = '<div style="display:flex;gap:8px">' + box("shop") + box("del") + '</div><div style="display:flex;justify-content:flex-end;margin-top:6px"><a class="btn sm ghost" href="/pos/">فتح نقاط البيع</a></div>'; if (pb.__h !== bh) { pb.innerHTML = bh; pb.__h = bh; } }
       document.getElementById("posSgBody").innerHTML = "";
-      fetch("/api/pos/shifts", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (s) {
-        if (!s || !s.ok) return; var el = document.getElementById("posSgSh"); if (!el) { el = document.createElement("div"); el.id = "posSgSh"; document.getElementById("posSgBody").appendChild(el); }
+      /* owner 26 Nov («وردية أحمد وينها»): a shift opened yesterday and still open shows too (the server lists one day only) */
+      var yd = new Date(Date.parse(j.day + "T12:00:00Z") - 864e5).toISOString().slice(0, 10);
+      fetch("/api/pos/shifts?f=" + yd + "&t=" + j.day, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (s) {
+        if (!s || !s.ok) return; s.shifts = (s.shifts || []).filter(function (h) { return h.day === j.day || h.st !== "closed"; }); var el = document.getElementById("posSgSh"); if (!el) { el = document.createElement("div"); el.id = "posSgSh"; document.getElementById("posSgBody").appendChild(el); }
         var hm = function (x) { var d = new Date(x); return d.toTimeString().slice(0, 5); }, col = function (v) { return Math.abs(v) < 0.01 ? "color:#15803d" : "color:#b91c1c"; };
         el.innerHTML = '<div style="font-weight:700;margin:12px 0 4px">ورديات اليوم</div>' + (s.shifts.length ? s.shifts.map(function (h) {
           var top = '<div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(h.u) + ' · ' + (h.br === "del" ? "التوصيل" : "المبيعات") + '</b><span class="small muted">' + hm(h.openAt) + (h.closeAt ? ' – ' + hm(h.closeAt) : ' · مفتوحة') + '</span></div>';
