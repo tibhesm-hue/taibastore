@@ -188,7 +188,7 @@ tr.last td{background:#f0fdf4}
    <div class="pms" style="margin-bottom:0" id="lvBtns"><button class="pm" data-lv="1">قريب</button><button class="pm" data-lv="2">متوسط</button><button class="pm" data-lv="3">بعيد</button></div></div>
   </div>
   <div class="card">
-   <div id="xfBar"></div>
+   <div id="xfBar"></div><div id="escBar"></div>
    <div class="pms" id="pmRow" style="grid-template-columns:repeat(5,minmax(0,1fr))"><button class="pm" data-m="cash">نقدي</button><button class="pm" data-m="card">شبكة</button><button class="pm" data-m="mix">نقدي + شبكة</button><button class="pm" data-m="tr">تحويل</button><button class="pm" data-m="aj" id="ajBtn">آجل</button></div>
    <div id="ajBox" style="display:none;margin-top:8px">
     <input class="in" id="ajQ" placeholder="ابحث باسم العميل" style="width:100%;margin-bottom:6px">
@@ -314,7 +314,9 @@ function add(x,q){if(!x)return;LADD=performance.now();warnOff();const L=cart.fin
 let DLV={fee:null,n:0,lv:0};
 function isDel(){return ME&&ME.br==="del"}
 function itemsT(){let t=0,n=0;for(const l of cart){t=r2(t+r2(l.p*l.q));n+=l.q}return{t,n}}
-let LOCS=[],LSEL="";
+let LOCS=[],LSEL="",STRICT=false,ESCL="",XESC="",ASKX=false;
+const ESC_L=["العميل ما أرسل الموقع","المشاركة ما اشتغلت","استلام من المحل","عميل معروف","غير ذلك"],ESC_T=["الإيصال ما وصل","المشاركة ما اشتغلت","العميل حوّل لرقم ثاني","غير ذلك"];
+function escBtns(a,cur,k){return a.map(r=>'<button type="button" class="pm'+(r===cur?" on":"")+'" data-esc="'+k+'" data-r="'+r+'" style="height:34px;font-size:13px;margin:2px;flex:0 0 auto;padding:0 10px">'+r+"</button>").join("")}
 function locApply(sv){const l=LOCS.find(x=>x.id===LSEL);if(!l){LSEL="";return}DLV.fee=sv>=20?l.fee1:l.fee0;DLV.lv=l.lv;DLV.man=true}
 function ordOk(){return !!(CUR_ORD&&(CUR_ORD.loc||CUR_ORD.dist==="pickup"))}
 function totals(){const a=itemsT();if(isDel()&&LSEL)locApply(a.t);if(isDel()&&DLV.fee>0)a.t=r2(a.t+DLV.fee);return a}
@@ -323,13 +325,13 @@ function dlvDraw(){if(!isDel())return;$("dlvCard").style.display="block";
  $("feeIn").classList.toggle("on",$("feeIn").value!=="");
  document.querySelectorAll("[data-drv]").forEach(b=>b.classList.toggle("on",+b.dataset.drv===DLV.n));
  document.querySelectorAll("[data-lv]").forEach(b=>b.classList.toggle("on",+b.dataset.lv===DLV.lv));
- if(!ME.owner){$("manDl").style.display="none";$("manLv").style.display="none"}
- if(!LSEL&&!ordOk()&&LOCS.length===1&&!ME.owner){LSEL=LOCS[0].id}
- {const lb=$("locBar"),L=["","قريب","متوسط","بعيد"],h=LOCS.length?'<div class="small2" style="margin-bottom:4px">موقع العميل (وصل من المشاركة)</div>'+LOCS.map(x=>'<div class="xfc'+(x.id===LSEL?" on":"")+'" data-l="'+x.id+'" style="margin-bottom:4px"><b>'+L[x.lv]+'</b><span>'+x.d.toFixed(1)+' كم · رسوم '+x.fee0+' (أو '+x.fee1+' لو 20+) · '+esc((x.t||"").slice(0,5))+'</span><a href="https://maps.google.com/?q='+x.lat+','+x.lng+'" target="_blank" data-v="1">خريطة</a></div>').join(""):(ME.owner||ordOk()?"":'<div class="small2" style="margin-bottom:6px;color:#b91c1c">ما وصل موقع العميل — اطلب منه يرسل موقعه، ثم شاركه إلى «دفتر طيبة»</div>');if(lb.dataset.h!==h){lb.dataset.h=h;lb.innerHTML=h;lb.querySelectorAll(".xfc").forEach(c=>c.onclick=e=>{if(e.target.dataset.v)return;LSEL=c.dataset.l;render()})}}
- const needLoc=!ME.owner&&!LSEL&&!ordOk();
- const miss=[needLoc?"موقع العميل":(DLV.fee==null?"الرسوم":""),!DLV.n?"المندوب":"",(!LSEL&&!ordOk()&&!DLV.lv&&ME.owner)?"المسافة":""].filter(Boolean);$("dlvSum").textContent=miss.length?"باقي: "+miss.join("، "):"✓";$("dlvSum").style.color=miss.length?"#b91c1c":"#15803d";
+ {const hide=STRICT&&!ME.owner&&!ESCL;$("manDl").style.display=hide?"none":"";$("manLv").style.display=hide?"none":""}
+ if(STRICT&&!LSEL&&!ordOk()&&LOCS.length===1&&!ME.owner){LSEL=LOCS[0].id}
+ {const lb=$("locBar"),L=["","قريب","متوسط","بعيد"],h=LOCS.length?'<div class="small2" style="margin-bottom:4px">موقع العميل (وصل من المشاركة)</div>'+LOCS.map(x=>'<div class="xfc'+(x.id===LSEL?" on":"")+'" data-l="'+x.id+'" style="margin-bottom:4px"><b>'+L[x.lv]+'</b><span>'+x.d.toFixed(1)+' كم · رسوم '+x.fee0+' (أو '+x.fee1+' لو 20+) · '+esc((x.t||"").slice(0,5))+'</span><a href="https://maps.google.com/?q='+x.lat+','+x.lng+'" target="_blank" data-v="1">خريطة</a></div>').join(""):((!STRICT||ME.owner||ordOk())?"":ESCL?'<div class="small2" style="margin-bottom:6px;color:#b45309">بدون موقع: '+esc(ESCL)+" — أدخل الرسوم والمسافة يدوياً</div>":'<div class="small2" style="margin-bottom:6px;color:#b91c1c">ما وصل موقع العميل — اطلب منه يرسل موقعه ثم شاركه إلى «دفتر طيبة»، أو اختر السبب:</div><div style="display:flex;flex-wrap:wrap;margin-bottom:6px">'+escBtns(ESC_L,"","l")+"</div>");if(lb.dataset.h!==h){lb.dataset.h=h;lb.innerHTML=h;lb.querySelectorAll(".xfc").forEach(c=>c.onclick=e=>{if(e.target.dataset.v)return;LSEL=c.dataset.l;render()})}}
+ const needLoc=STRICT&&!ME.owner&&!LSEL&&!ordOk()&&!ESCL;
+ const miss=[needLoc?"موقع العميل":(DLV.fee==null?"الرسوم":""),!DLV.n?"المندوب":"",(!LSEL&&!ordOk()&&!DLV.lv&&(ME.owner||!STRICT||ESCL))?"المسافة":""].filter(Boolean);$("dlvSum").textContent=miss.length?"باقي: "+miss.join("، "):"✓";$("dlvSum").style.color=miss.length?"#b91c1c":"#15803d";
  $("feeRow").style.display=DLV.fee>0?"flex":"none";$("feeV").textContent=f2(DLV.fee||0)}
-function dlvReset(){LSEL="";DLV={fee:null,n:0,lv:0};$("feeIn").value="";dlvDraw()}
+function dlvReset(){LSEL="";ESCL="";DLV={fee:null,n:0,lv:0};$("feeIn").value="";dlvDraw()}
 /* owner 24 Nov: a refresh must not lose the sale in progress — the cart is kept in this browser until the invoice is saved */
 function cartKeep(){try{localStorage.setItem("poscart_"+(ME&&ME.email||""),JSON.stringify({at:Date.now(),cart:cart,ord:CUR_ORD,dlv:DLV}))}catch(e){}}
 function cartBack(){try{const o=JSON.parse(localStorage.getItem("poscart_"+(ME&&ME.email||""))||"null");if(o&&Array.isArray(o.cart)&&o.cart.length&&Date.now()-o.at<36*3600e3){cart=o.cart;if(o.ord)CUR_ORD=o.ord;if(o.dlv)DLV=o.dlv}}catch(e){}}
@@ -440,18 +442,18 @@ let aT=[],aTm=null;
 $("ajQ").addEventListener("keydown",e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(!$("ajQ").value)aT=[];aT.push(performance.now())}},true);
 $("ajQ").addEventListener("input",()=>{clearTimeout(aTm);aTm=setTimeout(()=>{const t=$("ajQ").value.trim();if(t.length<4||aT.length<4)return;for(let i=1;i<aT.length;i++)if(aT[i]-aT[i-1]>45)return;const x=byCode(t);if(x){$("ajQ").value="";aT=[];ajDraw();add(x)}else if(/^\d{6,}$/.test(t)){$("ajQ").value="";aT=[];ajDraw();warn(t)}},120)});
 let XF=[],XSEL="",XST=0;
-async function xfLoad(){try{const j=await api("/api/pos/xfer");if(j&&j.ok){XF=(j.list||[]).filter(x=>x.free);LOCS=(j.locs||[]).filter(x=>x.free);if(isDel()){const t=totals();dlvDraw()}XST=j.stale||0;xfDraw()}}catch(e){}}
+async function xfLoad(){try{const j=await api("/api/pos/xfer");if(j&&j.ok){XF=(j.list||[]).filter(x=>x.free);LOCS=(j.locs||[]).filter(x=>x.free);STRICT=!!j.strict;if(isDel()){const t=totals();dlvDraw()}XST=j.stale||0;xfDraw()}}catch(e){}}
 function xfDraw(){if(!ME)return;const bar=$("xfBar"),tb=document.querySelector('.pm[data-m="tr"]');if(!bar||!tb)return;let t=0;try{t=totals().t}catch(e){}
  if(XSEL&&!XF.some(x=>x.id===XSEL))XSEL="";
  if(!XSEL&&t>0){const m=XF.filter(x=>Math.abs(x.amt-t)<=0.5);if(m.length)XSEL=m[0].id}
- tb.classList.toggle("lock",!ME.owner&&!XF.length);tb.classList.toggle("hot",XF.length>0);
+ tb.classList.toggle("lock",STRICT&&!ME.owner&&!XF.length&&!XESC);{const eb=$("escBar");const h=(STRICT&&ASKX&&!XF.length&&!XESC)?'<div class="small2" style="margin:4px 0">سبب عدم وجود إيصال:</div><div style="display:flex;flex-wrap:wrap">'+escBtns(ESC_T,"","t")+"</div>":"";if(eb.dataset.h!==h){eb.dataset.h=h;eb.innerHTML=h}}tb.classList.toggle("hot",XF.length>0);
  document.querySelectorAll('.pm[data-m="cash"],.pm[data-m="card"],.pm[data-m="mix"]').forEach(b=>b.classList.toggle("dim",XF.length>0));
  if(!XF.length){if(bar.innerHTML)bar.innerHTML="";bar.style.display="none";return}
  const h='<div class="xh">'+(ME.owner&&XST?"<span style=\"color:#b91c1c\">"+XST+" إيصال لم يُستخدم أكثر من ساعتين</span> · ":"")+(XF.length===1?"وصل تحويل":"وصلت "+XF.length+" تحويلات")+' · اختر إيصال هذه الفاتورة ثم «تحويل»</div><div class="xl">'+XF.map(x=>'<div class="xfc'+(x.id===XSEL?" on":"")+'" data-x="'+x.id+'"><b>'+x.amt.toFixed(2)+'</b><span>'+esc((x.t||"").slice(0,5)+(x.sender?" · "+x.sender:"")+(x.bank?" · "+x.bank:""))+'</span><a href="/api/pos/xfimg?id='+x.id+'" target="_blank" data-v="1">عرض</a></div>').join("")+'</div>';
  if(bar.dataset.h!==h){bar.dataset.h=h;bar.innerHTML=h;bar.querySelectorAll(".xfc").forEach(c=>c.onclick=e=>{if(e.target.dataset.v)return;XSEL=c.dataset.x;xfDraw()})}
  bar.style.display="block"}
 setInterval(()=>{if(ME)xfLoad()},8000);setInterval(()=>{if(ME)xfDraw()},1500);
-function setMode(m){if(m==="aj"&&isDel())m="cash";if(m==="tr"&&ME&&!ME.owner&&!XF.length){$("err").textContent="«تحويل» يتفعّل لما يوصل إيصال العميل: شاركه من الواتساب إلى «دفتر طيبة»";beep(false);return false}if(m==="tr")$("err").textContent="";mode=m;LMODE=performance.now();document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
+function setMode(m){if(m==="aj"&&isDel())m="cash";if(m==="tr"&&ME&&!ME.owner&&STRICT&&!XF.length&&!XESC){ASKX=true;xfDraw();$("err").textContent="ما وصل إيصال: اختر السبب من القائمة أو شارك الإيصال إلى «دفتر طيبة»";beep(false);return false}if(m==="tr")$("err").textContent="";mode=m;LMODE=performance.now();document.querySelectorAll(".pm[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m));$("mixBox").style.display=m==="mix"?"block":"none";$("ajBox").style.display=m==="aj"?"block":"none";if(m==="aj"){ajLoad();setTimeout(()=>$("ajQ").focus(),0)}else{AJ.cust=""}ajTopDraw();if(m==="mix"){$("cashIn").focus();$("cashIn").select()}mixCalc()}
 document.querySelectorAll(".pm[data-m]").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 function mixCalc(){const t=totals().t,c=+$("cashIn").value||0;$("cardIn").value=f2(Math.max(0,t-c))}
 $("cashIn").addEventListener("input",mixCalc);
@@ -496,12 +498,12 @@ async function save(){
  const t=totals().t;let cash=mode==="cash"?t:(mode==="card"||mode==="tr"||mode==="aj")?0:r2(+$("cashIn").value||0);
  if(mode==="aj"&&!AJ.cust){$("err").textContent="اختر العميل للآجل";$("ajQ").focus();return}
  if(mode==="mix"&&(cash<=0||cash>=t)){$("err").textContent="اكتب المبلغ النقدي (أقل من الإجمالي)";$("cashIn").focus();return}
- if(isDel()&&!ME.owner&&!LSEL&&!ordOk()){$("err").textContent="ما تقدر تحفظ فاتورة توصيل بلا موقع العميل: اطلب منه يرسل موقعه وشاركه إلى «دفتر طيبة»";beep(false);return}
+ if(isDel()&&STRICT&&!ME.owner&&!LSEL&&!ordOk()&&!ESCL){$("err").textContent="ما تقدر تحفظ فاتورة توصيل بلا موقع العميل: اطلب منه يرسل موقعه وشاركه إلى «دفتر طيبة»";beep(false);return}
  if(isDel()&&(DLV.fee==null||!DLV.n||(!DLV.lv&&!ordOk()))&&!save.warned){save.warned=1;$("err").textContent="انتبه: ما اخترت "+[DLV.fee==null?"رسوم التوصيل":"",!DLV.n?"المندوب":"",!DLV.lv?"المسافة":""].filter(Boolean).join(" و")+". اضغط حفظ مرة ثانية إذا تبي تحفظ كذا.";beep(false);return}save.warned=0;
- if(mode==="tr"&&!ME.owner){if(!XSEL&&XF.length===1)XSEL=XF[0].id;if(!XSEL){$("err").textContent="اختر إيصال التحويل من القائمة";beep(false);xfDraw();return}}
+ if(mode==="tr"&&!ME.owner){if(!XSEL&&XF.length===1)XSEL=XF[0].id;if(!XSEL&&STRICT&&!XESC){ASKX=true;$("err").textContent="اختر إيصال التحويل من القائمة أو سبب عدم وجوده";beep(false);xfDraw();return}}
  if(mode==="tr"&&XSEL&&!save.xw){const xr=XF.find(x=>x.id===XSEL);if(xr&&Math.abs(xr.amt-t)>0.5){save.xw=1;$("err").textContent="مبلغ الإيصال "+xr.amt.toFixed(2)+" لا يطابق الفاتورة "+t.toFixed(2)+". اضغط حفظ مرة ثانية لو هذا الإيصال الصحيح.";beep(false);return}}save.xw=0;
- const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};if(mode==="tr"&&XSEL)s.xf=XSEL;const usedXf=s.xf;if(mode==="aj")s.cust=AJ.cust;
- if(isDel()){const dr=(ME.drivers||[]).find(x=>x.n===DLV.n);s.dlv={fee:DLV.fee||0,n:DLV.n,lv:DLV.lv,name:dr?dr.name:"",loc:LSEL}}
+ const s={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,10),at:Date.now(),lines:cart.map(l=>[l.c,l.q]),mode,cash};if(mode==="tr"&&XSEL)s.xf=XSEL;else if(mode==="tr"&&XESC)s.xesc=XESC;const usedXf=s.xf;if(mode==="aj")s.cust=AJ.cust;
+ if(isDel()){const dr=(ME.drivers||[]).find(x=>x.n===DLV.n);s.dlv={fee:DLV.fee||0,n:DLV.n,lv:DLV.lv,name:dr?dr.name:"",loc:LSEL,esc:LSEL?"":ESCL}}
  if(CUR_ORD)s.ord=CUR_ORD.id;
  const snap=cart.slice();saving=true;$("saveBtn").disabled=true;
  try{const j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
@@ -510,6 +512,7 @@ async function save(){
   if(j2){LIadd({cid:s.cid,no:j2.no,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode});done(snap,t,cash,j2.no,j2.zqr);netState(true)}else{const rn=rvTake("s");if(rn){s.no=rn;s.dev=DEV}setQ(Q().concat([s]));LIadd({cid:s.cid,no:rn,day:new Date(s.at+3*3600e3).toISOString().slice(0,10),t:new Date(s.at).toTimeString().slice(0,8),lines:snap.map(l=>({c:l.c,n:l.n,p:l.p,q:l.q,back:0})),total:t,mode,off:1});netState(false);done(snap,t,cash,rn)}}
  saving=false;$("saveBtn").disabled=false;
  if(usedXf){XF=XF.filter(x=>x.id!==usedXf);XSEL="";xfDraw();xfLoad()}
+ ESCL="";XESC="";ASKX=false;
  if(s.dlv&&s.dlv.loc){LOCS=LOCS.filter(x=>x.id!==s.dlv.loc);LSEL="";try{dlvDraw()}catch(e){}xfLoad()}
 }
 function done(snap,t,cash,no,zqr){LSAVE=performance.now();LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
@@ -517,6 +520,7 @@ $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}enterSave()},true);
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-fee],button[data-drv],button[data-lv],button[data-m=cash],button[data-m=card],button[data-m=tr]");if(b)setTimeout(()=>{try{if(!$("cashIn")||document.activeElement!==$("cashIn"))$("q").focus()}catch(x){}},0)});
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-esc]");if(!b)return;if(b.dataset.esc==="l"){ESCL=b.dataset.r;$("err").textContent="";render()}else{XESC=b.dataset.r;ASKX=false;$("err").textContent="";setMode("tr");xfDraw()}});
 document.addEventListener("keydown",e=>{if($("jdView").style.display!=="none")return;if(e.repeat&&/^F\d+$/.test(e.key)){e.preventDefault();return}if(e.key==="F2"){e.preventDefault();setMode("cash");if(enterOk())save()}else if(e.key==="F3"){e.preventDefault();setMode("card");if(enterOk())save()}else if(e.key==="F4"){e.preventDefault();setMode("mix")}else if(e.key==="F6"){e.preventDefault();if(setMode("tr")!==false&&enterOk())save()}else if(e.key==="F8"){e.preventDefault();hold()}});
 
 async function lastFromServer(){try{const j=await api("/api/pos/day?full=1");const d=(j.inv||[])[0];if(!d)return null;
