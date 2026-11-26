@@ -110,4 +110,8 @@ document.addEventListener('click',async function(e){var t=e.target;if(!t.closest
       SR.rej=(SR.rej||[]).filter(function(y){return y.pred.id!==pid});toast('✓ انحفظ — تطلع العهدة الجديدة عند '+nm(x.u));SR.at=0;load(true)}catch(e){SR.rerr='ما انحفظ، جرّب مرة ثانية';rs.disabled=false}el0();return}});
 document.addEventListener('change',async function(e){if(e.target&&e.target.id==='srPh'){var f=e.target.files&&e.target.files[0];if(!f)return;try{SR.photo=typeof shrink==='function'?await shrink(f,true):f}catch(x){SR.photo=f}SR.err='';SR.rd=null;el0();readSlip(SR.photo)}});
 setInterval(function(){try{if(typeof S==='undefined'||!S.db)return;load(false);draw()}catch(e){}},1500);
+/* owner 27 Nov: the old closing form (and its menu entry) is hidden from cashiers; they close from the waiting shift card only. The owner keeps it. */
+function hideOld(){try{if(typeof S==='undefined'||S.owner)return;var c=$('closeCard');if(c&&c.style.display!=='none')c.style.display='none';
+  [].slice.call(document.querySelectorAll('a,button,li,span,div,p')).forEach(function(e){if(e.children.length||e.closest('#shRec')||e.closest('#closeCard'))return;var t=(e.textContent||'').replace(/[^\u0600-\u06FF ]/g,'').replace(/\s+/g,' ').trim();if(t==='موازنة الإقفال'||t==='موازنة الإقفال آخر الوردية'){var h=e.closest('li')||e.closest('button,a')||e;h.style.display='none'}})}catch(x){}}
+setInterval(hideOld,1000);
 }catch(e){}})();
