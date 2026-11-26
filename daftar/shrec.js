@@ -116,7 +116,7 @@ function hideOld(){try{if(typeof S==='undefined'||S.owner)return;var c=$('closeC
 setInterval(hideOld,1000);
 }catch(e){}})();
 (function(){try{
-var K='drw|mon|xp|sk|exp|sup|rcpt|dsc|as',st=document.createElement('style');
+if(window.__cx)return;window.__cx=1;var K='drw|mon|xp|sk|exp|sup|rcpt|dsc|as',st=document.createElement('style');
 st.textContent='body.cashV #dwOpen,body.cashV #dw{display:none!important}#cxSq{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}#cxSq .btn{padding:9px 6px;font-size:16px;min-height:44px;white-space:normal;line-height:1.3}'+K.split('|').map(function(k){return 'body.cashV #cwMenu [data-cwgo="'+k+'"]'}).join(',')+'{display:none!important}';
 document.head.appendChild(st);
 function cxList(){var l=[['drw','الدرج'],['mon','الموازنات']],n=0,w=0;try{n=cwXpList().length}catch(e){}try{w=skWarnN()}catch(e){}
