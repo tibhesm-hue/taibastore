@@ -1,11 +1,67 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>استقبال طيبة</title><link rel="manifest" href="/recv.webmanifest"><meta name="theme-color" content="#0e5a3c"><link rel="apple-touch-icon" href="/i192.png">
-<style>body{font-family:system-ui,Tahoma;background:#f4f6f5;margin:0;padding:18px;color:#1c2b33}.c{background:#fff;border-radius:16px;padding:20px;max-width:420px;margin:0 auto 14px;box-shadow:0 2px 14px #0001}h1{font-size:22px;margin:0 0 8px;color:#0e5a3c}p{margin:6px 0;line-height:1.7;font-size:15px}button,input{font-family:inherit;font-size:16px;border-radius:10px;border:1px solid #cfd8d5;padding:12px;width:100%;box-sizing:border-box;margin-top:8px}button{background:#0e5a3c;color:#fff;border:0;font-weight:700}#ins{display:none}</style></head><body>
-<div class="c"><h1>استقبال طيبة</h1><p>من واتساب: اضغط على إيصال التحويل أو موقع العميل أو بطاقة جهة الاتصال، ثم «مشاركة»، واختر «استقبال طيبة». يوصل لنقاط البيع مباشرة.</p><button id="ins">تثبيت التطبيق</button><p id="st" style="color:#6b7884;font-size:13px"></p></div>
-<div class="c"><form method="post" action="/app/share" enctype="multipart/form-data"><p>أو يدوياً:</p><input name="text" placeholder="الصق رابط موقع العميل"><input type="file" name="img" accept="image/*"><button>إرسال</button></form></div>
-<script>let dp=null;const b=document.getElementById("ins"),st=document.getElementById("st");
-if(matchMedia("(display-mode: standalone)").matches)st.textContent="التطبيق مثبّت وجاهز.";
+<style>
+body{font-family:system-ui,Tahoma;background:#f4f6f5;margin:0;padding:14px;color:#1c2b33}
+.c{background:#fff;border-radius:16px;padding:16px;max-width:440px;margin:0 auto 12px;box-shadow:0 2px 14px #0001}
+h1{font-size:20px;margin:0 0 6px;color:#0e5a3c}h2{font-size:16px;margin:0 0 8px}
+p,.s{margin:4px 0;line-height:1.7;font-size:14px;color:#51606a}
+input,button,select{font-family:inherit;font-size:16px;border-radius:10px;border:1px solid #cfd8d5;padding:11px;width:100%;box-sizing:border-box;margin-top:6px}
+button{background:#0e5a3c;color:#fff;border:0;font-weight:700}
+.r{border:1px solid #e1e8e5;border-radius:10px;padding:9px 10px;margin-top:6px;font-size:14px}
+.r b{display:block;font-size:15px;color:#1c2b33}.r span{color:#51606a;font-size:13px}
+.r.on{border-color:#0e5a3c;background:#eef6f2}
+.g{color:#0e5a3c}.e{color:#b3261e}
+</style></head><body>
+
+<div class="c"><h1>استقبال طيبة</h1>
+<p>شارك من واتساب: الموقع أو الإيصال أو جهة الاتصال، واختر «استقبال طيبة».</p>
+<button id="ins" style="display:none">تثبيت التطبيق</button><p id="st"></p></div>
+
+<div class="c"><h2>عميل التوصيل</h2>
+<p>اكتب الاسم (كما في الواتساب) أو الرقم، فتظهر قائمة المحفوظين.</p>
+<input id="n" placeholder="الاسم">
+<input id="p" inputmode="tel" placeholder="رقم الجوال">
+<div id="lst"></div>
+<div id="lw" style="display:none"><p style="margin-top:10px">موقع وصل قبل قليل ولم يُربط (اختياري):</p><div id="locs"></div></div>
+<button id="sv">حفظ</button>
+<p id="msg"></p></div>
+
+<div class="c"><p>لو نسيت تشارك الموقع: احفظ الاسم والرقم هنا أولاً، ثم شارك الموقع خلال 30 دقيقة فيُربط تلقائياً.</p></div>
+
+<script>
+const $=i=>document.getElementById(i),L=["","قريب","متوسط","بعيد"];
+let DC=[],LOCS=[],LSEL="",auth=true;
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const norm=s=>String(s||"").replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).toLowerCase();
+const ph=s=>{let d=norm(s).replace(/\D/g,"");if(d.startsWith("00"))d=d.slice(2);if(d.startsWith("966"))d=d.slice(3);if(d.startsWith("0"))d=d.slice(1);return d};
+async function load(){
+ try{const r=await fetch("/api/pos/dcust",{credentials:"same-origin",cache:"no-store"});if(r.status===401){auth=false;$("msg").innerHTML='<span class="e">سجّل دخولك أولاً من نقاط البيع في هذا الجوال ثم ارجع.</span>';return}
+  const j=await r.json();if(j.ok)DC=j.list||[]}catch(e){$("msg").innerHTML='<span class="e">تعذّر التحميل — تأكد من النت</span>'}
+ try{const r=await fetch("/api/pos/xfer",{credentials:"same-origin",cache:"no-store"});const j=await r.json();LOCS=(j.locs||[]).filter(x=>x.free)}catch(e){}
+ draw()}
+function draw(){
+ const q=norm($("n").value).trim(),qp=ph($("p").value);
+ let r=DC.filter(x=>(q&&norm(x.name).includes(q))||(qp.length>=3&&x.phone.includes(qp))||(!q&&qp.length<3&&false)).slice(0,6);
+ $("lst").innerHTML=r.length?'<p style="margin-top:10px">محفوظ من قبل — اضغط عليه بدل ما تضيفه من جديد:</p>'+r.map(x=>'<div class="r" data-i="'+x.id+'"><b>'+esc(x.name)+'</b><span>'+esc(x.phone)+" · "+(x.hasLoc?L[x.lv]+" · "+x.d.toFixed(1)+" كم":"بلا موقع")+"</span></div>").join(""):((q||qp.length>=3)?'<p style="margin-top:10px" class="g">ما فيه عميل بهالاسم أو الرقم — جديد.</p>':"");
+ $("lw").style.display=LOCS.length?"block":"none";
+ $("locs").innerHTML=LOCS.map(x=>'<div class="r'+(x.id===LSEL?" on":"")+'" data-l="'+x.id+'"><b>'+L[x.lv]+" · "+x.d.toFixed(1)+" كم</b><span>الساعة "+esc((x.t||"").slice(0,5))+"</span></div>").join("")}
+document.addEventListener("input",e=>{if(e.target.id==="n"||e.target.id==="p")draw()});
+document.addEventListener("click",e=>{const a=e.target.closest("[data-i]");if(a){const x=DC.find(y=>y.id===a.dataset.i);if(x){$("n").value=x.name;$("p").value=x.phone;draw()}return}
+ const l=e.target.closest("[data-l]");if(l){LSEL=LSEL===l.dataset.l?"":l.dataset.l;draw()}});
+$("sv").onclick=async()=>{
+ const n=$("n").value.trim(),p=$("p").value;if(n.length<2||ph(p).length<7){$("msg").innerHTML='<span class="e">اكتب الاسم والرقم</span>';return}
+ const ex=DC.find(x=>x.phone===ph(p));
+ if(ex&&ex.hasLoc&&LSEL&&!confirm("«"+ex.name+"» عنده موقع محفوظ. تحديثه بالموقع الجديد؟"))return;
+ try{const r=await fetch("/api/pos/dcust",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,phone:p,loc:LSEL})});
+  if(r.status===401){$("msg").innerHTML='<span class="e">سجّل دخولك من نقاط البيع أولاً</span>';return}
+  const j=await r.json();
+  if(j.ok){$("msg").innerHTML='<span class="g">تم الحفظ'+(LSEL?" مع الموقع":(ex&&ex.hasLoc?" (موقعه القديم باقٍ)":" — شارك موقعه خلال 30 دقيقة"))+"</span>";$("n").value="";$("p").value="";LSEL="";load()}
+  else $("msg").innerHTML='<span class="e">لم يُحفظ: '+esc(j.err||"")+"</span>"}catch(e){$("msg").innerHTML='<span class="e">تعذّر الحفظ — تأكد من النت</span>'}};
+let dp=null;const b=$("ins");
+if(matchMedia("(display-mode: standalone)").matches)$("st").textContent="التطبيق مثبّت وجاهز.";
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;b.style.display="block"});
 b.onclick=async()=>{if(dp){dp.prompt();await dp.userChoice;dp=null;b.style.display="none"}};
-addEventListener("appinstalled",()=>{st.textContent="تم التثبيت. جرّب المشاركة من واتساب."});
-if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script></body></html>
+addEventListener("appinstalled",()=>{$("st").textContent="تم التثبيت."});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+load();setInterval(load,20000);
+</script></body></html>
