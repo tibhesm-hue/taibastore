@@ -361,9 +361,12 @@ function HL(){try{return JSON.parse(localStorage.getItem("posheld")||"[]")}catch
 function setHL(a){try{localStorage.setItem("posheld",JSON.stringify(a))}catch(e){}heldShow()}
 function heldShow(){const a=HL();$("held").style.display=a.length?"block":"none";$("heldT").textContent="فواتير معلّقة ("+a.length+") — اضغط عليها لاسترجاعها";
  $("heldL").innerHTML=a.map((h,i)=>{const t=h.lines.reduce((s,l)=>r2(s+r2(l.p*l.q)),0),d=new Date(h.at);return`<button class="hb" data-h="${i}"><b>معلّقة ${i+1} · ${d.toTimeString().slice(0,5)}</b><small>${esc(h.lines.slice(0,2).map(l=>l.n).join("، "))}${h.lines.length>2?"…":""} (${h.lines.length} أصناف)</small><div class="t">${f2(t)}</div></button>`}).join("")}
-function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});setHL(a);cart=[];lastCode=null;CUR_ORD=null;ordCurDraw();if(isDel())dlvReset();$("cashIn").value="";setMode("");render();toast("عُلّقت الفاتورة");$("q").focus()}
-function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
- cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;CUR_ORD=h.ord||null;if(isDel()&&h.dlv){DLV=Object.assign({fee:null,n:0,lv:0},h.dlv)}ordCurDraw();render();$("q").focus()}
+function hold(){if(!cart.length){toast("السلة فارغة");return}const a=HL();a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null,mode:mode,cashIn:$("cashIn").value,cust:AJ.cust,dc:DCSEL,loc:LSEL,xsel:XSEL});setHL(a);cart=[];lastCode=null;CUR_ORD=null;ordCurDraw();if(isDel())dlvReset();$("cashIn").value="";setMode("");render();toast("عُلّقت الفاتورة");$("q").focus()}
+function resume(i){const a=HL();const h=a[i];if(!h)return;a.splice(i,1);if(cart.length){a.push({at:Date.now(),lines:cart,ord:CUR_ORD,dlv:isDel()?DLV:null,mode:mode,cashIn:$("cashIn").value,cust:AJ.cust,dc:DCSEL,loc:LSEL,xsel:XSEL});toast("عُلّقت الفاتورة الحالية واسترجعت المعلّقة",2500)}setHL(a);
+ cart=h.lines.map(l=>{const x=BY.get(l.c);return{c:l.c,n:x?x.n:l.n,p:x?x.p:l.p,q:l.q}});lastCode=null;CUR_ORD=h.ord||null;if(isDel()&&h.dlv){DLV=Object.assign({fee:null,n:0,lv:0},h.dlv)}ordCurDraw();if(isDel()){DCSEL=(h.dc&&DC.find(x=>x.id===h.dc))?h.dc:"";LSEL=(h.loc&&LOCS.find(x=>x.id===h.loc))?h.loc:""}
+ if(h.xsel&&XF.find(x=>x.id===h.xsel))XSEL=h.xsel;
+ if(h.mode){const wasAj=h.mode==="aj";setMode(h.mode);if(h.mode==="mix"||h.mode==="cash"){$("cashIn").value=h.cashIn||"";mixCalc()}if(wasAj&&mode==="aj"){AJ.cust=h.cust||"";ajLoad().then(()=>{if(AJ.cust&&!AJ.list.find(c=>c[0]===AJ.cust)){AJ.cust="";ajDraw();toast("العميل ما عاد موجود — اختر العميل للآجل",3500)}ajTopDraw()})}else if(mode!==h.mode)toast("طريقة الدفع ما رجعت — اخترها من جديد",3000)}
+ render();$("q").focus()}
 $("holdBtn").onclick=hold;
 /* orders from the price page */
 let CUR_ORD=null,ORDS=[],ORD_SEEN=null;
