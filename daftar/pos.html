@@ -179,14 +179,14 @@ tr.last td{background:#f0fdf4}
   <div class="card" id="dlvCard" style="display:none">
    <div class="ttl"><span>🛵 التوصيل</span><span id="dlvSum" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
    <div id="locBar"></div>
-   <div id="custBar"></div>
+   <div id="custBar" style="display:none"></div>
    <div style="display:flex;gap:6px;margin-bottom:8px"><input id="locIn" class="pm" style="flex:1;min-width:0;text-align:right;padding:0 8px;font-family:inherit;height:34px;font-size:13px" placeholder="الصق رابط موقع العميل هنا"><button type="button" class="pm" id="locAdd" style="height:34px;font-size:13px;flex:0 0 70px">إضافة</button></div>
    <div id="manDl"><div class="small2" style="margin-bottom:4px">رسوم التوصيل على الزبون (من رابط الأسعار)</div>
    <div class="pms" style="grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.6fr);margin-bottom:8px" id="feeBtns"><button class="pm" data-fee="0">0</button><button class="pm" data-fee="2">2</button><button class="pm" data-fee="3">3</button><button class="pm" data-fee="4">4</button><button class="pm" data-fee="5">5</button><input id="feeIn" class="pm" style="text-align:center;padding:0 4px;width:100%;min-width:0;font-family:inherit" inputmode="decimal" placeholder="غيره"></div>
    </div>
    <div class="small2" style="margin-bottom:4px">المندوب</div>
    <div class="pms" style="margin-bottom:8px" id="drvBtns"></div>
-   <div id="manLv"><div class="small2" style="margin-bottom:4px">مسافة المندوب</div>
+   <div id="manLv" style="display:none"><div class="small2" style="margin-bottom:4px">مسافة المندوب</div>
    <div class="pms" style="margin-bottom:0" id="lvBtns"><button class="pm" data-lv="1">قريب</button><button class="pm" data-lv="2">متوسط</button><button class="pm" data-lv="3">بعيد</button></div></div>
   </div>
   <div class="card">
@@ -322,13 +322,14 @@ const ESC_L=["العميل ما أرسل الموقع","المشاركة ما ا
 function escBtns(a,cur,k){return a.map(r=>'<button type="button" class="pm'+(r===cur?" on":"")+'" data-esc="'+k+'" data-r="'+r+'" style="height:34px;font-size:13px;margin:2px;flex:0 0 auto;padding:0 10px">'+r+"</button>").join("")}
 function locApply(sv){const c=DCSEL&&DC.find(x=>x.id===DCSEL&&x.hasLoc);if(c){DLV.fee=sv>=20?c.fee1:c.fee0;DLV.lv=c.lv;DLV.man=true;return}DCSEL="";const l=LOCS.find(x=>x.id===LSEL);if(!l){LSEL="";return}DLV.fee=sv>=20?l.fee1:l.fee0;DLV.lv=l.lv;DLV.man=true}
 function ordOk(){return !!(CUR_ORD&&(CUR_ORD.loc||CUR_ORD.dist==="pickup"))}
-function totals(){const a=itemsT();if(isDel()&&(LSEL||DCSEL))locApply(a.t);if(isDel()&&DLV.fee>0)a.t=r2(a.t+DLV.fee);return a}
+function lvFee(f,s){if(f==null)return 0;if(s>=20)return f<=0?1:f<=1?2:3;return f<=2?1:f<=3?2:3}
+function totals(){const a=itemsT();if(isDel()&&(LSEL||DCSEL))locApply(a.t);else if(isDel()&&!ordOk()&&DLV.fee!=null)DLV.lv=lvFee(DLV.fee,a.t);if(isDel()&&DLV.fee>0)a.t=r2(a.t+DLV.fee);return a}
 function dlvDraw(){if(!isDel())return;$("dlvCard").style.display="block";try{custDraw()}catch(e){}
  document.querySelectorAll("[data-fee]").forEach(b=>b.classList.toggle("on",DLV.fee!=null&&+b.dataset.fee===DLV.fee&&$("feeIn").value===""));
  $("feeIn").classList.toggle("on",$("feeIn").value!=="");
  document.querySelectorAll("[data-drv]").forEach(b=>b.classList.toggle("on",+b.dataset.drv===DLV.n));
  document.querySelectorAll("[data-lv]").forEach(b=>b.classList.toggle("on",+b.dataset.lv===DLV.lv));
- {const hide=STRICT&&!ME.owner&&!ESCL;$("manDl").style.display=hide?"none":"";$("manLv").style.display=hide?"none":""}
+ {const hide=STRICT&&!ME.owner&&!ESCL;$("manDl").style.display=hide?"none":"";$("manLv").style.display="none"}
  if(STRICT&&!LSEL&&!DCSEL&&!ordOk()&&LOCS.length===1&&!ME.owner){LSEL=LOCS[0].id}
  {const lb=$("locBar"),L=["","قريب","متوسط","بعيد"],h=LOCS.length?'<div class="small2" style="margin-bottom:4px">موقع العميل (وصل من المشاركة)</div>'+LOCS.map(x=>'<div class="xfc'+(x.id===LSEL?" on":"")+'" data-l="'+x.id+'" style="margin-bottom:4px"><b>'+L[x.lv]+'</b><span>'+x.d.toFixed(1)+' كم · رسوم '+x.fee0+' (أو '+x.fee1+' لو 20+) · '+esc((x.t||"").slice(0,5))+'</span><a href="https://maps.google.com/?q='+x.lat+','+x.lng+'" target="_blank" data-v="1">خريطة</a></div>').join(""):((!STRICT||ME.owner||ordOk()||DCSEL)?"":ESCL?'<div class="small2" style="margin-bottom:6px;color:#b45309">بدون موقع: '+esc(ESCL)+" — أدخل الرسوم والمسافة يدوياً</div>":'<div class="small2" style="margin-bottom:6px;color:#b91c1c">ما وصل موقع العميل — اطلب منه يرسل موقعه ثم شاركه إلى «دفتر طيبة»، أو اختر السبب:</div><div style="display:flex;flex-wrap:wrap;margin-bottom:6px">'+escBtns(ESC_L,"","l")+"</div>");if(lb.dataset.h!==h){lb.dataset.h=h;lb.innerHTML=h;lb.querySelectorAll(".xfc").forEach(c=>c.onclick=e=>{if(e.target.dataset.v)return;LSEL=c.dataset.l;render()})}}
  const needLoc=STRICT&&!ME.owner&&!LSEL&&!DCSEL&&!ordOk()&&!ESCL;
