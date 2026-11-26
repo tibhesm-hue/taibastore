@@ -118,7 +118,7 @@
       + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
       + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""), "shop", A === "shop")
       + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : ""), "del", A === "del")
-      + '</div><a class="btn sm ghost" href="/pos/" style="display:block;margin-top:8px;text-align:center">فتح نقاط البيع</a>';
+      + '</div><div class="small muted" style="margin-top:6px">محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><a class="btn sm ghost" href="/pos/" style="display:block;margin-top:8px;text-align:center">فتح نقاط البيع</a>';
     if (pb.__h !== h) { pb.innerHTML = h; pb.__h = h; }
     svChart();
   }
@@ -154,7 +154,7 @@
     if (k !== SV.key) { SV.data = null; SV.tap = -1; } SV.key = k; SV.busy = true; SV.at = Date.now(); svDraw();
     var P = [fetch("/api/pos/range?f=" + R.f + "&t=" + R.t, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); })];
     if (R.f === R.t) P.push(fetch("/api/pos/day?full=1&d=" + R.f, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }));
-    Promise.all(P).then(function (A) { if (SV.key !== k) return; if (A[0] && A[0].ok) SV.data = A[0]; if (A[1] && A[1].ok) { SV.hr = A[1].inv || []; SV.hk = R.f; } svDraw(); }).catch(function () { }).then(function () { SV.busy = false; });
+    Promise.all(P).then(function (A) { if (SV.key !== k) return; if (A[0] && A[0].ok) { SV.data = A[0]; SV.got = Date.now(); } if (A[1] && A[1].ok) { SV.hr = A[1].inv || []; SV.hk = R.f; } svDraw(); }).catch(function () { }).then(function () { SV.busy = false; });
   }
   function svTick() {
     var c = document.getElementById("sgCard"); if (!c || c.offsetParent === null || !(typeof S !== "undefined" && S.owner)) return;
