@@ -1,0 +1,11 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>استقبال طيبة</title><link rel="manifest" href="/recv.webmanifest"><meta name="theme-color" content="#0e5a3c"><link rel="apple-touch-icon" href="/i192.png">
+<style>body{font-family:system-ui,Tahoma;background:#f4f6f5;margin:0;padding:18px;color:#1c2b33}.c{background:#fff;border-radius:16px;padding:20px;max-width:420px;margin:0 auto 14px;box-shadow:0 2px 14px #0001}h1{font-size:22px;margin:0 0 8px;color:#0e5a3c}p{margin:6px 0;line-height:1.7;font-size:15px}button,input{font-family:inherit;font-size:16px;border-radius:10px;border:1px solid #cfd8d5;padding:12px;width:100%;box-sizing:border-box;margin-top:8px}button{background:#0e5a3c;color:#fff;border:0;font-weight:700}#ins{display:none}</style></head><body>
+<div class="c"><h1>استقبال طيبة</h1><p>من واتساب: اضغط على إيصال التحويل أو موقع العميل أو بطاقة جهة الاتصال، ثم «مشاركة»، واختر «استقبال طيبة». يوصل لنقاط البيع مباشرة.</p><button id="ins">تثبيت التطبيق</button><p id="st" style="color:#6b7884;font-size:13px"></p></div>
+<div class="c"><form method="post" action="/app/share" enctype="multipart/form-data"><p>أو يدوياً:</p><input name="text" placeholder="الصق رابط موقع العميل"><input type="file" name="img" accept="image/*"><button>إرسال</button></form></div>
+<script>let dp=null;const b=document.getElementById("ins"),st=document.getElementById("st");
+if(matchMedia("(display-mode: standalone)").matches)st.textContent="التطبيق مثبّت وجاهز.";
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;b.style.display="block"});
+b.onclick=async()=>{if(dp){dp.prompt();await dp.userChoice;dp=null;b.style.display="none"}};
+addEventListener("appinstalled",()=>{st.textContent="تم التثبيت. جرّب المشاركة من واتساب."});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script></body></html>
