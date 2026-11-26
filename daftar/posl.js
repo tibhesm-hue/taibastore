@@ -158,7 +158,8 @@
   }
   function svTick() {
     var c = document.getElementById("sgCard"); if (!c || c.offsetParent === null || !(typeof S !== "undefined" && S.owner)) return;
-    var pb = document.getElementById("posBr"); if (!pb) { pb = document.createElement("div"); pb.id = "posBr"; pb.style.margin = "8px 0"; } if (pb.parentNode !== c) c.insertBefore(pb, c.children[1] || null);
+    var pb = document.getElementById("posBr"); if (!pb) { pb = document.createElement("div"); pb.id = "posBr"; pb.style.margin = "8px 0"; } /* owner 26 Nov («أمس وتصفح المبيعات، السطرين هذه حطهم فوق»): the numbers sit under the period and browse rows */
+    var sb = document.getElementById("sbOpen"), row = sb; while (row && row.parentElement !== c) row = row.parentElement; if (row) { if (row.nextElementSibling !== pb) row.parentNode.insertBefore(pb, row.nextSibling); } else if (pb.parentNode !== c) c.insertBefore(pb, c.children[1] || null);
     ["sgSum", "dayCap", "dayChart", "sgAtL", "sgNow", "sgUser"].forEach(function (id) { var x = document.getElementById(id); if (x && x.style.display !== "none") x.style.display = "none"; });
     [].forEach.call(c.querySelectorAll("option,#sgAcc button"), function (o) { var t = o.textContent; if (/المحل/.test(t) && !/فرع/.test(t)) o.textContent = "فرع المبيعات"; else if (/^\W*التوصيل$/.test(t.trim())) o.textContent = "فرع التوصيل"; if (o.value === "pos") o.remove(); });
     svLoad();
