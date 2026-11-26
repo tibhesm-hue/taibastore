@@ -62,7 +62,7 @@ function resHTML(){var c=SR.res.c,k=closingCalc(c),d=r2(k.diff),big=Math.abs(d)>
   if(big&&!SR.res.note){var O=(NR_OPT[d<0?'s':'o']||[]);h+='<b style="display:block;margin-top:6px">وش سبب '+(!S.owner?'الفرق':d<0?'العجز':'الفايض')+'؟</b><div class="srG">'+O.map(function(o,i){return '<button class="srSq" type="button" data-srwhy="'+i+'">'+esc(o[0])+'</button>'}).join('')+'</div>';return h}
   if(SR.res.note)h+=R('السبب',esc(SR.res.note));
   h+=R('عهدة الكاشير اللي بعدك',fmt(c.leave!=null?c.leave:c.counted));
-  h+=SR.res.sent?'<div class="srSq" style="background:#E1F5EE;color:#085041;cursor:default">✓ انرسلت. خلصت 👍</div><button class="btn sm ghost" type="button" data-srdone="1" style="margin-top:6px">تم</button>':'<a class="srPur" style="display:block;text-decoration:none;background:#1f9d55;margin-top:8px" target="_blank" rel="noopener" data-srsend="1" href="https://wa.me/?text='+encodeURIComponent(closeText(c))+'">أرسل للقروب «موازنة»</a>';
+  h+=SR.res.sent?'<div class="srSq" style="background:#E1F5EE;color:#085041;cursor:default">✓ انرسلت. خلصت 👍</div><button class="btn sm ghost" type="button" data-srdone="1" style="margin-top:6px">تم</button>':'<button class="srPur" type="button" data-srimg="1" style="background:'+(SR.res.img?'#085041':'#1f9d55')+';margin-top:8px">'+(SR.res.img?'✓ انفتحت الصورة — أرسلها للقروب «موازنة»':'١) أرسل صورة الموازنة للقروب')+'</button><a class="srPur" style="display:block;text-decoration:none;background:#1f9d55;margin-top:8px;'+(SR.res.img?'':'opacity:.45;pointer-events:none')+'" target="_blank" rel="noopener" data-srsend="1" href="https://wa.me/?text='+encodeURIComponent(closeText(c))+'">٢) أرسل النص للقروب</a>';
   return h}
 async function save(){var L=mine(),x=L.find(function(y){return y.id===SR.open});if(!x)return;var v=vals(x);SR.err='';
   var took=null,cash;if(v.left!=null&&v.leftAll){took=0;cash=v.left}else{var cv=toNum(($('srCash')||{}).value);if(!(cv>=0)||String(($('srCash')||{}).value).trim()===''){SR.err=v.left!=null?'اكتب كم معك نقد.':'اكتب النقد اللي في الدرج.';el0();return}if(v.left!=null){took=cv;cash=r2(cv+v.left)}else cash=cv}
@@ -87,6 +87,9 @@ async function save(){var L=mine(),x=L.find(function(y){return y.id===SR.open});
     SR.list=(SR.list||[]).filter(function(y){return y.id!==x.id});
   }catch(e){SR.err='ما انحفظت: '+(e&&e.message||e);if(b)b.disabled=false}
   el0()}
+function slipImg(c){return new Promise(function(res){var L=closeText(c).replace(/\*/g,'').split('\n'),W=900,H=150+L.length*62+30,cv=document.createElement('canvas');cv.width=W;cv.height=H;var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#14532d';x.fillRect(0,0,W,110);x.direction='rtl';x.textAlign='right';x.fillStyle='#fff';x.font='700 44px sans-serif';x.fillText('موازنة وردية — أسواق طيبة',W-40,72);
+  L.forEach(function(l,i){var j=l.indexOf(': '),y=170+i*62;x.fillStyle='#e2dfd6';x.fillRect(30,y+18,W-60,2);x.font='600 34px sans-serif';x.fillStyle='#555';x.fillText(j>0?l.slice(0,j):l,W-40,y);x.textAlign='left';x.font='700 36px sans-serif';x.fillStyle='#111';if(j>0)x.fillText(l.slice(j+2),40,y);x.textAlign='right'});
+  cv.toBlob(res,'image/png')})}
 function el0(){var el=$('shRec');if(el)el.__h=null;draw()}
 document.addEventListener('click',async function(e){var t=e.target;if(!t.closest||!t.closest('#shRec'))return;
   var g=t.closest('[data-srgo]');if(g){SR.open=g.dataset.srgo;SR.err='';SR.ack=false;SR.photo=null;SR.rd=null;SR.hash=null;el0();return}
@@ -95,6 +98,7 @@ document.addEventListener('click',async function(e){var t=e.target;if(!t.closest
   if(t.closest('[data-srpay]')){var p=document.querySelector('[data-cwgo="pay"]');if(p)p.click();else toast('سجّل الفاتورة من «فاتورة دفعتها من الدرج»');return}
   if(t.closest('[data-srsave]')){save();return}
   var w=t.closest('[data-srwhy]');if(w&&SR.res){var d=SR.res.c.diff,o=(NR_OPT[d<0?'s':'o']||[])[+w.dataset.srwhy];if(!o)return;try{await S.db.doc('months/'+SR.res.month+'/closings/'+SR.res.id).update({note:o[0],reasonAt:Date.now(),reasonKind:o[1]||null,needReason:null});SR.res.note=o[0];SR.res.c.note=o[0]}catch(x){toast('ما انحفظ السبب، جرّب مرة ثانية')}el0();return}
+  if(t.closest('[data-srimg]')){try{var bl=await slipImg(SR.res.c),f=new File([bl],'moazana.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e2){if(e2&&e2.name==='AbortError')return}}else{var u=URL.createObjectURL(bl),a=document.createElement('a');a.href=u;a.download='moazana.png';document.body.appendChild(a);a.click();a.remove();toast('انحفظت الصورة — أرسلها للقروب من المعرض')}SR.res.img=true}catch(e3){toast('ما انعملت الصورة، جرّب مرة ثانية')}el0();return}
   if(t.closest('[data-srsend]')){setTimeout(async function(){try{await S.db.doc('months/'+SR.res.month+'/closings/'+SR.res.id).update({sent:true,sentAt:Date.now()})}catch(x){}SR.res.sent=true;el0()},800);return}
   if(t.closest('[data-srdone]')){SR.res=null;el0();return}
   var rs=t.closest('[data-rjsave]');if(rs){var pid=rs.dataset.rjsave,x=(SR.rej||[]).find(function(y){return y.pred.id===pid}),inp=document.querySelector('[data-rjin="'+pid+'"]'),nv=toNum(inp&&inp.value);SR.rerr='';
