@@ -119,14 +119,18 @@ setInterval(hideOld,1000);
 var K='drw|mon|xp|sk|exp|sup|rcpt|dsc|as',st=document.createElement('style');
 st.textContent='body.cashV #dwOpen,body.cashV #dw{display:none!important}#cxSq{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}#cxSq .btn{padding:9px 6px;font-size:16px;min-height:44px;white-space:normal;line-height:1.3}'+K.split('|').map(function(k){return 'body.cashV #cwMenu [data-cwgo="'+k+'"]'}).join(',')+'{display:none!important}';
 document.head.appendChild(st);
+function cxList(){var l=[['drw','الدرج'],['mon','الموازنات']],n=0,w=0;try{n=cwXpList().length}catch(e){}try{w=skWarnN()}catch(e){}
+ try{if(can('exp'))l.push(['exp','المصروفات'])}catch(e){}try{if(can('sup'))l.push(['sup','الموردون'])}catch(e){}
+ l.push(['rcpt','سندات القبض']);l.push(['dsc','خصومات الشركات']);l.push(['sk','المخزون'+(w?' ('+w+')':'')]);l.push(['xp','الصلاحية'+(n?' ('+n+')':'')]);
+ try{if(curCashier()===AS_WHO)l.push(['as','الأسعار'])}catch(e){}return l}
 function cxSq(){try{
  var el=document.getElementById('cxSq');
- if(typeof S==='undefined'||S.owner||typeof clList!=='function'){if(el)el.remove();document.body.classList.remove('cashV');return}
+ if(typeof S==='undefined'||S.owner||typeof cwGo!=='function'){if(el)el.remove();document.body.classList.remove('cashV');return}
  document.body.classList.add('cashV');
  var t=S.tab,host=document.getElementById(t==='home'?'tab-home':'tab-close');
- var ok=host&&(t==='home'||(t==='close'&&host.getAttribute('data-cw')==='menu'));
+ var ok=host&&(t==='home'||t==='close');
  if(!ok){if(el)el.style.display='none';return}
- var L=clList(),k=L.map(function(x){return x[0]+x[1]}).join('|');
+ var L=cxList(),k=L.map(function(x){return x[0]+x[1]}).join('|');
  if(!el){el=document.createElement('div');el.id='cxSq'}
  if(el.parentNode!==host||host.firstChild!==el)host.insertBefore(el,host.firstChild);
  el.style.display='';
