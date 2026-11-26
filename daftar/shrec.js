@@ -33,7 +33,7 @@ async function readSlip(p){var my=p.rd={busy:true};
       try{var all=[].concat(S.closings||[],PM('closings')||[]);if(p.hash&&(all.some(function(c){var m=c&&c.madaSlip;return m&&(m.hash===p.hash||(m.hashes||[]).indexOf(p.hash)>=0)})||(SR.ps||[]).some(function(q){return q!==p&&q.hash===p.hash})))rd.dup=true}catch(e){}p.rd=rd}
   }catch(e){if(p.rd===my)p.rd={read:false}}
   el0()}
-function psClear(){(SR.ps||[]).forEach(function(p){try{URL.revokeObjectURL(p.u)}catch(e){}});SR.ps=[]}
+function psClear(){SR.auto=null;(SR.ps||[]).forEach(function(p){try{URL.revokeObjectURL(p.u)}catch(e){}});SR.ps=[]}
 function draw(){var h=host(),el=$('shRec');var L=mine();
   var RJ=myRej();
   if(!h||(!L.length&&!SR.res&&!RJ.length)){if(el)el.remove();return}
@@ -54,7 +54,7 @@ function draw(){var h=host(),el=$('shRec');var L=mine();
      +(SR.err?'<div class="err" style="margin-top:6px">'+esc(SR.err)+'</div>':'')
      +'<button class="srPur" type="button" data-srsave="1" style="margin-top:10px"'+(v.float==null?' disabled':'')+'>حفظ الموازنة</button><div class="small muted">بعد الحفظ ما تقدر تغيّر الرقم.</div>'
      +'<button class="btn sm ghost" type="button" data-srback="1" style="margin-top:6px">رجوع</button>'}
-  if(el.__h!==H){var keep=$('srCash')?$('srCash').value:null,k2=$('srSlip')?$('srSlip').value:null,rdn=agg().all?String(agg().total):null;el.innerHTML=H;el.__h=H;if(keep!=null&&$('srCash'))$('srCash').value=keep;if(k2!=null&&$('srSlip')&&!(k2===''&&rdn))$('srSlip').value=k2}}
+  if(el.__h!==H){var keep=$('srCash')?$('srCash').value:null,k2=$('srSlip')?$('srSlip').value:null,rdn=agg().all?String(agg().total):null;el.innerHTML=H;el.__h=H;if(keep!=null&&$('srCash'))$('srCash').value=keep;if(k2!=null&&$('srSlip')&&!(rdn&&(k2===''||k2===SR.auto)))$('srSlip').value=k2;if(rdn)SR.auto=rdn}}
 function resHTML(){var c=SR.res.c,k=closingCalc(c),d=r2(k.diff),big=Math.abs(d)>=1;
   var R=function(a,b){return '<div class="srR"><span>'+a+'</span><span>'+b+'</span></div>'};
   var pill=Math.abs(d)<0.01?'<span class="pill zero">مطابق ✓</span>':!S.owner?'<span class="pill bad">فيه فرق</span>':d<0?'<span class="pill bad">عجز '+fmt(-d)+'</span>':'<span class="pill good">فايض '+fmt(d)+'</span>';
