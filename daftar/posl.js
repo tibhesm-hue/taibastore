@@ -13,14 +13,16 @@
   }
   var POSV = { show: false };
   var card = null, busy = false, last = 0;
+  /* owner 26 Nov («ابنه»): «نقاط البيع» merged into «المبيعات» — its card shows under the sales card whenever المبيعات is open, and its red counter sits on المبيعات */
+  function posInSales() { try { return typeof S !== "undefined" && !!S.owner && S.tab === "home" && !JX && !!document.querySelector('#sxV [data-sxv="h|sales"]:not(.ghost)'); } catch (e) { return false; } }
   function sales() {
     var sg = document.getElementById("sgCard"); if (!sg) return;
     if (!card) {
       card = document.createElement("div"); card.className = "card"; card.id = "posSgCard"; card.hidden = true;
-      card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">نقاط البيع</h2><span class="small muted" id="posSgDay"></span></div><div id="posSgBody" style="margin-top:8px"><p class="small muted">يحمّل…</p></div>';
+      card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">نقاط البيع</h2><span class="small muted" id="posSgDay"></span><a class="btn sm ghost" href="/pos/" style="margin-inline-start:auto">فتح نقاط البيع</a></div><div id="posSgBody" style="margin-top:8px"><p class="small muted">يحمّل…</p></div>';
       sg.parentNode.insertBefore(card, sg.nextSibling);
     }
-    var vis = POSV.show; card.hidden = !vis;
+    var vis = POSV.show || posInSales(); card.hidden = !vis;
     if (vis && !busy && Date.now() - last > 4000) load();
   }
   function load() {
@@ -402,7 +404,8 @@
     var v = document.getElementById("sxV");
     if (!v || !document.body.classList.contains("sxOwn")) return;
     if (typeof S !== "undefined" && S.tab !== "home" && JX) jxSet("");
-    [["p", "🖥️ نقاط البيع"], ["z", "الربط مع الهيئة"]].forEach(function (t) {
+    var oldP = v.querySelector('[data-jx="p"]'); if (oldP) oldP.remove();
+    [["z", "الربط مع الهيئة"]].forEach(function (t) {
       var b = v.querySelector('[data-jx="' + t[0] + '"]');
       if (!b) { b = document.createElement("button"); b.type = "button"; b.dataset.jx = t[0]; b.textContent = t[1]; }
       var anc = t[0] === "j" ? v.querySelector('[data-sxv="c|sk"]') : null; if (anc) { if (anc.nextSibling !== b) anc.parentNode.insertBefore(b, anc.nextSibling); } else if (b.parentNode !== v) v.appendChild(b);
@@ -546,7 +549,7 @@
   }
   function pvDraw() {
     var j = PV.d; if (!j) return; var n = (j.unseen || 0) + ((PV.e && PV.e.unseen) || 0);
-    pvBadge(document.getElementById("posTab"), n); pvBadge(document.querySelector('[data-jx="p"]'), n);
+    pvBadge(document.getElementById("posTab"), n); pvBadge(document.querySelector('#sxV [data-sxv="h|sales"]'), n);
     var card = document.getElementById("posSgCard"); if (!card) return;
     var box = document.getElementById("pvBox"); if (!box) { box = document.createElement("div"); box.id = "pvBox"; card.insertBefore(box, card.firstChild); }
     var L = (j.list || []).filter(function (x) { return !x.seen; }).slice(0, 40), K = { del: "حذف صنف", dec: "نقّص الكمية", clr: "فرّغ السلة" };
