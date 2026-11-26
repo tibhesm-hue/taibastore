@@ -430,15 +430,15 @@ document.addEventListener("input",e=>{if(e.target&&e.target.id==="ajQ")ajDraw()}
 let aT=[],aTm=null;
 $("ajQ").addEventListener("keydown",e=>{if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){if(!$("ajQ").value)aT=[];aT.push(performance.now())}},true);
 $("ajQ").addEventListener("input",()=>{clearTimeout(aTm);aTm=setTimeout(()=>{const t=$("ajQ").value.trim();if(t.length<4||aT.length<4)return;for(let i=1;i<aT.length;i++)if(aT[i]-aT[i-1]>45)return;const x=byCode(t);if(x){$("ajQ").value="";aT=[];ajDraw();add(x)}else if(/^\d{6,}$/.test(t)){$("ajQ").value="";aT=[];ajDraw();warn(t)}},120)});
-let XF=[],XSEL="";
-async function xfLoad(){try{const j=await api("/api/pos/xfer");if(j&&j.ok){XF=(j.list||[]).filter(x=>x.free);xfDraw()}}catch(e){}}
+let XF=[],XSEL="",XST=0;
+async function xfLoad(){try{const j=await api("/api/pos/xfer");if(j&&j.ok){XF=(j.list||[]).filter(x=>x.free);XST=j.stale||0;xfDraw()}}catch(e){}}
 function xfDraw(){if(!ME)return;const bar=$("xfBar"),tb=document.querySelector('.pm[data-m="tr"]');if(!bar||!tb)return;let t=0;try{t=totals().t}catch(e){}
  if(XSEL&&!XF.some(x=>x.id===XSEL))XSEL="";
  if(!XSEL&&t>0){const m=XF.filter(x=>Math.abs(x.amt-t)<=0.5);if(m.length)XSEL=m[0].id}
  tb.classList.toggle("lock",!ME.owner&&!XF.length);tb.classList.toggle("hot",XF.length>0);
  document.querySelectorAll('.pm[data-m="cash"],.pm[data-m="card"],.pm[data-m="mix"]').forEach(b=>b.classList.toggle("dim",XF.length>0));
  if(!XF.length){if(bar.innerHTML)bar.innerHTML="";bar.style.display="none";return}
- const h='<div class="xh">'+(XF.length===1?"وصل تحويل":"وصلت "+XF.length+" تحويلات")+' · اختر إيصال هذه الفاتورة ثم «تحويل»</div><div class="xl">'+XF.map(x=>'<div class="xfc'+(x.id===XSEL?" on":"")+'" data-x="'+x.id+'"><b>'+x.amt.toFixed(2)+'</b><span>'+esc((x.t||"").slice(0,5)+(x.sender?" · "+x.sender:"")+(x.bank?" · "+x.bank:""))+'</span><a href="/api/pos/xfimg?id='+x.id+'" target="_blank" data-v="1">عرض</a></div>').join("")+'</div>';
+ const h='<div class="xh">'+(ME.owner&&XST?"<span style=\"color:#b91c1c\">"+XST+" إيصال لم يُستخدم أكثر من ساعتين</span> · ":"")+(XF.length===1?"وصل تحويل":"وصلت "+XF.length+" تحويلات")+' · اختر إيصال هذه الفاتورة ثم «تحويل»</div><div class="xl">'+XF.map(x=>'<div class="xfc'+(x.id===XSEL?" on":"")+'" data-x="'+x.id+'"><b>'+x.amt.toFixed(2)+'</b><span>'+esc((x.t||"").slice(0,5)+(x.sender?" · "+x.sender:"")+(x.bank?" · "+x.bank:""))+'</span><a href="/api/pos/xfimg?id='+x.id+'" target="_blank" data-v="1">عرض</a></div>').join("")+'</div>';
  if(bar.dataset.h!==h){bar.dataset.h=h;bar.innerHTML=h;bar.querySelectorAll(".xfc").forEach(c=>c.onclick=e=>{if(e.target.dataset.v)return;XSEL=c.dataset.x;xfDraw()})}
  bar.style.display="block"}
 setInterval(()=>{if(ME)xfLoad()},8000);setInterval(()=>{if(ME)xfDraw()},1500);
