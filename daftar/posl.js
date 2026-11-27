@@ -103,7 +103,7 @@
   /* owner 26 Nov («فوق مبيعات اليوم وبجنبها عدد الفواتير، تحت فرع المبيعات وفرع التوصيل، والرسم تحت الكل، والدفتر شيلها»):
      the sales card reads the POS for the chosen period and branch; the Smart Life numbers, the users list and the «الدفتر» option are gone */
   var SV = { busy: false, at: 0, key: "", data: null, hr: null, hk: "", hy: null, tap: -1 };
-  function svRange() { try { var R = sgRange(); return { f: R.f, t: R.t }; } catch (e) { var d = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return { f: d, t: d }; } }
+  function svRange() { try { var pr = document.querySelector('#sgPer [aria-pressed="true"]'), p = pr && pr.getAttribute("data-p"), old = S.sgP, R; if (p && p !== (old || "today")) { S.sgP = p; try { R = sgRange(); } finally { S.sgP = old; } } else R = sgRange(); return { f: R.f, t: R.t }; } catch (e) { var d = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return { f: d, t: d }; } }
   function svAcc() { var a = (typeof S !== "undefined" && S.sgAcc) || "all"; return a === "s" ? "shop" : a === "d" ? "del" : "all"; }
   function svSetAcc(k) { var a = k === "shop" ? "s" : k === "del" ? "d" : "all"; var b = document.querySelector('#sgAcc [data-a="' + a + '"]'); if (b) b.click(); }
   function svDm(d) { return d.split("-").reverse().map(function (x) { return +x; }).slice(0, 2).join("/"); }
@@ -123,7 +123,7 @@
     var z = { n: 0, total: 0, cash: 0, card: 0, rn: 0, ret: 0 }, a = A === "all" ? j.all : (j.br[A] || z), sh = j.br.shop || z, dl = j.br.del || z;
     var XS = svSmart(j, R); if (XS.any) { sh = Object.assign({}, sh, { total: (sh.total || 0) + XS.s.t, n: (sh.n || 0) + XS.s.n }); dl = Object.assign({}, dl, { total: (dl.total || 0) + XS.d.t, n: (dl.n || 0) + XS.d.n }); a = A === "all" ? Object.assign({}, j.all, { total: (j.all.total || 0) + XS.s.t + XS.d.t, n: (j.all.n || 0) + XS.s.n + XS.d.n }) : (A === "shop" ? sh : dl); }
     var lbl = one ? (R.f === td ? "مبيعات اليوم" : "مبيعات " + svDm(R.f)) : "المبيعات";
-    var h = '<div class="small muted" style="margin:0 0 6px">محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    var h = '<div class="small muted" style="margin:0 0 6px">' + svDm(R.f) + (one ? "" : " – " + svDm(R.t)) + ' · محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
       + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) + (XS.any ? "<br>(مع سمارت لايف قبل التحويل)" : ""))
       + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
       + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""), "shop", A === "shop")
