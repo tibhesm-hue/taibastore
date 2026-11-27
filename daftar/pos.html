@@ -658,6 +658,8 @@ function rcReset(){RC={};RCX=false;try{rcDraw()}catch(e){}}
 document.addEventListener("click",e=>{const p=e.target.closest("[data-rcp]"),m=e.target.closest("[data-rcm]");if(p){RCX=false;const d=p.dataset.rcp;RC[d]=(RC[d]||0)+1;rcDraw();$("err").textContent="";return}if(m){RCX=false;const d=m.dataset.rcm;RC[d]=Math.max(0,(RC[d]||0)-1);rcDraw();return}if(e.target.closest("#rcvX")){RC={};RCX=true;rcDraw();$("err").textContent="";return}if(e.target.closest("#rcvZ")){rcReset()}});
 {const _r0=render;render=function(){const x=_r0.apply(this,arguments);try{rcDraw()}catch(e){}return x}}
 {const _sm=setMode;setMode=function(m){const x=_sm.apply(this,arguments);try{rcDraw()}catch(e){}return x}}
+document.addEventListener("focusin",e=>{const i=e.target;if(i&&i.classList&&i.classList.contains("rcI")){setTimeout(()=>{try{i.select()}catch(x){}},0)}});
+document.addEventListener("pointerup",e=>{const i=e.target;if(i&&i.classList&&i.classList.contains("rcI")){try{i.select()}catch(x){}}});
 document.addEventListener("input",e=>{const i=e.target;if(!i.classList||!i.classList.contains("rcI"))return;let v=String(i.value).replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g,"");if(v!==i.value)i.value=v;RCX=false;RC[i.dataset.d]=parseInt(v||"0",10)||0;$("err").textContent="";rcDraw()});
 $("lastQ").addEventListener("input",lastDraw);
 $("lastQ").addEventListener("keydown",e=>{if(e.key==="Enter"){const v=$("lastQ").value.trim().replace(/^[FfRr]/,"");if(!v)return;retOpen();$("retNo").value=v;retGet()}});
