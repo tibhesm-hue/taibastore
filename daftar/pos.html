@@ -108,13 +108,12 @@ tr.last td{background:#f0fdf4}
 <div id="shClose" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:460px;max-width:94vw">
   <div style="font-size:22px;font-weight:600;margin-bottom:12px;color:#3C3489">تسليم الوردية</div>
-  <div id="scAsk"><div style="font-size:18px;font-weight:600;margin-bottom:8px">كيف تسلّم النقد للي بعدك؟</div>
-  <div style="display:flex;gap:8px;margin-bottom:10px"><button type="button" data-scm="all" style="flex:1;height:52px;border:0;border-radius:12px;background:#efede6;font-size:17px;font-weight:600;font-family:inherit;cursor:pointer">النقد كامل</button><button type="button" data-scm="part" style="flex:1;height:52px;border:0;border-radius:12px;background:#efede6;font-size:17px;font-weight:600;font-family:inherit;cursor:pointer">جزء منه، والباقي أعدّه بالجوال</button></div>
-  <div id="scLw" style="display:none"><div id="scLq" style="font-size:17px;font-weight:600;margin-bottom:6px"></div><input id="scLeft" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;box-sizing:border-box;height:56px;border:2px solid #3C3489;border-radius:12px;font-size:26px;font-weight:700;text-align:center;font-family:inherit"><div id="scLh" style="color:#5c6b78;margin:6px 0"></div></div>
-  <button class="save" id="scGo" style="background:#3C3489">سلّم الوردية</button>
+  <div id="scAsk"><div style="font-size:18px;font-weight:600;margin-bottom:8px">سلّم الدرج للي بعدك</div>
+  <div style="color:#5c6b78;margin-bottom:12px;font-size:16px">بعد التسليم خذ فلوسك وعدّها من جوالك في «موازنة ورديتك»، واكتب هناك «النقد المتروك» اللي تركته في الدرج.</div>
+  <button class="save" id="scGo" style="background:#3C3489">سلّم الدرج</button>
   <button id="scBack" style="width:100%;height:44px;margin-top:8px;border:1px solid #cfd8df;border-radius:10px">رجوع للبيع</button></div>
   <div id="scDone" style="display:none"><div style="font-size:20px;font-weight:600;color:#15803d;margin-bottom:8px">✓ سلّمت الوردية</div>
-  <div style="font-size:17px;margin-bottom:12px">افتح <b>الدفتر من جوالك</b> وسوّ الموازنة.</div>
+  <div style="font-size:17px;margin-bottom:12px">افتح <b>الدفتر من جوالك</b>: خذ فلوسك وعدّها، واكتب «النقد المتروك» في الموازنة.</div>
   <div style="background:#efede6;border-radius:12px;padding:12px;font-size:16px">الكاشير اللي بعدك: سجّل دخولك باسمك، وتنفتح ورديتك على طول.</div>
   <a href="/poslogout" class="save" style="display:block;text-align:center;line-height:52px;text-decoration:none;color:#fff;margin-top:12px">دخول الكاشير التالي</a>
   <div style="color:#5c6b78;margin-top:10px" id="scSum"></div></div>
@@ -498,7 +497,7 @@ function pendShow(){const n=Q().length;$("pend").textContent=n?("فواتير ب
 async function flush(){if(flush.busy)return;const a=Q();if(!a.length)return;flush.busy=true;let k=0,closed=false;
  /* in order: a return never goes before its sale, the shift close goes last; the first network failure stops the round */
  try{for(;k<a.length;k++){const s=a[k];let j;
-  try{if(s.type==="close")j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s.left!=null?{left:s.left,all:!!s.all}:{})});
+  try{if(s.type==="close")j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s.left!=null?{left:s.left,all:!!s.all}:{v2:1})});
    else if(s.type==="ret")j=await api("/api/pos/ret",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
    else j=await api("/api/pos/sale",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)})}catch(e){break}
   if(!j||(!j.ok&&j.err!=="item"&&j.err!=="empty"&&j.err!=="pay"&&j.err!=="nf"&&j.err!=="qty"&&j.err!=="noshift"&&j.err!=="noloc"))break;
@@ -650,7 +649,7 @@ setInterval(()=>{if(SHIFT)flLoad()},15000);
 function view(v){$("mainView").style.display=v==="main"?"flex":"none";$("jdView").style.display=v==="jard"?"flex":"none";$("shOpen").style.display=v==="open"?"flex":"none";$("shClose").style.display=v==="close"?"flex":"none";if(v==="main")$("q").focus()}
 $("shGo").onclick=async()=>{const j=await api("/api/pos/shift/open",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({float:0,dev:posDev()})});if(j.ok){SHIFT=j.shift;view("main");toast("فُتحت الوردية");flLoad()}else $("shErr").textContent="ما انفتحت: "+j.err};
 $("shFloat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("shGo").click()}});
-$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل التسليم",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";SCM="";$("scLw").style.display="none";document.querySelectorAll("[data-scm]").forEach(x=>{x.style.background="#efede6";x.style.color=""});view("close");$("scBack").focus()};
+$("scBtn").onclick=()=>{if(cart.length){toast("احفظ الفاتورة اللي في السلة أو علّقها قبل التسليم",3000);return}$("scErr").textContent="";$("scAsk").style.display="";$("scDone").style.display="none";view("close");$("scBack").focus()};
 $("scBack").onclick=()=>view("main");
 /* stocktake (الجرد): scan → count → Enter; unknown barcode → name + count; name fix kept for the owner */
 let JD={c:null,set:false,back:"main",kT:[],t:null,hits:[]};
@@ -695,8 +694,9 @@ setInterval(()=>{if($("jdView").style.display!=="none")jdLoad()},15000);
 /* owner 26 Nov: at handover the cashier says whether he leaves all the cash or part of it, and writes the amount he leaves; the rest he takes and counts from his phone (blind) */
 let SCM="";document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-scm]");if(!b)return;SCM=b.getAttribute("data-scm");document.querySelectorAll("[data-scm]").forEach(x=>{const on=x===b;x.style.background=on?"#3C3489":"#efede6";x.style.color=on?"#fff":""});$("scLw").style.display="";$("scLq").textContent=SCM==="all"?"كم النقد اللي في الدرج كامل؟":"كم تركت في الدرج للي بعدك؟";$("scLh").textContent=SCM==="all"?"عدّه كله، واللي بعدك يستلمه. وبعدها كمّل موازنتك من جوالك: صورة إيصال مدى والفواتير.":"الباقي خذه معك، وعدّه من جوالك في «موازنة ورديتك» بالدفتر.";$("scErr").textContent="";$("scLeft").value="";$("scLeft").focus()});
 function scLeftVal(){const v=String($("scLeft").value||"").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[٫,]/g,".").trim();const n=parseFloat(v);return v!==""&&n>=0&&n<1e7?Math.round(n*100)/100:null}
-$("scGo").onclick=async()=>{if(!SCM){$("scErr").textContent="اختر: النقد كامل أو جزء منه";return}const LV=scLeftVal();if(LV==null){$("scErr").textContent="اكتب المبلغ اللي تركته في الدرج";$("scLeft").focus();return}const LB=JSON.stringify({left:LV,all:SCM==="all"});
- if(Q().length||!navigator.onLine){if(!Q().some(x=>x.type==="close"))setQ(Q().concat([{type:"close",at:Date.now(),left:LV,all:SCM==="all"}]));$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent="انحفظ التسليم في الجهاز — يُرسل أول ما يرجع النت، وبعدها يسجّل خروجك";flush();return}
+/* owner 27 Nov: handover is just «تسليم الدرج»; the cash he leaves is written later, in the phone balance */
+$("scGo").onclick=async()=>{const LB=JSON.stringify({v2:1});
+ if(Q().length||!navigator.onLine){if(!Q().some(x=>x.type==="close"))setQ(Q().concat([{type:"close",at:Date.now(),v2:1}]));$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent="انحفظ التسليم في الجهاز — يُرسل أول ما يرجع النت، وبعدها يسجّل خروجك";flush();return}
  $("scGo").disabled=true;try{const j=await api("/api/pos/shift/close",{method:"POST",headers:{"Content-Type":"application/json"},body:LB});
  if(j.ok){const s=j.shift;$("scErr").textContent="";$("scAsk").style.display="none";$("scDone").style.display="";$("scSum").textContent=s.u+" · "+s.n+" فاتورة"+(s.rn?" · "+s.rn+" مرتجع":"")+" · يسجّل خروجك بعد لحظات";setTimeout(()=>location.href="/poslogout",20000)}
  else $("scErr").textContent=j.err==="noshift"?"ما فيه وردية مفتوحة":j.err==="predwait"?"ما تقدر تسلّم ورديتك لين يوازن "+(j.who||"الكاشير اللي قبلك")+" ورديته من الجوال ويرسلها للقروب. نبّهه وحاول بعدين.":"ما انقفلت: "+j.err}catch(e){$("scErr").textContent="تعذّر الاتصال، جرّب مرة ثانية"}$("scGo").disabled=false};

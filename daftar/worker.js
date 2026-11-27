@@ -1083,6 +1083,7 @@ async function shPred(env, cur) {
 const shKey = pr => pr.left != null ? +pr.leftAt || 0 : (pr.rec && pr.rec.at ? +pr.rec.at : 0);
 async function shRecOf(env, pr) {
   if (pr.left != null) return +pr.left;
+  if (pr.hv) return null; /* owner 27 Nov: handover first, the cash he leaves is written later in his phone balance */
   if (pr.rec && pr.rec.cash != null) return +pr.rec.cash;
   const ym = posDay(pr.closeAt).slice(0, 7), nm = String(pr.u || "").replace(/\s+(مبيعات|توصيل)$/, "").trim(), sh = pr.br === "del" ? "توصيل" : "مبيعات";
   const row = await env.DB.prepare("SELECT data FROM docs WHERE col=? AND json_extract(data,'$.cashier')=? AND json_extract(data,'$.shift')=? AND json_extract(data,'$.at')>=? AND json_extract(data,'$.at')<=? ORDER BY at DESC LIMIT 1").bind("months/" + ym + "/closings", nm, sh, (+pr.closeAt || 0) - 3600e3, (+pr.closeAt || 0) + 12 * 3600e3).first();
@@ -1247,7 +1248,7 @@ async function posShiftApi(env, req, me, p, q, br, B) {
     for (const x of r) { const d = JSON.parse(x.data); sc = posR2(sc + d.cash); sd = posR2(sd + d.card); st = posR2(st + (d.tr || 0)); if (d.tr) { trn++; if (d.xf) { trx = posR2(trx + (d.xfAmt || 0)); if (d.xfMis) trm++; } else trb++; } if (d.esc || d.xesc) esc++; sa = posR2(sa + (d.aj || 0)); if (d.kind === "ret") { rn++; ret = posR2(ret + d.total); } else { n++; sales = posR2(sales + d.total); } }
     const exp = { cash: posR2(cur.float + sc), card: sd, tr: st, trx, trn, trb, trm, esc, aj: sa, sales, ret, n, rn };
     const lv = o.left != null && posR2(+o.left) >= 0 && posR2(+o.left) < 1e7 ? posR2(+o.left) : null;
-    const d = Object.assign({}, cur, o.drawer ? { dev: String(o.drawer).slice(0, 24) } : {}, lv != null ? { left: lv, leftAt: now, leftAll: !!o.all } : {}, { st: "closed", closeAt: now, counted: noCnt ? null : { cash, card }, exp, diff: noCnt ? null : { cash: posR2(cash - exp.cash), card: posR2(card - exp.card) } }); delete d.id;
+    const d = Object.assign({}, cur, o.drawer ? { dev: String(o.drawer).slice(0, 24) } : {}, lv != null ? { left: lv, leftAt: now, leftAll: !!o.all } : (o.v2 ? { hv: 1 } : {}), { st: "closed", closeAt: now, counted: noCnt ? null : { cash, card }, exp, diff: noCnt ? null : { cash: posR2(cash - exp.cash), card: posR2(card - exp.card) } }); delete d.id;
     await writeDoc(env, "posshift", cur.id, d);
     return json({ ok: true, shift: { id: cur.id, u: d.u, br: d.br, openAt: d.openAt, closeAt: now, float: d.float, counted: d.counted, n, rn } });
   }
@@ -1621,7 +1622,7 @@ export default {
       if (p === "/api/shift/pending") {
         const r = (await env.DB.prepare("SELECT id,data FROM docs WHERE col='posshift' AND json_extract(data,'$.st')='closed' AND json_extract(data,'$.rec') IS NULL AND json_extract(data,'$.closeAt')>? ORDER BY at DESC LIMIT 40").bind(Date.now() - 14 * 864e5).all()).results || [];
         const out = [];
-        for (const x of r) { const d = JSON.parse(x.data); d.id = x.id; const pr = await shPred(env, d); out.push({ id: d.id, u: d.u, br: d.br, dev: d.dev || null, openAt: d.openAt, closeAt: d.closeAt, day: d.day, exp: d.exp || null, fShort: d.fShort || null, left: d.left != null ? d.left : null, leftAll: !!d.leftAll, pred: pr ? { id: pr.id, u: pr.u, closeAt: pr.closeAt, cash: await shRecOf(env, pr) } : null }); }
+        for (const x of r) { const d = JSON.parse(x.data); d.id = x.id; const pr = await shPred(env, d); out.push({ id: d.id, u: d.u, br: d.br, dev: d.dev || null, openAt: d.openAt, closeAt: d.closeAt, day: d.day, exp: d.exp || null, fShort: d.fShort || null, left: d.left != null ? d.left : null, leftAll: !!d.leftAll, hv: d.hv ? 1 : 0, pred: pr ? { id: pr.id, u: pr.u, closeAt: pr.closeAt, cash: await shRecOf(env, pr) } : null }); }
         return json({ ok: true, list: out });
       }
       if (p === "/api/shift/rejects") {
@@ -1674,6 +1675,7 @@ export default {
         if (!id || !(cash >= 0 && cash < 1e7)) return json({ ok: false, err: "num" });
         const row = await env.DB.prepare("SELECT data FROM docs WHERE col='posshift' AND id=?").bind(id).first(); if (!row) return json({ ok: false, err: "noshift" });
         const d = JSON.parse(row.data); if (d.st !== "closed") return json({ ok: false, err: "open" }); if (d.rec && !me.owner) return json({ ok: false, err: "done" });
+        if (d.hv && d.left == null) { const lv = Math.round((+o.left) * 100) / 100; if (!(lv >= 0 && lv < 1e7)) return json({ ok: false, err: "left" }); d.left = lv; d.leftAt = Date.now(); d.leftAll = false; }
         d.rec = { cash, at: Date.now(), by: me.name || "", closingId: String(o.closingId || "").slice(0, 40) || null }; await writeDoc(env, "posshift", id, d); return json({ ok: true });
       }
       if (p.startsWith("/api/pos/")) return await posApi(env, req, me, p, q);
