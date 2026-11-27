@@ -22,6 +22,7 @@ button{background:#0e5a3c;color:#fff;border:0;font-weight:700}
 <p>اكتب الاسم (كما في الواتساب) أو الرقم، فتظهر قائمة المحفوظين.</p>
 <input id="n" placeholder="الاسم">
 <input id="p" inputmode="tel" placeholder="رقم الجوال">
+<div style="display:flex;gap:8px"><button id="pst" type="button" style="background:#fff;color:#0e5a3c;border:1px solid #0e5a3c">الصق الرقم المنسوخ</button><button id="ctc" type="button" style="display:none;background:#fff;color:#0e5a3c;border:1px solid #0e5a3c">من جهات الاتصال</button></div>
 <div id="lst"></div>
 <div id="lw" style="display:none"><p style="margin-top:10px">موقع وصل قبل قليل ولم يُربط (اختياري):</p><div id="locs"></div></div>
 <button id="sv">حفظ</button>
@@ -39,7 +40,7 @@ async function load(){
  try{const r=await fetch("/api/pos/dcust",{credentials:"same-origin",cache:"no-store"});if(r.status===401){auth=false;$("msg").innerHTML='<span class="e">سجّل دخولك أولاً من نقاط البيع في هذا الجوال ثم ارجع.</span>';return}
   const j=await r.json();if(j.ok){DC=j.list||[];CUR=j.cur||null}}catch(e){$("msg").innerHTML='<span class="e">تعذّر التحميل — تأكد من النت</span>'}
  try{const r=await fetch("/api/pos/xfer",{credentials:"same-origin",cache:"no-store"});const j=await r.json();LOCS=(j.locs||[]).filter(x=>x.free)}catch(e){}
- draw()}
+ draw();clip(false)}
 function draw(){
  const cb=$("cur");if(CUR){cb.style.display="block";cb.innerHTML="<b>العميل الحالي: "+esc(CUR.name)+"</b><span>الموقع والإيصال اللي يوصلون الآن يُربطون به.</span><button id=\"cx\" style=\"background:#fff;color:#b3261e;border:1px solid #e1c4c1;margin-top:8px\">بدون عميل / عميل آخر</button>"}else cb.style.display="none";
  const q=norm($("n").value).trim(),qp=ph($("p").value);
@@ -47,6 +48,12 @@ function draw(){
  $("lst").innerHTML=r.length?'<p style="margin-top:10px">محفوظ من قبل — اضغط عليه ليصير هو العميل الحالي (الموقع والإيصال يُربطان به):</p>'+r.map(x=>'<div class="r" data-i="'+x.id+'"><b>'+esc(x.name)+'</b><span>'+esc(x.phone)+" · "+(x.hasLoc?L[x.lv]+" · "+x.d.toFixed(1)+" كم":"بلا موقع")+"</span></div>").join(""):((q||qp.length>=3)?'<p style="margin-top:10px" class="g">ما فيه عميل بهالاسم أو الرقم — جديد.</p>':"");
  $("lw").style.display=LOCS.length?"block":"none";
  $("locs").innerHTML=LOCS.map(x=>'<div class="r'+(x.id===LSEL?" on":"")+'" data-l="'+x.id+'"><b>'+L[x.lv]+" · "+x.d.toFixed(1)+" كم</b><span>الساعة "+esc((x.t||"").slice(0,5))+"</span></div>").join("")}
+let LASTCLIP="";
+function takeNum(t,force){const d=ph(t);if(!/^[\d\s+\-()٠-٩]{7,22}$/.test(String(t).trim())||d.length<7||d.length>12)return false;if(!force&&(d===LASTCLIP||$("p").value.trim()))return false;LASTCLIP=d;$("p").value=d.length===9&&d[0]==="5"?"0"+d:d;const ex=DC.find(x=>x.phone===d);if(ex)$("n").value=ex.name;draw();$("msg").innerHTML='<span class="g">'+(ex?"الرقم المنسوخ محفوظ باسم «"+esc(ex.name)+"» — اضغط عليه تحت.":"أخذت الرقم المنسوخ — اكتب الاسم واحفظ.")+"</span>";return true}
+async function clip(force){try{if(!navigator.clipboard||!navigator.clipboard.readText)return false;const t=await navigator.clipboard.readText();return takeNum(t,force)}catch(e){return false}}
+$("pst").onclick=async()=>{const ok=await clip(true);if(!ok)$("msg").innerHTML='<span class="e">ما لقيت رقم منسوخ — انسخ الرقم من الواتساب أولاً.</span>'};
+if("contacts" in navigator&&navigator.contacts.select){$("ctc").style.display="";$("ctc").onclick=async()=>{try{const r=await navigator.contacts.select(["name","tel"],{multiple:false});if(!r||!r.length)return;const c=r[0],t=(c.tel||[])[0]||"",nm=(c.name||[])[0]||"";if(!t){$("msg").innerHTML='<span class="e">هذي الجهة ما فيها رقم.</span>';return}const d=ph(t);$("p").value=d.length===9&&d[0]==="5"?"0"+d:d;const ex=DC.find(x=>x.phone===d);$("n").value=ex?ex.name:nm;draw();$("msg").innerHTML='<span class="g">'+(ex?"محفوظ من قبل — اضغط عليه تحت.":"راجع الاسم واضغط حفظ.")+"</span>"}catch(e){}}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>clip(false),300)});window.addEventListener("focus",()=>setTimeout(()=>clip(false),300));
 document.addEventListener("input",e=>{if(e.target.id==="n"||e.target.id==="p")draw()});
 document.addEventListener("click",e=>{const a=e.target.closest("[data-i]");if(a){const x=DC.find(y=>y.id===a.dataset.i);if(x){$("n").value=x.name;$("p").value=x.phone;fetch("/api/pos/dcust",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:x.name,phone:x.phone})}).then(()=>load());draw()}return}
  if(e.target.id==="cx"){fetch("/api/pos/dcust",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({clear:1})}).then(()=>load());return}
