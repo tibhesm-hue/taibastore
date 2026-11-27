@@ -12,8 +12,6 @@
 #payBody .save{height:64px;font-size:22px}
 #payBody #rcvG{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
 #payBody [data-rcb]>div:first-child{font-size:26px!important}
-#payBody [data-rcb] [data-rcn]{font-size:20px!important;min-height:28px!important}
-#payBody [data-rcb] button{height:46px!important;font-size:24px!important}
 #payBody #rcvA,#payBody #rcvC{font-size:28px}
 #payBody #rcvX,#payBody #rcvZ{height:46px;font-size:16px}
 
@@ -653,13 +651,14 @@ const RCD=[500,200,100,50,20,10,5,2,1,0.5,0.25];let RC={},RCX=false;
 function rcOn(){return mode==="cash"&&ME&&!isDel()&&!ME.owner}
 function rcSum(){if(RCX)return totals().t;let t=0;RCD.forEach(d=>{t+=d*(RC[d]||0)});return r2(t)}
 function rcDraw(){try{payLayout();if($("payTot"))$("payTot").textContent=f2(totals().t)}catch(e){}const c=$("rcvCard");if(!c)return;const on=mode==="cash"&&ME&&!isDel();c.style.display=on?"block":"none";if(!on)return;const g=$("rcvG");
- if(!g.firstChild||!g.dataset.b){g.dataset.b="1";g.innerHTML=RCD.map(d=>`<div data-rcb="${d}" style="border:1px solid #cfd8d5;border-radius:12px;padding:5px;text-align:center;background:#fff"><div style="font-size:17px;font-weight:600">${d}</div><div data-rcn style="font-size:16px;min-height:22px">0</div><div style="display:flex;gap:4px"><button type="button" data-rcm="${d}" style="flex:1;height:36px;border:1px solid #cfd8d5;border-radius:8px;background:#fff;font-size:18px;padding:0;color:#1c2b33;margin:0">−</button><button type="button" data-rcp="${d}" style="flex:1;height:36px;border:1px solid #cfd8d5;border-radius:8px;background:#fff;font-size:18px;padding:0;color:#1c2b33;margin:0">+</button></div></div>`).join("")}
- g.querySelectorAll("[data-rcb]").forEach(e=>{const n=RCX?0:(RC[e.dataset.rcb]||0);e.querySelector("[data-rcn]").textContent=n;e.style.borderColor=n?"#0e5a3c":"#cfd8d5";e.style.background=n?"#eef6f2":"#fff"});
+ if(!g.firstChild||!g.dataset.b){g.dataset.b="1";g.innerHTML=RCD.map(d=>`<div data-rcb="${d}" style="border:1px solid #cfd8d5;border-radius:12px;padding:6px;text-align:center;background:#fff"><div style="font-size:26px;font-weight:700;margin-bottom:4px">${d<1?d.toFixed(2):d}</div><input class="rcI" data-d="${d}" inputmode="numeric" autocomplete="off" placeholder="0" style="width:100%;box-sizing:border-box;text-align:center;font-size:22px;height:46px;border:1px solid #cfd8d5;border-radius:8px;margin:0 0 6px;font-family:inherit;padding:0"><div style="display:flex;gap:4px"><button type="button" data-rcp="${d}" style="flex:1;height:46px;border:1px solid #0e5a3c;border-radius:8px;background:#fff;font-size:24px;padding:0;color:#0e5a3c;margin:0">+</button><button type="button" data-rcm="${d}" style="flex:1;height:46px;border:1px solid #cfd8d5;border-radius:8px;background:#fff;font-size:24px;padding:0;color:#444;margin:0">−</button></div></div>`).join("")}
+ g.querySelectorAll("[data-rcb]").forEach(e=>{const n=RCX?0:(RC[e.dataset.rcb]||0),i=e.querySelector(".rcI");if(document.activeElement!==i)i.value=n?String(n):"";e.style.borderColor=n?"#0e5a3c":"#cfd8d5";e.style.background=n?"#eef6f2":"#fff"})
  const t=totals().t,a=rcSum();$("rcvA").textContent=f2(a);const ch=r2(a-t);$("rcvC").textContent=f2(ch>0?ch:0);$("rcvC").parentNode.style.color=ch<0?"#b91c1c":"#0e5a3c";$("rcvX").style.borderColor=RCX?"#0e5a3c":""}
 function rcReset(){RC={};RCX=false;try{rcDraw()}catch(e){}}
 document.addEventListener("click",e=>{const p=e.target.closest("[data-rcp]"),m=e.target.closest("[data-rcm]");if(p){RCX=false;const d=p.dataset.rcp;RC[d]=(RC[d]||0)+1;rcDraw();$("err").textContent="";return}if(m){RCX=false;const d=m.dataset.rcm;RC[d]=Math.max(0,(RC[d]||0)-1);rcDraw();return}if(e.target.closest("#rcvX")){RC={};RCX=true;rcDraw();$("err").textContent="";return}if(e.target.closest("#rcvZ")){rcReset()}});
 {const _r0=render;render=function(){const x=_r0.apply(this,arguments);try{rcDraw()}catch(e){}return x}}
 {const _sm=setMode;setMode=function(m){const x=_sm.apply(this,arguments);try{rcDraw()}catch(e){}return x}}
+document.addEventListener("input",e=>{const i=e.target;if(!i.classList||!i.classList.contains("rcI"))return;let v=String(i.value).replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g,"");if(v!==i.value)i.value=v;RCX=false;RC[i.dataset.d]=parseInt(v||"0",10)||0;$("err").textContent="";rcDraw()});
 $("lastQ").addEventListener("input",lastDraw);
 $("lastQ").addEventListener("keydown",e=>{if(e.key==="Enter"){const v=$("lastQ").value.trim().replace(/^[FfRr]/,"");if(!v)return;retOpen();$("retNo").value=v;retGet()}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-lret]");if(!b)return;retOpen();$("retNo").value=b.dataset.lret;retGet();window.scrollTo(0,0)});
