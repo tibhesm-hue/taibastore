@@ -3,8 +3,8 @@
   "short_name": "استقبال طيبة",
   "lang": "ar",
   "dir": "rtl",
-  "id": "/recv",
-  "start_url": "/recv.html",
+  "id": "/recv2",
+  "start_url": "/recv.html?r=1",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4f6f5",
@@ -14,7 +14,7 @@
     {"src": "/i512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ],
   "share_target": {
-    "action": "/app/share",
+    "action": "/r/share",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
