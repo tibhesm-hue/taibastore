@@ -2741,7 +2741,7 @@ function grCard(s,td){var L=logs.filter(function(l){return l.sid===s.id&&l.gr&&l
 var _ri65=redoItems;redoItems=function(s,td){var o=_ri65(s,td);o.forEach(function(x){var l=logs.filter(function(q){return q.sid===s.id&&q.date===x.d})[0]||{};if(x.t==="L"){x.by=l.rby;x.nt=l.rnt}else{x.by=l.rrby;x.nt=l.rrnt}});return o};var _rc64=redoCard;redoCard=function(s,td){return _rc64(s,td)+grCard(s,td)};
 
 /* الدخول بحساب Google: يؤكد الإيميل */
-var GCID="602073315832-ohi4d153hc72bt3hgc1lafmfggh4ugrn.apps.googleusercontent.com",GSI=0,GV={};
+var GCID="521449883805-gd5mhvbke0encrt6jf32tgem5sfe4m7n.apps.googleusercontent.com",GSI=0,GV={};
 function gsiLoad(cb){if(window.__EMB)return;if(window.google&&google.accounts&&google.accounts.id){if(GSI!==2){google.accounts.id.initialize({client_id:GCID,callback:gCb,ux_mode:"popup",auto_select:false,cancel_on_tap_outside:true});GSI=2}cb();return}if(GSI===1){setTimeout(function(){gsiLoad(cb)},300);return}GSI=1;var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=function(){GSI=0;gsiLoad(cb)};s.onerror=function(){GSI=0};document.head.appendChild(s)}
 function gMsg(m){if(window.TAJW&&!window.ITQ&&typeof supErr==="function")supErr(m);else itErr(m)}
 function gCb(resp){var cred=resp&&resp.credential;if(!cred)return;gMsg("⏳ لحظة…");itCall("glogin",{cred:cred}).then(function(r){if(!r||!r.ok)return gMsg("تعذّر الدخول بحساب Google، أعد المحاولة");var A=itAuth();

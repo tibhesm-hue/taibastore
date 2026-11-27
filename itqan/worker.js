@@ -266,7 +266,7 @@ async function oaRead(DB,a,o,cors){const J=x=>new Response(JSON.stringify(x),{he
   return J(res)}
 
 /* الدخول بحساب Google: يتأكد من الإيميل */
-const GCID="602073315832-ohi4d153hc72bt3hgc1lafmfggh4ugrn.apps.googleusercontent.com",GCID2="401821545055-k3oltbn3tav487pgtpqnherqg0uc8b0e.apps.googleusercontent.com";/* owner 27 Nov: new client in amalmateq1 (redirect sign-in); the old one still accepted */
+const GCID="602073315832-ohi4d153hc72bt3hgc1lafmfggh4ugrn.apps.googleusercontent.com",GCID2="401821545055-k3oltbn3tav487pgtpqnherqg0uc8b0e.apps.googleusercontent.com",GCID3="521449883805-gd5mhvbke0encrt6jf32tgem5sfe4m7n.apps.googleusercontent.com";/* owner 27 Nov: new client in amalmateq1 (redirect sign-in); the old one still accepted */
 async function lgSes(DB,e,hh){try{return !!(await lgOne(DB,"SELECT e FROM itsess WHERE hh=? AND e=?",hh,e))}catch(x){return false}}
 const b64u=t=>{t=String(t).replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";return Uint8Array.from(atob(t),c=>c.charCodeAt(0))};
 let GCERT=null;
@@ -274,7 +274,7 @@ async function gVerify(tok,env){const P=String(tok||"").split(".");if(P.length!=
   if(!GCERT||Date.now()-GCERT.at>3600e3){const j=env&&env.__GCERTS?env.__GCERTS:await (await fetch("https://www.googleapis.com/oauth2/v3/certs")).json();GCERT={at:Date.now(),keys:j.keys||[]}}
   const k=GCERT.keys.find(x=>x.kid===hd.kid);if(!k||hd.alg!=="RS256")return null;const key=await crypto.subtle.importKey("jwk",{kty:k.kty,n:k.n,e:k.e,alg:"RS256",ext:true},{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
   const ok=await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,b64u(P[2]),new TextEncoder().encode(P[0]+"."+P[1]));if(!ok)return null;
-  if((pl.aud!==GCID&&pl.aud!==GCID2)||!["accounts.google.com","https://accounts.google.com"].includes(pl.iss)||!(pl.exp*1000>Date.now())||!(pl.email_verified===true||pl.email_verified==="true")||!pl.email)return null;return pl}
+  if((pl.aud!==GCID&&pl.aud!==GCID2&&pl.aud!==GCID3)||!["accounts.google.com","https://accounts.google.com"].includes(pl.iss)||!(pl.exp*1000>Date.now())||!(pl.email_verified===true||pl.email_verified==="true")||!pl.email)return null;return pl}
 async function gHash(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("itq|"+s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 const gRand=()=>[...crypto.getRandomValues(new Uint8Array(24))].map(x=>x.toString(16).padStart(2,"0")).join("");
 async function gAct(DB,a,o,cors,env){const J=x=>new Response(JSON.stringify(x),{headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
