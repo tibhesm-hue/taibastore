@@ -1332,6 +1332,14 @@ async function posOrdersApi(env, req, me, p, br) {
     const L = r.map(x => Object.assign(JSON.parse(x.data), { id: x.id })).filter(d => (+d.at || 0) >= lim && (d.st === "new" || d.by === me.email));
     return json({ ok: true, orders: L });
   }
+  /* owner 27 Nov («ما تروح اذا خلص منها»): the cashier closes an order he finished; it is kept with his name */
+  if (p === "/api/pos/orders/close" && req.method === "POST") {
+    const o = await req.json().catch(() => ({})), id = String(o.id || "");
+    const x = await env.DB.prepare("SELECT data FROM docs WHERE col='posord' AND id=?").bind(id).first(); if (!x) return json({ ok: false, err: "nf" });
+    const d = JSON.parse(x.data); if (d.st !== "new" && d.st !== "taken") return json({ ok: true });
+    d.st = "closed"; d.closedBy = me.email; d.closedU = me.name || me.email; d.closedAt = Date.now(); d.byCashier = 1; await writeDoc(env, "posord", id, d);
+    return json({ ok: true });
+  }
   if (p === "/api/pos/orders/stale") {
     if (!me.owner) return json({ ok: false }, 403);
     const r = (await env.DB.prepare("SELECT id,data FROM docs WHERE col='posord' AND json_extract(data,'$.day')>=? AND json_extract(data,'$.st') IN ('new','taken') ORDER BY at DESC LIMIT 200").bind(posDay(Date.now() - 7 * 864e5)).all()).results || [];
@@ -1387,7 +1395,8 @@ function posOrdSim(od, lines) {
   for (const x of it) { let q = x[3] ? byC.get(String(x[3])) : undefined; if (q == null) q = byN.get(posNormName(x[0])); if (q != null) { m++; if (Math.abs(q - (+x[1] || 0)) < 0.01) mq++; } }
   return { r: m / n, rq: mq / n, dsum: Math.abs(posR2(sum) - (+od.sub || 0)) };
 }
-const posOrdFits = (s, od) => s.r >= 0.5 && (s.rq >= 0.8 || s.dsum <= Math.max(1, 0.15 * (+od.sub || 0)));
+/* owner 27 Nov: an order filled with substitutes (other brands) still closes when most of it and its total match */
+const posOrdFits = (s, od) => (s.r >= 0.5 && (s.rq >= 0.8 || s.dsum <= Math.max(1, 0.15 * (+od.sub || 0)))) || (s.r >= 0.4 && s.dsum <= Math.max(1.5, 0.1 * (+od.sub || 0)));
 const posOrdScore = s => s.rq * 2 + s.r - Math.min(1, s.dsum / 20);
 /* a hand-typed delivery invoice: the open order of the last 6 hours it fits best */
 async function posOrdFind(env, lines, at) {
