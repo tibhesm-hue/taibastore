@@ -169,7 +169,7 @@ tr.last td{background:#f0fdf4}
   <div id="held" style="display:none"><div style="font-size:14px;color:#5c6b78;margin-bottom:6px" id="heldT"></div><div id="heldL" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px"></div></div>
   <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
   <div class="cart" id="cart"></div>
-  <div id="totBar" style="position:sticky;bottom:8px;z-index:20;box-shadow:0 -6px 16px rgba(0,0,0,.18);background:#0f2a43;color:#fff;border-radius:14px;padding:14px 22px;display:flex;justify-content:space-between;align-items:baseline"><button type="button" id="clrTop" style="position:absolute;top:-16px;left:14px;background:#dc2626;color:#fff;border:0;border-radius:10px;padding:7px 16px;font-size:15px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.25)">تفريغ السلة</button><span style="font-size:22px">الإجمالي</span><b style="font-size:46px;font-weight:700"><span id="total2">0.00</span> <small style="font-size:20px;font-weight:400">ر.س</small></b></div>
+  <div id="totBar" style="position:sticky;bottom:8px;z-index:20;box-shadow:0 -6px 16px rgba(0,0,0,.18);background:#0f2a43;color:#fff;border-radius:14px;padding:14px 22px;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:22px">الإجمالي</span><b style="font-size:46px;font-weight:700"><span id="total2">0.00</span> <small style="font-size:20px;font-weight:400">ر.س</small></b></div>
   <div class="card" id="retBox" style="display:none;border:2px solid #dc2626">
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:19px;color:#991b1b">مرتجع</b><button id="retX" style="border:1px solid #cfd8df;border-radius:8px;padding:6px 14px">رجوع للبيع</button></div>
    <div style="display:flex;gap:10px;margin-bottom:10px"><input id="retNo" class="uin" style="margin:0;height:50px;font-size:18px;border:2px solid #dc2626" inputmode="numeric" placeholder="رقم الفاتورة"><button id="retGet" style="padding:0 22px;border-radius:10px;background:#991b1b;color:#fff;font-weight:600;white-space:nowrap">جلب الفاتورة</button></div>
@@ -364,7 +364,7 @@ function cartBack(){try{const o=JSON.parse(localStorage.getItem("poscart_"+(ME&&
 function render(){try{cartKeep()}catch(e){}
  const c=$("cart");
  if(!cart.length)c.innerHTML=`<div class="empty">امسح باركود أو اكتب اسم الصنف لبدء الفاتورة</div>`;
- else c.innerHTML=`<table><tr><th class="n">#</th><th>الصنف</th><th style="width:100px">السعر</th><th style="width:150px">الكمية</th><th style="width:110px">المجموع</th><th style="width:44px"></th></tr>`+
+ else c.innerHTML=`<table><tr><th class="n">#</th><th>الصنف</th><th style="width:100px">السعر</th><th style="width:150px">الكمية</th><th style="width:110px">المجموع</th><th style="width:104px"><button type="button" id="clrTop" style="background:#dc2626;color:#fff;border:0;border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer">تفريغ السلة</button></th></tr>`+
   cart.map((l,i)=>`<tr class="${l.c===lastCode?"last":""}"><td class="n">${i+1}</td><td>${esc(l.n)}<button class="ed" data-ed="nm" data-i="${i}" aria-label="تغيير الاسم"><i class="ti ti-pencil"></i></button><span class="code">${esc(l.c)}</span></td><td>${f2(l.p)}<button class="ed" data-ed="pr" data-i="${i}" aria-label="تغيير السعر"><i class="ti ti-tag"></i></button></td><td><span class="q"><button data-a="-" data-i="${i}">−</button><input data-i="${i}" value="${l.q}" inputmode="decimal"><button data-a="+" data-i="${i}">+</button></span></td><td><b>${f2(l.p*l.q)}</b></td><td><button class="del" data-a="x" data-i="${i}"><i class="ti ti-trash"></i></button></td></tr>`).reverse().join("")+`</table>`;
  const{t,n}=totals();$("total").textContent=f2(t);$("total2").textContent=f2(t);dlvDraw();$("cnt").textContent=cart.length+" أصناف · "+(Math.round(n*1000)/1000)+" قطع";
  const v=ME&&ME.vat?r2(t*15/115):0;$("vat").textContent=f2(v);$("net").textContent=f2(t-v);
@@ -661,7 +661,7 @@ document.addEventListener("click",e=>{const p=e.target.closest("[data-rcp]"),m=e
 document.addEventListener("focusin",e=>{const i=e.target;if(i&&i.classList&&i.classList.contains("rcI")){setTimeout(()=>{try{i.select()}catch(x){}},0)}});
 document.addEventListener("pointerup",e=>{const i=e.target;if(i&&i.classList&&i.classList.contains("rcI")){try{i.select()}catch(x){}}});
 document.addEventListener("input",e=>{const i=e.target;if(!i.classList||!i.classList.contains("rcI"))return;let v=String(i.value).replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g,"");if(v!==i.value)i.value=v;RCX=false;RC[i.dataset.d]=parseInt(v||"0",10)||0;$("err").textContent="";rcDraw()});
-$("clrTop").addEventListener("click",()=>$("clrBtn").click());
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#clrTop"))$("clrBtn").click()});
 $("lastQ").addEventListener("input",lastDraw);
 $("lastQ").addEventListener("keydown",e=>{if(e.key==="Enter"){const v=$("lastQ").value.trim().replace(/^[FfRr]/,"");if(!v)return;retOpen();$("retNo").value=v;retGet()}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-lret]");if(!b)return;retOpen();$("retNo").value=b.dataset.lret;retGet();window.scrollTo(0,0)});
