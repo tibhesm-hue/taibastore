@@ -2866,13 +2866,15 @@ function keyBlock(id,val){if(!document.getElementById("kbcss")){var st=document.
   var S=function(n,ar,en,ph){return '<div class="kb-st"><div class="kb-n">'+n+'</div><div style="flex:1;min-width:0"><div class="kb-ar">'+ar+'</div><div class="kb-en">'+en+'</div>'+(ph?'<div class="kb-ph">'+ph+'<span class="kb-a">⬅</span></div>':'')+'</div></div>'};
   /* owner 27 Nov: the key box must catch the eye — red border that pulses, a blinking dot, 4 big steps */
   if(!document.getElementById("kbcss2")){var s2=document.createElement("style");s2.id="kbcss2";s2.textContent='@keyframes kbbl{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.7)}50%{box-shadow:0 0 0 7px rgba(226,75,74,.18)}}@keyframes kbdt{0%,100%{opacity:1}50%{opacity:.15}}.kb-bx{border:2px solid #E24B4A;border-radius:12px;padding:10px;background:#FCEBEB;margin-bottom:12px;animation:kbbl 1.4s infinite}.kb-dt{flex:none;width:12px;height:12px;border-radius:50%;background:#E24B4A;animation:kbdt 1s infinite}.kb-go{display:block;text-align:center;text-decoration:none;background:#E24B4A;color:#fff!important;font-weight:700;font-size:17px;border-radius:10px;padding:13px 6px;margin:10px 0;animation:kbbl 1.4s infinite}';document.head.appendChild(s2)}
+  /* owner 27 Nov: Arabic of each Groq button too — some phones translate the Groq page automatically */
+  var tr=function(a){return '<div style="font-size:13px;color:#5F5E5A">إن كانت الصفحة مترجمة: «'+a+'»</div>'};
   var T=function(n,t){return '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #F3D9AE"><div class="kb-n">'+n+'</div><div style="flex:1;min-width:0;font-size:15px">'+t+'</div></div>'};
   return '<div class="kb-bx"><div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#791F1F;font-size:17px"><span class="kb-dt"></span>🔑 مهم: خذ مفتاحك (دقيقة واحدة)</div>'
   +'<div style="background:#fff;border-radius:9px;padding:2px 10px;margin-top:8px">'
   +T("١","اضغط المربع الأحمر تحت").replace('border-top:1px solid #F3D9AE','border-top:0')
-  +T("٢",'اختر <b dir="ltr">Log in with Google</b> بنفس حسابك')
-  +T("٣",'اضغط <b dir="ltr">Create API Key</b> واكتب <b dir="ltr">itqan</b> ثم <b dir="ltr">Submit</b>')
-  +T("٤",'اضغط <b dir="ltr">Copy</b> وارجع هنا، يُوضع تلقائياً')
+  +T("٢",'اختر <b dir="ltr">Log in with Google</b> بنفس حسابك'+tr("تسجيل الدخول باستخدام Google"))
+  +T("٣",'اضغط <b dir="ltr">Create API Key</b> واكتب <b dir="ltr">itqan</b> ثم <b dir="ltr">Submit</b>'+tr("إنشاء مفتاح API ← اسم العرض ← إرسال"))
+  +T("٤",'اضغط <b dir="ltr">Copy</b> وارجع هنا، يُوضع تلقائياً'+tr("نسخ"))
   +'</div><a class="kb-go" target="_blank" rel="noopener" href="https://console.groq.com/keys">🔑 افتح Groq وخذ المفتاح</a>'
   +'<input id="'+id+'" data-kauto="1" dir="ltr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="gsk_…" value="'+esc(val||"")+'" style="width:100%;font-size:16px;padding:10px;box-sizing:border-box;margin:4px 0 6px;border:1.5px solid #D3D1C7;border-radius:10px;background:#fff"><button class="btn sec" data-kpaste="'+id+'" style="margin:0">📋 الصق المفتاح</button><div id="'+id+'_st" style="font-weight:700;font-size:15px;margin-top:6px;text-align:center"></div></div>'}
 window.keyBlock=keyBlock;
