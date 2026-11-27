@@ -95,9 +95,11 @@ tr.last td{background:#f0fdf4}
 <div class="top">
  <div class="brand">أسواق طيبة</div>
  <div class="brx" id="brName">…</div>
+ <button type="button" class="tb" id="zBadge" style="display:none;border:0;color:#fff;font-weight:700"></button>
  <div class="info"><span>الكاشير: <b id="uName">…</b></span><span>التاريخ: <b id="dt">…</b></span><span>الوقت: <b id="tm">…</b></span></div>
  <div style="display:flex;gap:8px"><a href="/app/" class="tb" id="toLedger" style="display:none">الدفتر</a><button class="tb" id="scBtn" style="display:none;background:#3C3489;border-color:#3C3489">تسليم الوردية</button><a href="/poslogout" class="tb">تسجيل خروج</a></div>
 </div>
+<div id="zPanel" style="display:none;background:#fff;border:1px solid #cfd8df;border-radius:12px;margin:8px 12px;padding:12px;font-size:15px;line-height:1.9;color:#111"></div>
 <div id="shOpen" style="display:none;flex:1;align-items:center;justify-content:center;padding:30px">
  <div class="card" style="width:420px;max-width:94vw">
   <div style="font-size:22px;font-weight:600;margin-bottom:4px">فتح الوردية</div>
@@ -721,5 +723,22 @@ try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").ca
 /* owner 25 Nov: a POS window left open all day picks up a new version by itself — only while the invoice is empty and nothing is being saved */
 (function(){let h0=null;const hs=async()=>{try{const r=await fetch(location.pathname,{cache:"no-store"});if(!r.ok)return null;const t=await r.text();if(t.indexOf('id="scGo"')<0)return null;let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return h}catch(e){return null}};
 hs().then(h=>{h0=h});setInterval(async()=>{if(h0==null){h0=await hs();return}try{if(typeof cart==="undefined"||cart.length||saving)return}catch(e){return}const h=await hs();if(h!=null&&h!==h0)location.reload()},120000)})();
+</script>
+<script>
+/* owner 27 Nov: ZATCA link mark on the sales POS — green when the relay (Chrome extension) answered in the last 6 minutes, red otherwise with the waiting count; tapping red shows how to install it on this computer */
+(function(){let ZS=null;
+function zDraw(){const b=document.getElementById("zBadge");if(!b||!ZS)return;const ok=ZS.now-ZS.at<6*60e3;b.style.display="";b.style.background=ok?"#15803d":"#b91c1c";b.textContent=ok?("الربط مع الهيئة: يعمل"+(ZS.n?" · يرسل "+ZS.n:"")):("الربط متوقف"+(ZS.n?" · "+ZS.n+" معلقة":""));
+ const p=document.getElementById("zPanel");if(p&&p.style.display!=="none")zPan()}
+function zPan(){const p=document.getElementById("zPanel"),ok=ZS&&ZS.now-ZS.at<6*60e3,d=ZS&&ZS.at?new Date(ZS.at):null;
+ p.innerHTML=(ok?'<b style="color:#15803d">الربط يعمل.</b> آخر اتصال قبل '+Math.max(0,Math.round((ZS.now-ZS.at)/60000))+' دقيقة.':'<b style="color:#b91c1c">الربط متوقف</b>'+(d?' من '+d.getDate()+'/'+(d.getMonth()+1)+' الساعة '+(d.getHours()%12||12)+':'+String(d.getMinutes()).padStart(2,"0")+(d.getHours()<12?" ص":" م"):""))
+ +'<div style="margin-top:6px">تشغيل الربط على هذا الجهاز (مرة وحدة):</div><a href="/zrelay.zip" download style="display:block;text-align:center;padding:10px;border-radius:10px;background:#0e5a3c;color:#fff;text-decoration:none;font-weight:700;margin:6px 0">1. نزّل برنامج الربط</a>'
+ +'<div>2. افتح مجلد التنزيلات، واضغط على الملف بالزر الأيمن ثم «استخراج الكل».</div>'
+ +'<div>3. اكتب في عنوان Chrome: <b dir="ltr">chrome://extensions</b> <button type="button" class="tb" id="zCp" style="padding:2px 10px;color:#0e5a3c;border-color:#0e5a3c;background:#fff">نسخ</button> وشغّل «وضع المطوّر» فوق.</div>'
+ +'<div>4. اضغط «تحميل إضافة غير مُعبّأة» واختر المجلد اللي استخرجته.</div>'
+ +'<div style="color:#555;font-size:13px;margin-top:4px">يشتغل الربط ما دام Chrome مفتوح على هذا الجهاز. ولو انثبت على جهازين ما فيه تعارض.</div>'
+ +'<button type="button" class="tb" id="zCl" style="margin-top:6px;color:#444;border-color:#cfd8df;background:#fff">إغلاق</button>'}
+async function zLoad(){try{if(typeof ME==="undefined"||!ME||ME.br!=="shop")return;const r=await fetch("/api/pos/zst",{credentials:"same-origin",cache:"no-store"}),j=await r.json();if(j&&j.ok){ZS=j;zDraw()}}catch(e){}}
+document.addEventListener("click",e=>{const t=e.target;if(t.id==="zBadge"){const p=document.getElementById("zPanel");if(p.style.display==="none"){zPan();p.style.display=""}else p.style.display="none"}else if(t.id==="zCl"){document.getElementById("zPanel").style.display="none"}else if(t.id==="zCp"){try{navigator.clipboard.writeText("chrome://extensions");t.textContent="انتسخ"}catch(x){}}});
+setTimeout(zLoad,3000);setInterval(zLoad,60000)})();
 </script>
 </body></html>
