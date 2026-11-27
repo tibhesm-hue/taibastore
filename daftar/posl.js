@@ -108,13 +108,23 @@
   function svSetAcc(k) { var a = k === "shop" ? "s" : k === "del" ? "d" : "all"; var b = document.querySelector('#sgAcc [data-a="' + a + '"]'); if (b) b.click(); }
   function svDm(d) { return d.split("-").reverse().map(function (x) { return +x; }).slice(0, 2).join("/"); }
   function svBox(t, v, s, k, on) { return '<div' + (k ? ' data-svbr="' + k + '"' : '') + ' style="min-width:0;border-radius:14px;padding:10px 12px;background:' + (on ? "#3C3489;color:#fff" : "#efede6") + (k ? ";cursor:pointer" : "") + '"><div class="small" style="opacity:.75">' + t + '</div><div style="font-size:1.45em;font-weight:800;direction:ltr;text-align:right">' + v + '</div>' + (s ? '<div class="small" style="opacity:.75">' + s + '</div>' : '') + '</div>'; }
+  /* owner 27 Nov: Smart Life's sales (everything it pulled, up to its last invoice) count too — for each day+branch the POS has no record of, take Smart Life's net figure; where the POS has the day, the POS wins (no double count) */
+  function svSmart(j, R) {
+    var X = { s: { t: 0, n: 0 }, d: { t: 0, n: 0 }, any: false, day: {} }; try {
+      var SG = (typeof S !== "undefined" && S.sgDays) || {}; Object.keys(SG).forEach(function (k) {
+        if (!/^\d{4}-\d\d-\d\d$/.test(k) || k < R.f || k > R.t) return; var x = SG[k] || {}, dbr = (j && j.dbr) || {};
+        [["s", "shop"], ["d", "del"]].forEach(function (p) { var v = x[p[0]]; if (!Array.isArray(v) || dbr[k + "|" + p[1]]) return; var t = (+v[0] || 0) + (+v[1] || 0), n = +v[3] || 0; if (!t && !n) return; X[p[0]].t += t; X[p[0]].n += n; X.any = true; var D = X.day[k] || (X.day[k] = { s: 0, d: 0 }); D[p[0]] += t; });
+      });
+    } catch (e) { } return X;
+  }
   function svDraw() {
     var pb = document.getElementById("posBr"); if (!pb) return; var j = SV.data, A = svAcc(), R = svRange(), one = R.f === R.t, td = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
     if (!j) { if (!pb.__h) pb.innerHTML = '<p class="empty">⏳ يحمّل…</p>'; return; }
     var z = { n: 0, total: 0, cash: 0, card: 0, rn: 0, ret: 0 }, a = A === "all" ? j.all : (j.br[A] || z), sh = j.br.shop || z, dl = j.br.del || z;
+    var XS = svSmart(j, R); if (XS.any) { sh = Object.assign({}, sh, { total: (sh.total || 0) + XS.s.t, n: (sh.n || 0) + XS.s.n }); dl = Object.assign({}, dl, { total: (dl.total || 0) + XS.d.t, n: (dl.n || 0) + XS.d.n }); a = A === "all" ? Object.assign({}, j.all, { total: (j.all.total || 0) + XS.s.t + XS.d.t, n: (j.all.n || 0) + XS.s.n + XS.d.n }) : (A === "shop" ? sh : dl); }
     var lbl = one ? (R.f === td ? "مبيعات اليوم" : "مبيعات " + svDm(R.f)) : "المبيعات";
     var h = '<div class="small muted" style="margin:0 0 6px">محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card))
+      + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) + (XS.any ? "<br>(مع سمارت لايف قبل التحويل)" : ""))
       + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
       + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""), "shop", A === "shop")
       + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : ""), "del", A === "del")
@@ -134,10 +144,10 @@
       var lo = 24, hi = -1; H.forEach(function (x, i) { if (x.s || x.d || x.y) { lo = Math.min(lo, i); hi = Math.max(hi, i); } }); if (hi < 0) { el.innerHTML = '<p class="small muted" style="text-align:center">ما فيه مبيعات</p>'; return; }
       bars = H.slice(lo, hi + 1);
     } else { if (!j || !j.dbr) { el.innerHTML = ""; return; }
-      var D = {}, d = new Date(R.f + "T12:00:00"), e = new Date(R.t + "T12:00:00"), n = 0;
-      var keys = Object.keys(j.days || {}).sort(); if (keys.length && keys[0] > R.f) d = new Date(keys[0] + "T12:00:00");
+      var XS = svSmart(j, R), D = {}, d = new Date(R.f + "T12:00:00"), e = new Date(R.t + "T12:00:00"), n = 0;
+      var keys = Object.keys(j.days || {}).concat(Object.keys(XS.day)).sort(); if (keys.length && keys[0] > R.f) d = new Date(keys[0] + "T12:00:00");
       var span = Math.round((e - d) / 864e5) + 1, mon = span > 62;
-      for (; d <= e && n < 800; d = new Date(d.getTime() + 864e5), n++) { var iso = d.toISOString().slice(0, 10), k = mon ? iso.slice(0, 7) : iso; if (!D[k]) { D[k] = { l: mon ? (+iso.slice(5, 7)) + "/" + iso.slice(2, 4) : svDm(iso), s: 0, d: 0 }; bars.push(D[k]); } var s1 = j.dbr[iso + "|shop"], d1 = j.dbr[iso + "|del"]; if (s1) D[k].s += s1.total; if (d1) D[k].d += d1.total; }
+      for (; d <= e && n < 800; d = new Date(d.getTime() + 864e5), n++) { var iso = d.toISOString().slice(0, 10), k = mon ? iso.slice(0, 7) : iso; if (!D[k]) { D[k] = { l: mon ? (+iso.slice(5, 7)) + "/" + iso.slice(2, 4) : svDm(iso), s: 0, d: 0 }; bars.push(D[k]); } var s1 = j.dbr[iso + "|shop"], d1 = j.dbr[iso + "|del"]; if (s1) D[k].s += s1.total; if (d1) D[k].d += d1.total; var sm = XS.day[iso]; if (sm) { D[k].s += sm.s; D[k].d += sm.d; } }
     }
     if (A === "shop") bars.forEach(function (x) { x.d = 0; }); if (A === "del") bars.forEach(function (x) { x.s = 0; });
     var mx = Math.max.apply(null, bars.map(function (x) { return Math.max(x.s + x.d, x.y || 0); }).concat([1])), W = 34, Hh = 150, wd = Math.max(bars.length * W, 40);
