@@ -1069,9 +1069,10 @@ async function posLogin(env, req) {
 }
 
 /* owner 24 Nov: POS shifts — opening float before selling; blind closing count; the result goes to the owner */
-/* owner 26 Nov: the shift that handed the drawer to this one — same branch, closed just before it opened, same device when both are named */
+/* owner 26 Nov: the shift that handed the drawer to this one — same branch, same device when both are named.
+   owner 27 Nov («عدل كل العجوزات الوهمية»): the last one closed before THIS shift closes (not before it opened) — a cashier who opens while the other is still on the drawer takes the drawer from him when he hands over */
 async function shPred(env, cur) {
-  const r = (await env.DB.prepare("SELECT id,data FROM docs WHERE col='posshift' AND json_extract(data,'$.br')=? AND json_extract(data,'$.st')='closed' AND json_extract(data,'$.closeAt')<=? ORDER BY json_extract(data,'$.closeAt') DESC LIMIT 20").bind(cur.br, (+cur.openAt || 0) + 120000).all()).results || [];
+  const r = (await env.DB.prepare("SELECT id,data FROM docs WHERE col='posshift' AND json_extract(data,'$.br')=? AND json_extract(data,'$.st')='closed' AND json_extract(data,'$.closeAt')<=? ORDER BY json_extract(data,'$.closeAt') DESC LIMIT 20").bind(cur.br, (+cur.closeAt || Date.now()) + 120000).all()).results || [];
   let first = null;
   for (const x of r) { if (x.id === cur.id) continue; const d = JSON.parse(x.data); d.id = x.id; if (!first) first = d; if (cur.dev && d.dev === cur.dev) return d; }
   return cur.dev ? (r.length && first && !first.dev ? first : (first && first.dev === cur.dev ? first : (first && !cur.dev ? first : first))) : first;
