@@ -102,7 +102,7 @@
 
   /* owner 26 Nov («فوق مبيعات اليوم وبجنبها عدد الفواتير، تحت فرع المبيعات وفرع التوصيل، والرسم تحت الكل، والدفتر شيلها»):
      the sales card reads the POS for the chosen period and branch; the Smart Life numbers, the users list and the «الدفتر» option are gone */
-  var SV = { busy: false, at: 0, key: "", data: null, hr: null, hk: "", tap: -1 };
+  var SV = { busy: false, at: 0, key: "", data: null, hr: null, hk: "", hy: null, tap: -1 };
   function svRange() { try { var R = sgRange(); return { f: R.f, t: R.t }; } catch (e) { var d = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return { f: d, t: d }; } }
   function svAcc() { var a = (typeof S !== "undefined" && S.sgAcc) || "all"; return a === "s" ? "shop" : a === "d" ? "del" : "all"; }
   function svSetAcc(k) { var a = k === "shop" ? "s" : k === "del" ? "d" : "all"; var b = document.querySelector('#sgAcc [data-a="' + a + '"]'); if (b) b.click(); }
@@ -129,7 +129,9 @@
     if (one) { if (!SV.hr || SV.hk !== R.f) { el.innerHTML = ""; return; }
       var H = []; for (var i = 0; i < 24; i++) H.push({ l: (i % 12 || 12) + (i < 12 ? "ص" : "م"), s: 0, d: 0 });
       SV.hr.forEach(function (x) { var k = +String(x.t || "").slice(0, 2); if (!(k >= 0 && k < 24)) return; if (x.br === "del") H[k].d += +x.total || 0; else H[k].s += +x.total || 0; });
-      var lo = 24, hi = -1; H.forEach(function (x, i) { if (x.s || x.d) { lo = Math.min(lo, i); hi = Math.max(hi, i); } }); if (hi < 0) { el.innerHTML = '<p class="small muted" style="text-align:center">ما فيه مبيعات</p>'; return; }
+      /* owner 27 Nov: yesterday beside today, hour by hour (gray bar), like the old chart */
+      var YOK = !!(SV.hy && SV.hyk === R.f); if (YOK) { H.forEach(function (x) { x.y = 0; }); SV.hy.forEach(function (x) { var k = +String(x.t || "").slice(0, 2); if (!(k >= 0 && k < 24)) return; if (A === "shop" && x.br === "del") return; if (A === "del" && x.br !== "del") return; H[k].y += +x.total || 0; }); }
+      var lo = 24, hi = -1; H.forEach(function (x, i) { if (x.s || x.d || x.y) { lo = Math.min(lo, i); hi = Math.max(hi, i); } }); if (hi < 0) { el.innerHTML = '<p class="small muted" style="text-align:center">ما فيه مبيعات</p>'; return; }
       bars = H.slice(lo, hi + 1);
     } else { if (!j || !j.dbr) { el.innerHTML = ""; return; }
       var D = {}, d = new Date(R.f + "T12:00:00"), e = new Date(R.t + "T12:00:00"), n = 0;
@@ -138,11 +140,13 @@
       for (; d <= e && n < 800; d = new Date(d.getTime() + 864e5), n++) { var iso = d.toISOString().slice(0, 10), k = mon ? iso.slice(0, 7) : iso; if (!D[k]) { D[k] = { l: mon ? (+iso.slice(5, 7)) + "/" + iso.slice(2, 4) : svDm(iso), s: 0, d: 0 }; bars.push(D[k]); } var s1 = j.dbr[iso + "|shop"], d1 = j.dbr[iso + "|del"]; if (s1) D[k].s += s1.total; if (d1) D[k].d += d1.total; }
     }
     if (A === "shop") bars.forEach(function (x) { x.d = 0; }); if (A === "del") bars.forEach(function (x) { x.s = 0; });
-    var mx = Math.max.apply(null, bars.map(function (x) { return x.s + x.d; }).concat([1])), W = 34, Hh = 150, wd = Math.max(bars.length * W, 40);
-    var nB = bars.length, g = bars.map(function (x, i0) { var i = nB - 1 - i0; var hs = x.s / mx * Hh, hd = x.d / mx * Hh, X = i * W + 6, on = SV.tap === i0; return '<g data-svbar="' + i0 + '" style="cursor:pointer"><rect x="' + (i * W) + '" y="0" width="' + W + '" height="' + (Hh + 30) + '" fill="transparent"/>' + (hs ? '<rect x="' + X + '" y="' + (Hh - hs) + '" width="' + (W - 12) + '" height="' + hs + '" rx="3" fill="#3C3489" opacity="' + (on || SV.tap < 0 ? 1 : .45) + '"/>' : '') + (hd ? '<rect x="' + X + '" y="' + (Hh - hs - hd) + '" width="' + (W - 12) + '" height="' + hd + '" rx="3" fill="#c9a227" opacity="' + (on || SV.tap < 0 ? 1 : .45) + '"/>' : '') + '<text x="' + (i * W + W / 2) + '" y="' + (Hh + 16) + '" font-size="10" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" fill="#6b6a64">' + x.l + '</text></g>'; }).join("");
+    var mx = Math.max.apply(null, bars.map(function (x) { return Math.max(x.s + x.d, x.y || 0); }).concat([1])), W = 34, Hh = 150, wd = Math.max(bars.length * W, 40);
+    var nB = bars.length, hasY = bars.some(function (x) { return x.y !== undefined; }), BW = hasY ? 10 : W - 12, g = bars.map(function (x, i0) { var i = nB - 1 - i0; var hs = x.s / mx * Hh, hd = x.d / mx * Hh, hy = (x.y || 0) / mx * Hh, X = i * W + 4, on = SV.tap === i0, op = (on || SV.tap < 0 ? 1 : .45); return '<g data-svbar="' + i0 + '" style="cursor:pointer"><rect x="' + (i * W) + '" y="0" width="' + W + '" height="' + (Hh + 30) + '" fill="transparent"/>' + (hy ? '<rect x="' + (X + BW + 1) + '" y="' + (Hh - hy) + '" width="' + BW + '" height="' + hy + '" rx="2" fill="#9a998f" opacity="' + (op * .55) + '"/>' : '') + (hs ? '<rect x="' + X + '" y="' + (Hh - hs) + '" width="' + BW + '" height="' + hs + '" rx="3" fill="#3C3489" opacity="' + op + '"/>' : '') + (hd ? '<rect x="' + X + '" y="' + (Hh - hs - hd) + '" width="' + BW + '" height="' + hd + '" rx="3" fill="#c9a227" opacity="' + op + '"/>' : '') + '<text x="' + (i * W + W / 2) + '" y="' + (Hh + 16) + '" font-size="10" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" fill="#6b6a64">' + x.l + '</text></g>'; }).join("");
+    var yTot = "";
+    if (hasY) { var nowH = new Date(Date.now() + 3 * 3600e3).getUTCHours(), isTd = R.f === ymd(new Date(Date.now() + 3 * 3600e3)), tT = 0, yT = 0, yAll = 0; H.forEach(function (x, i) { tT += x.s + x.d; yAll += x.y || 0; if (!isTd || i <= nowH) yT += x.y || 0; }); var pc = yT > 0 ? Math.round((tT - yT) / yT * 1000) / 10 : null; yTot = '<div class="small" style="margin:0 0 4px"><b>اليوم ' + f2(tT) + '</b> · أمس ' + (isTd ? 'لنفس الساعة ' : '') + f2(yT) + (pc !== null ? ' <b style="color:' + (pc < 0 ? '#c0392b' : '#2e7d32') + '">' + (pc < 0 ? '▼ ' : '▲ ') + Math.abs(pc) + '%</b>' : '') + (isTd ? ' · أمس كامل ' + f2(yAll) : '') + '</div>'; }
     var t = SV.tap >= 0 && bars[SV.tap] ? bars[SV.tap] : null;
-    var cap = t ? '<b>' + t.l + '</b> · ' + f2(t.s + t.d) + (A === "all" ? ' <span class="muted">(المبيعات ' + f2(t.s) + ' · التوصيل ' + f2(t.d) + ')</span>' : '') : (A === "all" ? '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#3C3489;vertical-align:middle"></i> المبيعات &nbsp; <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#c9a227;vertical-align:middle"></i> التوصيل' : '');
-    var h = '<div class="small" style="margin:0 0 4px;min-height:1.4em">' + cap + '</div><div class="scroll-x" style="overflow-x:auto"><svg viewBox="0 0 ' + wd + ' ' + (Hh + 24) + '" width="' + wd + '" height="' + (Hh + 24) + '" direction="ltr" style="display:block">' + g + '</svg></div>';
+    var cap = t ? '<b>' + t.l + '</b> · ' + f2(t.s + t.d) + (t.y !== undefined ? ' · أمس ' + f2(t.y) : '') + (A === "all" ? ' <span class="muted">(المبيعات ' + f2(t.s) + ' · التوصيل ' + f2(t.d) + ')</span>' : '') : (A === "all" ? '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#3C3489;vertical-align:middle"></i> المبيعات &nbsp; <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#c9a227;vertical-align:middle"></i> التوصيل' : '') + (hasY && !t ? ' &nbsp; <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#9a998f;opacity:.6;vertical-align:middle"></i> أمس' : '');
+    var h = yTot + '<div class="small" style="margin:0 0 4px;min-height:1.4em">' + cap + '</div><div class="scroll-x" style="overflow-x:auto"><svg viewBox="0 0 ' + wd + ' ' + (Hh + 24) + '" width="' + wd + '" height="' + (Hh + 24) + '" direction="ltr" style="display:block">' + g + '</svg></div>';
     if (el.__h !== h) { el.innerHTML = h; el.__h = h; var sx = el.querySelector(".scroll-x"); if (sx && SV.sk !== SV.key) { SV.sk = SV.key; sx.scrollLeft = -1e6; } }
   }
   document.addEventListener("click", function (e) {
@@ -153,8 +157,8 @@
     var R = svRange(), k = R.f + "|" + R.t; if (SV.busy) return; if (k === SV.key && Date.now() - SV.at < 15000) return;
     if (k !== SV.key) { SV.data = null; SV.tap = -1; } SV.key = k; SV.busy = true; SV.at = Date.now(); svDraw();
     var P = [fetch("/api/pos/range?f=" + R.f + "&t=" + R.t, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); })];
-    if (R.f === R.t) P.push(fetch("/api/pos/day?full=1&d=" + R.f, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }));
-    Promise.all(P).then(function (A) { if (SV.key !== k) return; if (A[0] && A[0].ok) { SV.data = A[0]; SV.got = Date.now(); } if (A[1] && A[1].ok) { SV.hr = A[1].inv || []; SV.hk = R.f; } svDraw(); }).catch(function () { }).then(function () { SV.busy = false; });
+    if (R.f === R.t) { P.push(fetch("/api/pos/day?full=1&d=" + R.f, { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); })); P.push(fetch("/api/pos/day?full=1&d=" + ymd(new Date(new Date(R.f + "T12:00:00").getTime() - 864e5)), { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); })); }
+    Promise.all(P).then(function (A) { if (SV.key !== k) return; if (A[0] && A[0].ok) { SV.data = A[0]; SV.got = Date.now(); } if (A[1] && A[1].ok) { SV.hr = A[1].inv || []; SV.hk = R.f; } if (A[2] && A[2].ok) { SV.hy = A[2].inv || []; SV.hyk = R.f; } svDraw(); }).catch(function () { }).then(function () { SV.busy = false; });
   }
   function svTick() {
     var c = document.getElementById("sgCard"); if (!c || c.offsetParent === null || !((typeof S !== "undefined" && S.owner) || document.documentElement.classList.contains("ownV"))) return;
