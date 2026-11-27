@@ -1302,7 +1302,7 @@ async function posOrderIn(env, req) {
     if (!r0) return json({ ok: false });
     const d0 = JSON.parse(r0.data); if (Date.now() - (+d0.at || 0) > 3 * 3600e3) return json({ ok: false });
     d0.fee = posR2(Math.max(0, Math.min(50, +o.fee || 0))); d0.dist = String(o.dist || "").slice(0, 10);
-    if (o.loc && isFinite(+o.loc.lat) && isFinite(+o.loc.lng)) d0.loc = { lat: +o.loc.lat, lng: +o.loc.lng };
+    if (o.loc && isFinite(+o.loc.lat) && isFinite(+o.loc.lng)) d0.loc = { lat: +o.loc.lat, lng: +o.loc.lng }; /* owner 27 Nov: the fee of a link order is worked out here from the location, by the one rule (posLocCalc) — never taken from the customer page */ if (d0.loc) { const c = posLocCalc(d0.loc.lat, d0.loc.lng); d0.fee = (+d0.sub || 0) >= 20 ? c.fee1 : c.fee0; d0.dist = ["", "d1", "d3", "d9"][c.lv]; }
     d0.updAt = Date.now(); await writeDoc(env, "posord", r0.id, d0); return json({ ok: true, upd: 1 });
   }
   const day = posDay(), cnt = await env.DB.prepare("SELECT COUNT(*) c FROM docs WHERE col='posord' AND json_extract(data,'$.day')=?").bind(day).first();
@@ -1314,7 +1314,7 @@ async function posOrderIn(env, req) {
   }
   if (!items.length) return json({ ok: false }, 400);
   const pay = ["cash", "card", "both"].includes(o.pay) ? o.pay : "", now = Date.now();
-  const d = { ono, edit: !!o.edit, day, at: now, t: posTime(now), items, sub: posR2(+o.sub || 0), fee: posR2(Math.max(0, Math.min(50, +o.fee || 0))), dist: String(o.dist || "").slice(0, 10), pay, cash: posR2(+o.cash || 0), cg: String(o.cg || "").slice(0, 10), loc: o.loc && isFinite(+o.loc.lat) && isFinite(+o.loc.lng) ? { lat: +o.loc.lat, lng: +o.loc.lng } : null, st: "new" };
+  const d = { ono, edit: !!o.edit, day, at: now, t: posTime(now), items, sub: posR2(+o.sub || 0), fee: posR2(Math.max(0, Math.min(50, +o.fee || 0))), dist: String(o.dist || "").slice(0, 10), pay, cash: posR2(+o.cash || 0), cg: String(o.cg || "").slice(0, 10), loc: o.loc && isFinite(+o.loc.lat) && isFinite(+o.loc.lng) ? { lat: +o.loc.lat, lng: +o.loc.lng } : null, st: "new" }; if (d.loc && d.dist !== "pickup") { const c = posLocCalc(d.loc.lat, d.loc.lng); d.fee = d.sub >= 20 ? c.fee1 : c.fee0; d.dist = ["", "d1", "d3", "d9"][c.lv]; }
   { const m = /(?:^|;\s*)ppv=([a-z0-9]{8,40})/.exec(req.headers.get("Cookie") || ""); if (m) d.vid = m[1]; }
   if (d.edit) {
     const prev = (await env.DB.prepare("SELECT id,data FROM docs WHERE col='posord' AND json_extract(data,'$.ono')=? AND json_extract(data,'$.st')='new'").bind(ono).all()).results || [];
