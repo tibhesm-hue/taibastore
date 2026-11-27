@@ -64,7 +64,7 @@ function draw(){var h=host(),el=$('shRec');var L=mine();
      +'<button class="srPur" type="button" data-srsave="1" style="margin-top:10px"'+(v.float==null?' disabled':'')+'>حفظ الموازنة</button><div class="small muted">بعد الحفظ ما تقدر تغيّر الرقم.</div>'
      +'<button class="btn sm ghost" type="button" data-srback="1" style="margin-top:6px">رجوع</button>'}
   if(el.__h!==H){var keep=$('srCash')?$('srCash').value:null,k2=$('srSlip')?$('srSlip').value:null,rdn=agg().all?String(agg().total):null;el.innerHTML=H;el.__h=H;if(keep!=null&&$('srCash'))$('srCash').value=keep;if(k2!=null&&$('srSlip')&&!(rdn&&(k2===''||k2===SR.auto)))$('srSlip').value=k2;if(rdn)SR.auto=rdn}}
-function resHTML(){var c=SR.res.c,k=closingCalc(c),d=r2(k.diff),big=Math.abs(d)>=1;
+function resHTML(){var c=SR.res.c,k=closingCalc(c),d=r2(k.diff),big=Math.abs(d)>3;/* owner 27 Nov: a reason is asked only when the shortage or surplus is above 3 riyals */
   var R=function(a,b){return '<div class="srR"><span>'+a+'</span><span>'+b+'</span></div>'};
   var pill=Math.abs(d)<0.01?'<span class="pill zero">مطابق ✓</span>':!S.owner?'<span class="pill bad">فيه فرق</span>':d<0?'<span class="pill bad">عجز '+fmt(-d)+'</span>':'<span class="pill good">فايض '+fmt(d)+'</span>';
   var h='<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">النتيجة</h2>'+pill+'</div>';
@@ -97,7 +97,7 @@ async function save(){var L=mine(),x=L.find(function(y){return y.id===SR.open});
     if(fail.length){try{await S.db.doc('months/'+v.date.slice(0,7)+'/closings/'+ref.id).update({linkFail:fail.map(function(f){return f[0]})})}catch(e){}}
     var ok=false;for(var t2=0;t2<4&&!ok;t2++){try{var rr=await fetch('/api/shift/rec',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:x.id,cash:cash,closingId:ref.id})});var jj=await rr.json();ok=!!(jj&&(jj.ok||jj.err==='done'))}catch(e){}if(!ok)await new Promise(function(r){setTimeout(r,1500)})}
     rec.id=ref.id;SR.res={c:rec,id:ref.id,month:v.date.slice(0,7),from:nm(x.pred&&x.pred.u),aj:v.aj,note:'',sent:false};SR.open=null;psClear();SR.ack=false;
-    if(Math.abs(rec.diff)>=1){try{await S.db.doc('months/'+SR.res.month+'/closings/'+ref.id).update({needReason:{at:Date.now(),diff:rec.diff}})}catch(e){}}
+    if(Math.abs(rec.diff)>3){try{await S.db.doc('months/'+SR.res.month+'/closings/'+ref.id).update({needReason:{at:Date.now(),diff:rec.diff}})}catch(e){}}
     SR.list=(SR.list||[]).filter(function(y){return y.id!==x.id});
   }catch(e){SR.err='ما انحفظت: '+(e&&e.message||e);if(b)b.disabled=false}
   el0()}
@@ -122,7 +122,7 @@ document.addEventListener('click',async function(e){var t=e.target;if(!t.closest
     if(!x||!(nv>=0)||String(inp.value).trim()===''){SR.rerr='اكتب الرقم الصحيح.';el0();return}rs.disabled=true;
     try{var rr=await fetch('/api/shift/recfix',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:pid,cash:nv})});var jj=await rr.json();if(!jj||!jj.ok){SR.rerr='ما انحفظ: '+((jj&&jj.err)||'');rs.disabled=false;el0();return}
       var cid=x.pred.closingId,c=cid&&[].concat(S.closings||[],PM('closings')||[]).find(function(y){return y&&y.id===cid});
-      if(c&&c.date){var nc=c.took!=null?r2(+c.took+nv):nv,dlt=r2(nc-(+c.counted||0)),cd=r2((+c.cashDiff||0)+dlt);var up={counted:nc,leave:nv,cashDiff:cd,diff:r2((+c.diff||0)+dlt),floatFix:{prev:+c.counted||0,now:nv,at:Date.now(),by:nm(x.u),why:x.why||''}};if(Math.abs(up.diff)>=1&&!(c.note||'').trim())up.needReason={at:Date.now(),diff:up.diff};try{await S.db.doc('months/'+c.date.slice(0,7)+'/closings/'+cid).update(up)}catch(e){}}
+      if(c&&c.date){var nc=c.took!=null?r2(+c.took+nv):nv,dlt=r2(nc-(+c.counted||0)),cd=r2((+c.cashDiff||0)+dlt);var up={counted:nc,leave:nv,cashDiff:cd,diff:r2((+c.diff||0)+dlt),floatFix:{prev:+c.counted||0,now:nv,at:Date.now(),by:nm(x.u),why:x.why||''}};if(Math.abs(up.diff)>3&&!(c.note||'').trim())up.needReason={at:Date.now(),diff:up.diff};try{await S.db.doc('months/'+c.date.slice(0,7)+'/closings/'+cid).update(up)}catch(e){}}
       SR.rej=(SR.rej||[]).filter(function(y){return y.pred.id!==pid});toast('✓ انحفظ — تطلع العهدة الجديدة عند '+nm(x.u));SR.at=0;load(true)}catch(e){SR.rerr='ما انحفظ، جرّب مرة ثانية';rs.disabled=false}el0();return}});
 document.addEventListener('change',async function(e){if(e.target&&e.target.id==='srPh'){var f=e.target.files&&e.target.files[0];if(!f)return;var b0;try{b0=typeof shrink==='function'?await shrink(f,true):f}catch(x){b0=f}try{if(typeof scanIt==='function')b0=await scanIt(b0)}catch(x){}var p={b:b0,rd:null,hash:null,u:URL.createObjectURL(b0)};SR.ps=SR.ps||[];SR.ps.push(p);SR.err='';el0();readSlip(p)}});
 setInterval(function(){try{if(typeof S==='undefined'||!S.db)return;load(false);draw()}catch(e){}},1500);
