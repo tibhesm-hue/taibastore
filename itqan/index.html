@@ -2835,7 +2835,7 @@ window.gsBtn=function(){if(!ITGI||ITGI.ld||ITGI.bad)return "";if(!ITGI.tin)retur
   return '<button class="btn" data-pt="gself" style="margin:10px 0 0;background:#E6F1FB;color:#0C447C;border:1.5px solid #85B7EB">✍️ اسمك غير موجود؟ سجّل اسمك بنفسك</button>'};
 OACT.gself=function(){PTS.gs=PTS.gs||{};PTS.err="";PTS.v="gself";render()};
 OACT.gsback=function(){if(PTS.gs)PTS.gs.pend=0;PTS.err="";PTS.v="gpick";render()};
-OACT.gsend=function(){gsSend(0)};
+OACT.gsend=function(){gsSend(0)};OACT.gsalt=function(){gsKeep();PTS.gs=PTS.gs||{};PTS.gs.alt=1;PTS.err="";render()};
 OACT.gsdone=function(){PTS.gs=null;PTS.err="";itGClr();PTS.v=itAuth()?"acc":"list";render()};
 function gsKeep(){var G=PTS.gs=PTS.gs||{};["gsn","gsc","gsk","gse"].forEach(function(id){var el=document.getElementById(id);if(el)G[id]=el.value})}
 document.addEventListener("input",function(ev){var t=ev.target;if(t&&["gsn","gsc","gsk","gse"].indexOf(t.id)>=0)gsKeep()},true);
@@ -2846,7 +2846,9 @@ TVW.gself=function(){var G=ITGI;if(!G||G.ld||G.bad){PTS.v="gpick";return TVW.gpi
   var C=function(n,t,off){return '<div style="display:flex;align-items:center;gap:8px;font-weight:700;margin:12px 0 4px'+(off?';color:#B4B2A9':'')+'"><span style="flex:none;width:26px;height:26px;border-radius:50%;background:'+(off?'#D3D1C7':'#0F6E56')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px">'+n+'</span>'+t+'</div>'};
   h+=C("1","اسمك الثلاثي")+'<input id="gsn" value="'+esc(S.gsn||"")+'" placeholder="مثل: محمد عبدالله أحمد" '+IN+'>';
   if(G.cid)h+='<div class="muted">السجل المدني <span style="color:#A32D2D">(مطلوب في هذه الحلقة)</span></div><input id="gsc" inputmode="numeric" dir="ltr" maxlength="10" value="'+esc(S.gsc||"")+'" placeholder="10 أرقام" '+IN+'>';
-  if(!A)return itCard(h+C("2","ادخل بحسابك")+'<div class="gwrap" style="margin:4px 0 6px"><div class="gbtn" style="display:flex;justify-content:center;min-height:44px"></div></div>'+C("3","مفتاح المطابقة (بعد الدخول)",1)+itER()+'<a href="#" class="lb" data-pt="gsback" style="margin-top:14px">↩️ رجوع</a>');
+  /* owner 27 Nov («لازم يدخل»): some browsers (Huawei…) break the Google page with Error 400 — a way in by typed email stays, behind one box */
+  if(!A&&S.alt)return itCard(h+C("2","إيميلك")+'<input id="gse" type="email" name="email" autocomplete="email" inputmode="email" dir="ltr" autocapitalize="off" autocorrect="off" placeholder="إيميلك أنت" value="'+esc(S.gse||"")+'" '+IN+'>'+(S.needpw?'<div class="muted">🔒 كلمة مرور حسابك</div><input id="gsp" type="password" autocomplete="current-password" dir="ltr" autocapitalize="off" '+IN+'>':'')+C("3","مفتاح المطابقة")+keyBlock("gsk",S.gsk||"")+itER()+'<button class="btn" data-pt="gsend" style="background:#0F6E56">📨 أرسل طلبي للمعلم</button><a href="#" class="lb" data-pt="gsback" style="margin-top:14px">↩️ رجوع</a>');
+  if(!A)return itCard(h+C("2","ادخل بحسابك")+'<div class="gwrap" style="margin:4px 0 6px"><div class="gbtn" style="display:flex;justify-content:center;min-height:44px"></div></div><button class="btn sec" data-pt="gsalt" style="margin:6px 0">صفحة Google لم تفتح؟ ادخل بإيميلك</button>'+C("3","مفتاح المطابقة (بعد الدخول)",1)+itER()+'<a href="#" class="lb" data-pt="gsback" style="margin-top:14px">↩️ رجوع</a>');
   h+=C("✓",'<span dir="ltr">'+esc(A.e)+'</span>')+C("3","مفتاح المطابقة")+keyBlock("gsk",S.gsk||"");
   return itCard(h+itER()+'<button class="btn" data-pt="gsend" style="background:#0F6E56">📨 أرسل طلبي للمعلم</button><a href="#" class="lb" data-pt="gsback" style="margin-top:14px">↩️ رجوع</a>')};
 TVW.gsent=function(){return itCard('<div style="text-align:center;padding:10px 0"><div style="font-size:40px">✅</div><div style="font-weight:700;font-size:19px;margin:6px 0">وصل طلبك إلى المعلم</div><div class="muted" style="font-size:15px;line-height:1.8">بعد موافقته افتح رابط الإتقان وادخل بإيميلك، فتجد حلقتك ومنهجك</div></div><button class="btn" data-pt="gsdone" style="margin-top:12px">تم</button>')};
