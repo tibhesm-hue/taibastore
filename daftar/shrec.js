@@ -24,10 +24,19 @@ function slipUI(){var L=SR.ps||[];if(!L.length)return '';var h='';
     h+='<div style="margin-top:8px;padding:8px;border:1px solid #e2dfd6;border-radius:12px"><img src="'+p.u+'" data-srzoom="1" style="display:block;width:100%;max-height:170px;object-fit:contain;border-radius:10px;background:#eee"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px"><div>'+(L.length>1?'<b>إيصال '+(i+1)+'</b> ':'')+t+'</div><button class="btn sm ghost" type="button" data-srdel="'+i+'">حذف</button></div></div>'});
   var g=agg();
   return h+'<div style="font-size:16px;margin-top:8px">مجموع الشبكة'+(L.length>1?' في كل الإيصالات':' في الإيصال')+'</div><input class="srIn" id="srSlip" inputmode="decimal" autocomplete="off" placeholder="0.00"'+(g.all?' value="'+g.total+'"':'')+'><div class="small muted">راجع الرقم مع الورق، وصحّحه لو غلط.</div>'}
+/* owner 27 Nov («صلحه»): a long (or sideways) slip photo is cut into zoomed, slightly overlapping pieces along its length, sent with the whole photo, so the reader doesn't skip the MasterCard/VISA sections */
+async function slipParts(blob){var bm=await createImageBitmap(blob),W=bm.width,H=bm.height,tall=H>=W,L=tall?H:W,S=tall?W:H;if(L/S<2.2){try{bm.close()}catch(e){}return[]}
+  var n=Math.min(5,Math.ceil(L/(S*1.6))),seg=L/n,ov=Math.round(seg*0.08),out=[];
+  for(var i=0;i<n;i++){var a=Math.max(0,Math.round(i*seg-ov)),e=Math.min(L,Math.round((i+1)*seg+ov)),len=e-a,sc=Math.min(1,1400/Math.max(len,S)),cv=document.createElement('canvas');
+    cv.width=Math.round((tall?S:len)*sc);cv.height=Math.round((tall?len:S)*sc);var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);
+    if(tall)x.drawImage(bm,0,a,S,len,0,0,cv.width,cv.height);else x.drawImage(bm,a,0,len,S,0,0,cv.width,cv.height);
+    out.push(cv.toDataURL('image/jpeg',0.85).split(',')[1]||'')}
+  try{bm.close()}catch(e){}return out.filter(function(z){return z.length>200})}
 async function readSlip(p){var my=p.rd={busy:true};
   try{var blob=p.b,b64=await new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(',')[1]||'')};fr.onerror=rej;fr.readAsDataURL(blob)});
     try{var d=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());p.hash=Array.from(new Uint8Array(d)).slice(0,12).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){p.hash=null}
-    var j=null;for(var t=0;t<2&&!j;t++){try{var r=await fetch('/api/shift/slip',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({b64:b64})});j=await r.json()}catch(e){await new Promise(function(z){setTimeout(z,1200)})}}
+    var parts=[];try{parts=await slipParts(blob)}catch(e){parts=[]}
+    var j=null;for(var t=0;t<2&&!j;t++){try{var r=await fetch('/api/shift/slip',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({b64:b64,parts:parts,sh:SR.open||null})});j=await r.json()}catch(e){await new Promise(function(z){setTimeout(z,1200)})}}
     if(p.rd!==my)return;
     if(!j||!j.ok)p.rd={read:false};else if(!j.read)p.rd={read:false,notSlip:!!j.notSlip};else{var rd=j;try{var td=bizDayISO();if(rd.dateISO&&Math.abs(Math.round((new Date(td)-new Date(rd.dateISO))/864e5))>1)rd.dateOff=true}catch(e){}
       try{var all=[].concat(S.closings||[],PM('closings')||[]);if(p.hash&&(all.some(function(c){var m=c&&c.madaSlip;return m&&(m.hash===p.hash||(m.hashes||[]).indexOf(p.hash)>=0)})||(SR.ps||[]).some(function(q){return q!==p&&q.hash===p.hash})))rd.dup=true}catch(e){}p.rd=rd}

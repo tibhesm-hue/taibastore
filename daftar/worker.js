@@ -1640,12 +1640,29 @@ export default {
       /* owner 26 Nov: read the mada settlement slip photo (Gemini); the cashier confirms or corrects the number on his phone */
       if (p === "/api/shift/slip" && req.method === "POST") {
         const o = await req.json().catch(() => ({})), b64 = String(o.b64 || ""); if (b64.length < 200 || b64.length > 6e6) return json({ ok: false, err: "img" });
+        /* owner 27 Nov («صلحه»): a long or sideways slip comes with zoomed pieces (cut on the phone) so no section is skipped */
+        const pcs = (Array.isArray(o.parts) ? o.parts : []).map(x => String(x || "")).filter(x => x.length > 200 && x.length < 3e6).slice(0, 6);
+        const IMGS = [{ b64, mime: "image/jpeg" }].concat(pcs.map(x => ({ b64: x, mime: "image/jpeg" })));
+        const PRP = pcs.length ? "\nالصورة الأولى هي الإيصال كاملاً، وبعدها " + pcs.length + " مقاطع مكبّرة منه بالترتيب من أوله إلى آخره، بينها تداخل بسيط — اقرأ الأرقام من المقاطع، ولا تحسب القسم الذي ظهر في مقطعين إلا مرة واحدة. قد تكون الصورة مصوّرة بالعرض فاقرأها على اتجاهها." : "";
         const PR = 'هذه صورة إيصال موازنة/تسوية (Reconciliation / Settlement / إجمالي) من جهاز نقاط البيع «مدى» في محل «أسواق طيبة». اقرأ الأرقام بدقة ولا تخمّن.\nأعد JSON فقط: {"isTerminal":true|false,"dateISO":"YYYY-MM-DD","time":"HH:MM","terminalId":"","schemes":[{"name":"mada أو VISA أو MasterCard أو غيرها","count":0,"amount":0}],"refunds":0,"total":0}\nشكل الإيصال: قسم لكل نوع بطاقة بعنوانه (MASTERCARD، mada، VISA، UNIONPAY، AMERICAN EXPRESS، MAESTRO، GCCNET…). داخل كل قسم جدول «mada HOST / خادم مدى» ثم «POS TERMINAL / جهاز نقاط البيع» بنفس الأرقام — خذ «TOTALS / المجاميع» تحت POS TERMINAL لكل قسم مرة واحدة فقط. عبارة «خادم مدى» تظهر داخل قسم فيزا وماستركارد أيضاً، فاسم البطاقة هو عنوان القسم. الأقسام المكتوب تحتها «NO TRANSACTIONS / لا يوجد عمليات» = صفر. اجمع كل الأقسام. تحقق: مجموع amount لكل البطاقات − refunds ≈ total. وإن كان في الصورة أكثر من إيصال بتواريخ أو أوقات مختلفة فاجمع إجمالياتها كلها في total واكتب في time وقت أحدثها. refunds رقم موجب أو 0. إن لم تكن الصورة إيصال موازنة فأعد isTerminal=false.';
         const num = x => { const n = typeof x === "number" ? x : parseFloat(String(x == null ? "" : x).replace(/[,٬\s]/g, "").replace(/٫/g, ".")); return isFinite(n) ? n : null; };
         const chk = r => { const sc = Array.isArray(r && r.schemes) ? r.schemes : []; const sum = sc.reduce((a, y) => a + (num(y.amount) || 0), 0); return num(r && r.total) != null && (!sc.length || Math.abs(sum - (num(r.refunds) || 0) - num(r.total)) <= 0.06); };
         let r = null, ok = false, err = "";
         for (let i = 0; i < 3 && !ok; i++) {
-          try { const g = await gemRead(env, PR + (i ? "\nقراءتك السابقة لم تتطابق مجاميعها؛ أعد القراءة بعناية." : ""), [{ b64, mime: "image/jpeg" }], true); r = g && (g.json || g.data || g); ok = !!(r && r.isTerminal !== false && chk(r)); await gemStat(env, true); if (r && r.isTerminal === false) break; } catch (e) { err = String(e && e.message || e).slice(0, 100); await gemStat(env, false, err); if (e && e.stop) break; }
+          try { const g = await gemRead(env, PR + PRP + (i ? "\nقراءتك السابقة لم تتطابق مجاميعها؛ أعد القراءة بعناية." : ""), IMGS, true); r = g && (g.json || g.data || g); ok = !!(r && r.isTerminal !== false && chk(r)); await gemStat(env, true); if (r && r.isTerminal === false) break; } catch (e) { err = String(e && e.message || e).slice(0, 100); await gemStat(env, false, err); if (e && e.stop) break; }
+        }
+        /* the read is compared (server only — the cashier never sees it) with the shift's card sales; a read well under them is redone section by section and the fuller valid read is kept */
+        if (r && r.isTerminal !== false && num(r.total) != null && o.sh) {
+          try {
+            const sw = await env.DB.prepare("SELECT data FROM docs WHERE col='posshift' AND id=?").bind(String(o.sh)).first();
+            const ex = sw ? +((JSON.parse(sw.data).exp || {}).card) || 0 : 0;
+            if (ex > 0 && num(r.total) < ex * 0.99 - 1) {
+              const PR2 = PR + PRP + "\nتنبيه مهم: كثيراً ما يُغفَل قسم في أعلى الإيصال (ماستركارد، أمريكان إكسبريس، ديسكفر) أو في آخره (فيزا، يونيون باي). امشِ على الإيصال من أوله إلى آخره قسماً قسماً، واذكر في schemes كل قسم مجموعه غير صفر باسمه ومبلغه وعدده، وإن كان في الصور أكثر من إيصال فاذكر أقسام كل إيصال.";
+              for (let i = 0; i < 2; i++) {
+                try { const g = await gemRead(env, PR2, IMGS, true); const r2 = g && (g.json || g.data || g); await gemStat(env, true); if (r2 && r2.isTerminal !== false && chk(r2) && num(r2.total) > num(r.total) + 0.004) { r = r2; ok = true; } if (num(r.total) >= ex * 0.99 - 1) break; } catch (e) { await gemStat(env, false, String(e && e.message || e).slice(0, 100)); if (e && e.stop) break; }
+              }
+            }
+          } catch (e) { }
         }
         if (!r || r.isTerminal === false || num(r.total) == null) return json({ ok: true, read: false, notSlip: !!(r && r.isTerminal === false), err });
         return json({ ok: true, read: true, sure: ok, total: Math.round(num(r.total) * 100) / 100, schemes: (Array.isArray(r.schemes) ? r.schemes : []).map(y => ({ name: String(y.name || "").slice(0, 30), amount: num(y.amount), count: y.count == null ? null : num(y.count) })), refunds: num(r.refunds) || 0, dateISO: /^\d{4}-\d{2}-\d{2}$/.test(String(r.dateISO || "")) ? r.dateISO : null, time: String(r.time || "").slice(0, 5), terminalId: String(r.terminalId || "").slice(0, 20) });
