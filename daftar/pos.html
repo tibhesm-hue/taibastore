@@ -5,6 +5,18 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
+#payOv{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:12px}
+#payBox{background:#fff;border-radius:16px;max-width:780px;width:100%;max-height:97vh;overflow:auto;padding:14px}
+#payBody .card{box-shadow:none;border:0;padding:0;margin:0 0 8px}
+#payBody .pm{height:56px;font-size:21px}
+#payBody .save{height:64px;font-size:22px}
+#payBody #rcvG{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+#payBody [data-rcb]>div:first-child{font-size:26px!important}
+#payBody [data-rcb] [data-rcn]{font-size:20px!important;min-height:28px!important}
+#payBody [data-rcb] button{height:46px!important;font-size:24px!important}
+#payBody #rcvA,#payBody #rcvC{font-size:28px}
+#payBody #rcvX,#payBody #rcvZ{height:46px;font-size:16px}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{overflow-x:hidden;font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;background:#eef1f4;color:#1b2430;display:flex;flex-direction:column;min-height:100vh}
@@ -177,6 +189,7 @@ tr.last td{background:#f0fdf4}
    <div class="row" id="feeRow" style="display:none"><span>رسوم التوصيل</span><span id="feeV">0.00</span></div>
    <div class="tot"><span style="font-size:18px;font-weight:500">الإجمالي</span><b><span id="total">0.00</span> <small style="font-size:18px;color:#5c6b78;font-weight:400">ر.س</small></b></div>
   </div>
+  <div id="payGoBox" style="display:none"><button class="save" id="payGo" style="height:60px;font-size:22px">ادفع (F9)</button></div>
   <div class="card" id="rcvCard" style="display:none">
    <div class="small2" style="margin-bottom:6px;color:#1c2b33">كم دفع العميل؟ اضغط الفئة التي استلمتها</div>
    <div id="rcvG" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"></div>
@@ -231,6 +244,7 @@ tr.last td{background:#f0fdf4}
    </div></div>
  </div>
 </div>
+<div id="payOv"><div id="payBox"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:20px">الدفع</b><button type="button" id="payBack" style="border:1px solid #cfd8df;border-radius:8px;padding:6px 16px;background:#fff">رجوع</button></div><div style="background:#0f2a43;color:#fff;border-radius:12px;padding:10px 16px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:18px">الإجمالي</span><b style="font-size:44px;font-weight:600" id="payTot">0.00</b></div><div id="payBody"></div></div></div>
 <div class="foot"><span><span class="dot" id="netDot"></span><span id="netTxt">متصل بالدفتر · تُحفظ الفواتير لحظياً</span></span><span id="pend"></span><span>نسخة 35</span><span>اختصارات: Enter إضافة الصنف، وEnter والخانة فاضية حفظ وطباعة · F2 نقدي · F3 شبكة · F4 نقدي + شبكة · F6 تحويل · F8 تعليق</span></div>
 <div class="toast" id="toast"></div>
 <div id="rc"></div>
@@ -318,7 +332,7 @@ $("cart").addEventListener("click",e=>{const b=e.target.closest("button[data-ed]
 $("warnOk").onclick=()=>{warnOff();$("q").focus()};
 let LADD=-1e9,LSAVE=-1e9,LMODE=-1e9;function enterOk(){const n=performance.now();return n-LADD>1500&&n-LSAVE>3000&&$('warn').style.display!=='block'}
 /* owner 25 Nov: Enter saves only when the payment method was chosen AFTER the last item was added — an item added later cancels the old confirmation, so a stray Enter while the cashier is still adding never saves or prints */
-function enterSave(){if(!cart.length)return;if(!mode){$("err").textContent="اختر طريقة الدفع: نقدي أو شبكة";beep(false);return}if(LMODE<LADD){$("err").textContent="أُضيف صنف بعد اختيار الدفع، اضغط طريقة الدفع من جديد ثم Enter";beep(false);return}if(enterOk())save()}
+function enterSave(){if(!cart.length)return;if(payShop()&&!PAYOPEN){payOpen();return}if(!mode){$("err").textContent="اختر طريقة الدفع: نقدي أو شبكة";beep(false);return}if(LMODE<LADD){$("err").textContent="أُضيف صنف بعد اختيار الدفع، اضغط طريقة الدفع من جديد ثم Enter";beep(false);return}if(enterOk())save()}
 function add(x,q){if(!x)return;LADD=performance.now();warnOff();const L=cart.find(l=>l.c===x.c);if(L){L.q=r2(L.q+(q||1));cart.splice(cart.indexOf(L),1);cart.push(L)}else cart.push({c:x.c,n:x.n,p:x.p,q:q||1});
  lastCode=x.c;beep(true);$("q").value="";$("drop").classList.remove("show");render();$("q").focus()}
 let DLV={fee:null,n:0,lv:0};
@@ -539,7 +553,7 @@ function LI(){try{return JSON.parse(localStorage.getItem("posli_"+(ME&&ME.email|
 function LIset(a){try{localStorage.setItem("posli_"+(ME&&ME.email||""),JSON.stringify(a.slice(0,300)))}catch(e){}}
 function LIadd(x){LIset([x].concat(LI().filter(y=>y.cid!==x.cid)))}
 async function save(){
- if(saving)return;$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
+ if(saving)return;if(payShop()&&!PAYOPEN){payOpen();return}$("err").textContent="";if(!cart.length){$("err").textContent="السلة فارغة";return}
  if(!mode){$("err").textContent="اختر طريقة الدفع: نقدي أو شبكة";beep(false);return}
  const t=totals().t;let cash=mode==="cash"?t:(mode==="card"||mode==="tr"||mode==="aj")?0:r2(+$("cashIn").value||0);
  if(mode==="aj"&&!AJ.cust){$("err").textContent="اختر العميل للآجل";$("ajQ").focus();return}
@@ -564,7 +578,7 @@ async function save(){
  if(s.dlv&&s.dlv.cust){DCSEL="";DCQ=""}
  if(s.dlv&&s.dlv.loc){LOCS=LOCS.filter(x=>x.id!==s.dlv.loc);LSEL="";try{dlvDraw()}catch(e){}xfLoad()}
 }
-function done(snap,t,cash,no,zqr){rcReset();LSAVE=performance.now();LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
+function done(snap,t,cash,no,zqr){rcReset();try{payClose()}catch(e){}LSAVE=performance.now();LASTINV={no,zqr:zqr||"",cust:mode==="aj"?AJ.cust:"",aj:mode==="aj"?t:0,lines:snap,total:t,cash,card:(mode==="tr"||mode==="aj")?0:r2(t-cash),tr:mode==="tr"?t:0,mode,at:new Date(),vat:ME.vat?r2(t*15/115):0,fee:isDel()?(DLV.fee||0):0};if(isDel())dlvReset();CUR_ORD=null;ordCurDraw();cart=[];$("cashIn").value="";setMode("");render();toast(no?("حُفظت الفاتورة رقم "+fmtNo(no)+" · "+f2(t)):"حُفظت في الجهاز وستُرسل تلقائياً",2200);printInv();loadDay();$("q").focus()}
 $("saveBtn").onclick=save;
 /* owner 24 Nov: Enter saves and prints from anywhere (after tapping a fee/driver/distance button the focus sat on that button and Enter re-clicked it) */
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.repeat)return;const t=e.target,tg=(t&&t.tagName)||"";if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT")return;if($("jdView").style.display!=="none"||$("retBox").style.display==="block")return;if(!cart.length)return;e.preventDefault();e.stopPropagation();try{t.blur&&t.blur()}catch(x){}enterSave()},true);
@@ -624,10 +638,21 @@ $("camBtn").onclick=()=>camOn?camStop():camStart();
 
 
 /* owner 28 Nov: sales branch, cash — the cashier taps the notes the customer handed over; the screen shows the change; no cash invoice without it */
+
+/* owner 28 Nov: sales branch — payment happens on a big «شاشة الدفع»; delivery branch keeps the inline payment card */
+let PAYOPEN=false,PAYCARD=null,PAYPH=null,PAYRC=null,PAYRCPH=null;
+function payShop(){return !!(ME&&!isDel())}
+function payLayout(){const c=$("saveBtn")&&$("saveBtn").closest(".card");if(!c)return;if(PAYOPEN)return;const sh=payShop();$("payGoBox").style.display=sh?"block":"none";c.style.display=sh?"none":""}
+function payOpen(){if(PAYOPEN||!payShop())return;if(!cart.length){toast("السلة فارغة",1500);return}
+ const c=$("saveBtn").closest(".card"),r=$("rcvCard");PAYCARD=c;PAYRC=r;PAYPH=document.createComment("p");PAYRCPH=document.createComment("r");c.parentNode.insertBefore(PAYPH,c);r.parentNode.insertBefore(PAYRCPH,r);
+ $("payBody").appendChild(r);$("payBody").appendChild(c);c.style.display="";PAYOPEN=true;$("payOv").style.display="flex";if(!mode)setMode("cash");rcDraw();$("err").textContent=""}
+function payClose(){if(!PAYOPEN)return;PAYOPEN=false;$("payOv").style.display="none";if(PAYPH&&PAYPH.parentNode){PAYPH.parentNode.insertBefore(PAYCARD,PAYPH);PAYPH.remove()}if(PAYRCPH&&PAYRCPH.parentNode){PAYRCPH.parentNode.insertBefore(PAYRC,PAYRCPH);PAYRCPH.remove()}payLayout();rcDraw()}
+document.addEventListener("click",e=>{if(e.target.closest("#payGo"))payOpen();else if(e.target.closest("#payBack"))payClose()});
+document.addEventListener("keydown",e=>{if(e.key==="F9"){e.preventDefault();payOpen()}else if(e.key==="Escape"&&PAYOPEN){payClose()}},true);
 const RCD=[500,200,100,50,20,10,5,2,1,0.5,0.25];let RC={},RCX=false;
 function rcOn(){return mode==="cash"&&ME&&!isDel()&&!ME.owner}
 function rcSum(){if(RCX)return totals().t;let t=0;RCD.forEach(d=>{t+=d*(RC[d]||0)});return r2(t)}
-function rcDraw(){const c=$("rcvCard");if(!c)return;const on=mode==="cash"&&ME&&!isDel();c.style.display=on?"block":"none";if(!on)return;const g=$("rcvG");
+function rcDraw(){try{payLayout();if($("payTot"))$("payTot").textContent=f2(totals().t)}catch(e){}const c=$("rcvCard");if(!c)return;const on=mode==="cash"&&ME&&!isDel();c.style.display=on?"block":"none";if(!on)return;const g=$("rcvG");
  if(!g.firstChild||!g.dataset.b){g.dataset.b="1";g.innerHTML=RCD.map(d=>`<div data-rcb="${d}" style="border:1px solid #cfd8d5;border-radius:12px;padding:5px;text-align:center;background:#fff"><div style="font-size:17px;font-weight:600">${d}</div><div data-rcn style="font-size:16px;min-height:22px">0</div><div style="display:flex;gap:4px"><button type="button" data-rcm="${d}" style="flex:1;height:36px;border:1px solid #cfd8d5;border-radius:8px;background:#fff;font-size:18px;padding:0;color:#1c2b33;margin:0">−</button><button type="button" data-rcp="${d}" style="flex:1;height:36px;border:1px solid #cfd8d5;border-radius:8px;background:#fff;font-size:18px;padding:0;color:#1c2b33;margin:0">+</button></div></div>`).join("")}
  g.querySelectorAll("[data-rcb]").forEach(e=>{const n=RCX?0:(RC[e.dataset.rcb]||0);e.querySelector("[data-rcn]").textContent=n;e.style.borderColor=n?"#0e5a3c":"#cfd8d5";e.style.background=n?"#eef6f2":"#fff"});
  const t=totals().t,a=rcSum();$("rcvA").textContent=f2(a);const ch=r2(a-t);$("rcvC").textContent=f2(ch>0?ch:0);$("rcvC").parentNode.style.color=ch<0?"#b91c1c":"#0e5a3c";$("rcvX").style.borderColor=RCX?"#0e5a3c":""}
