@@ -2889,7 +2889,7 @@ function keyBlock(id,val){if(!document.getElementById("kbcss")){var st=document.
   +T("٢",'اختر <b dir="ltr">Log in with Google</b> بنفس حسابك'+tr("تسجيل الدخول باستخدام Google"))
   +T("٣",'اضغط <b dir="ltr">Create API Key</b> واكتب <b dir="ltr">itqan</b> ثم <b dir="ltr">Submit</b>'+tr("إنشاء مفتاح API ← اسم العرض ← إرسال"))
   +T("٤",'اضغط <b dir="ltr">Copy</b> وارجع هنا، يُوضع تلقائياً'+tr("نسخ"))
-  +'</div><a class="kb-go" target="_blank" rel="noopener" href="https://console.groq.com/keys">🔑 افتح Groq وخذ المفتاح</a>'
+  +'</div><a class="kb-go" style="text-decoration:none" target="_blank" rel="noopener" href="https://console.groq.com/keys">🔑 افتح Groq وخذ المفتاح</a>'
   +'<input id="'+id+'" data-kauto="1" dir="ltr" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="gsk_…" value="'+esc(val||"")+'" style="width:100%;font-size:16px;padding:10px;box-sizing:border-box;margin:4px 0 6px;border:1.5px solid #D3D1C7;border-radius:10px;background:#fff"><button class="btn sec" data-kpaste="'+id+'" style="margin:0">📋 الصق المفتاح</button><div id="'+id+'_st" style="font-weight:700;font-size:15px;margin-top:6px;text-align:center"></div></div>'}
 window.keyBlock=keyBlock;
 (function(){var T={};function st(id,t,c){var e=document.getElementById(id+"_st");if(e){e.textContent=t;e.style.color=c}}
