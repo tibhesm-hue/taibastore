@@ -647,7 +647,7 @@ function payOpen(){if(PAYOPEN||!payShop())return;if(!cart.length){toast("الس�
 function payClose(){if(!PAYOPEN)return;PAYOPEN=false;$("payOv").style.display="none";if(PAYPH&&PAYPH.parentNode){PAYPH.parentNode.insertBefore(PAYCARD,PAYPH);PAYPH.remove()}if(PAYRCPH&&PAYRCPH.parentNode){PAYRCPH.parentNode.insertBefore(PAYRC,PAYRCPH);PAYRCPH.remove()}payLayout();rcDraw()}
 document.addEventListener("click",e=>{if(e.target.closest("#payGo"))payOpen();else if(e.target.closest("#payBack"))payClose()});
 document.addEventListener("keydown",e=>{if(e.key==="F9"){e.preventDefault();payOpen()}else if(e.key==="Escape"&&PAYOPEN){payClose()}},true);
-const RCD=[500,200,100,50,20,10,5,2,1,0.5,0.25];let RC={},RCX=false;
+const RCD=[500,200,100,50,20,10,5,2,1,0.5,0.25,0.05];let RC={},RCX=false;
 function rcOn(){return mode==="cash"&&ME&&!isDel()&&!ME.owner}
 function rcSum(){if(RCX)return totals().t;let t=0;RCD.forEach(d=>{t+=d*(RC[d]||0)});return r2(t)}
 function rcDraw(){try{payLayout();if($("payTot"))$("payTot").textContent=f2(totals().t)}catch(e){}const c=$("rcvCard");if(!c)return;const on=mode==="cash"&&ME&&!isDel();c.style.display=on?"block":"none";if(!on)return;const g=$("rcvG");
