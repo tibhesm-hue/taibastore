@@ -107,13 +107,13 @@
   function svAcc() { var a = (typeof S !== "undefined" && S.sgAcc) || "all"; return a === "s" ? "shop" : a === "d" ? "del" : "all"; }
   function svSetAcc(k) { var a = k === "shop" ? "s" : k === "del" ? "d" : "all"; var b = document.querySelector('#sgAcc [data-a="' + a + '"]'); if (b) b.click(); }
   function svDm(d) { return d.split("-").reverse().map(function (x) { return +x; }).slice(0, 2).join("/"); }
-  function svBox(t, v, s, k, on) { return '<div' + (k ? ' data-svbr="' + k + '"' : '') + ' style="min-width:0;border-radius:14px;padding:10px 12px;background:' + (on ? "#3C3489;color:#fff" : "#efede6") + (k ? ";cursor:pointer" : "") + '"><div class="small" style="opacity:.75">' + t + '</div><div style="font-size:1.45em;font-weight:800;direction:ltr;text-align:right">' + v + '</div>' + (s ? '<div class="small" style="opacity:.75">' + s + '</div>' : '') + '</div>'; }
+  function svBox(t, v, s, k, on) { return '<div' + (k ? ' data-svbr="' + k + '"' : '') + ' style="min-width:0;border-radius:14px;padding:10px 12px;background:' + (on ? "#3C3489;color:#fff" : "#efede6") + (k ? ";cursor:pointer" : "") + '"><div class="small" style="opacity:.75">' + t + '</div><div style="font-size:' + (String(v).length > 11 ? "1.05em" : String(v).length > 9 ? "1.25em" : "1.45em") + ';font-weight:800;direction:ltr;text-align:right;white-space:nowrap;overflow:hidden">' + v + '</div>' + (s ? '<div class="small" style="opacity:.75">' + s + '</div>' : '') + '</div>'; }
   /* owner 27 Nov: Smart Life's sales (everything it pulled, up to its last invoice) count too — for each day+branch the POS has no record of, take Smart Life's net figure; where the POS has the day, the POS wins (no double count) */
   function svSmart(j, R) {
     var X = { s: { t: 0, n: 0 }, d: { t: 0, n: 0 }, any: false, day: {} }; try {
-      var SG = (typeof S !== "undefined" && S.sgDays) || {}; Object.keys(SG).forEach(function (k) {
+      var SG = (typeof S !== "undefined" && S.sgDays) || {}, SL = (typeof S !== "undefined" && S.sgLast) || null; Object.keys(SG).forEach(function (k) {
         if (!/^\d{4}-\d\d-\d\d$/.test(k) || k < R.f || k > R.t) return; var x = SG[k] || {}, dbr = (j && j.dbr) || {};
-        [["s", "shop"], ["d", "del"]].forEach(function (p) { var v = x[p[0]]; if (!Array.isArray(v) || dbr[k + "|" + p[1]]) return; var t = (+v[0] || 0) + (+v[1] || 0), n = +v[3] || 0; if (!t && !n) return; X[p[0]].t += t; X[p[0]].n += n; X.any = true; var D = X.day[k] || (X.day[k] = { s: 0, d: 0 }); D[p[0]] += t; });
+        [["s", "shop"], ["d", "del"]].forEach(function (p) { var v = x[p[0]]; if (!Array.isArray(v) || dbr[k + "|" + p[1]]) return; var lv = SL && SL[p[0]] ? String(SL[p[0]]).slice(0, 10) : ""; if (!lv || k > lv || Math.abs(+v[0] || 0) > 60000) return; var t = (+v[0] || 0) + (+v[1] || 0), n = +v[3] || 0; if (!t && !n) return; X[p[0]].t += t; X[p[0]].n += n; X.any = true; var D = X.day[k] || (X.day[k] = { s: 0, d: 0 }); D[p[0]] += t; });
       });
     } catch (e) { } return X;
   }
@@ -123,8 +123,8 @@
     var z = { n: 0, total: 0, cash: 0, card: 0, rn: 0, ret: 0 }, a = A === "all" ? j.all : (j.br[A] || z), sh = j.br.shop || z, dl = j.br.del || z;
     var XS = svSmart(j, R); if (XS.any) { sh = Object.assign({}, sh, { total: (sh.total || 0) + XS.s.t, n: (sh.n || 0) + XS.s.n }); dl = Object.assign({}, dl, { total: (dl.total || 0) + XS.d.t, n: (dl.n || 0) + XS.d.n }); a = A === "all" ? Object.assign({}, j.all, { total: (j.all.total || 0) + XS.s.t + XS.d.t, n: (j.all.n || 0) + XS.s.n + XS.d.n }) : (A === "shop" ? sh : dl); }
     var lbl = one ? (R.f === td ? "مبيعات اليوم" : "مبيعات " + svDm(R.f)) : "المبيعات";
-    var h = '<div class="small muted" style="margin:0 0 6px">' + svDm(R.f) + (one ? "" : " – " + svDm(R.t)) + ' · محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) + (XS.any ? "<br>(مع سمارت لايف قبل التحويل)" : ""))
+    var h = '<div class="small muted" style="margin:0 0 6px">' + svDm(R.f) + (one ? "" : " – " + svDm(R.t)) + (XS.any ? " · يشمل سمارت لايف قبل التحويل" : "") + ' · محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) )
       + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
       + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""), "shop", A === "shop")
       + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : ""), "del", A === "del")
