@@ -731,11 +731,11 @@ function zDraw(){const b=document.getElementById("zBadge");if(!b||!ZS)return;con
  const p=document.getElementById("zPanel");if(p&&p.style.display!=="none")zPan()}
 function zPan(){const p=document.getElementById("zPanel"),ok=ZS&&ZS.now-ZS.at<6*60e3,d=ZS&&ZS.at?new Date(ZS.at):null;
  p.innerHTML=(ok?'<b style="color:#15803d">الربط يعمل.</b> آخر اتصال قبل '+Math.max(0,Math.round((ZS.now-ZS.at)/60000))+' دقيقة.':'<b style="color:#b91c1c">الربط متوقف</b>'+(d?' من '+d.getDate()+'/'+(d.getMonth()+1)+' الساعة '+(d.getHours()%12||12)+':'+String(d.getMinutes()).padStart(2,"0")+(d.getHours()<12?" ص":" م"):""))
- +'<div style="margin-top:6px">تشغيل الربط على هذا الجهاز (مرة وحدة):</div><a href="/zrelay.zip" download style="display:block;text-align:center;padding:10px;border-radius:10px;background:#0e5a3c;color:#fff;text-decoration:none;font-weight:700;margin:6px 0">1. نزّل برنامج الربط</a>'
- +'<div>2. افتح مجلد التنزيلات، واضغط على الملف بالزر الأيمن ثم «استخراج الكل».</div>'
- +'<div>3. اكتب في عنوان Chrome: <b dir="ltr">chrome://extensions</b> <button type="button" class="tb" id="zCp" style="padding:2px 10px;color:#0e5a3c;border-color:#0e5a3c;background:#fff">نسخ</button> وشغّل «وضع المطوّر» فوق.</div>'
- +'<div>4. اضغط «تحميل إضافة غير مُعبّأة» واختر المجلد اللي استخرجته.</div>'
- +'<div style="color:#555;font-size:13px;margin-top:4px">يشتغل الربط ما دام Chrome مفتوح على هذا الجهاز. ولو انثبت على جهازين ما فيه تعارض.</div>'
+ +'<div style="margin-top:6px">تشغيل الربط على هذا الكمبيوتر (مرة وحدة للكمبيوتر، مو لكل كاشير):</div><a href="/zr-install.bat" download style="display:block;text-align:center;padding:10px;border-radius:10px;background:#0e5a3c;color:#fff;text-decoration:none;font-weight:700;margin:6px 0">1. نزّل ملف تثبيت الربط وشغّله</a>'
+ +'<div>2. تنفتح صفحة الإضافات: شغّل «وضع المطوّر» فوق.</div>'
+ +'<div>3. اضغط «تحميل إضافة غير مُعبّأة»، وفي خانة المجلد اضغط Ctrl+V ثم «اختيار مجلد».</div>'
+ +'<div>4. سكّر الصفحة وافتح نقاط البيع من أيقونة TaibaPOS. بعد دقيقة تصير العلامة خضراء.</div>'
+ +'<div style="color:#555;font-size:13px;margin-top:4px">الربط يشتغل ما دامت نقاط البيع مفتوحة على هذا الكمبيوتر، مهما كان الكاشير الداخل. ولو انثبت على جهازين ما فيه تعارض.</div>'
  +'<button type="button" class="tb" id="zCl" style="margin-top:6px;color:#444;border-color:#cfd8df;background:#fff">إغلاق</button>'}
 async function zLoad(){try{if(typeof ME==="undefined"||!ME||ME.br!=="shop")return;const r=await fetch("/api/pos/zst",{credentials:"same-origin",cache:"no-store"}),j=await r.json();if(j&&j.ok){ZS=j;zDraw()}}catch(e){}}
 document.addEventListener("click",e=>{const t=e.target;if(t.id==="zBadge"){const p=document.getElementById("zPanel");if(p.style.display==="none"){zPan();p.style.display=""}else p.style.display="none"}else if(t.id==="zCl"){document.getElementById("zPanel").style.display="none"}else if(t.id==="zCp"){try{navigator.clipboard.writeText("chrome://extensions");t.textContent="انتسخ"}catch(x){}}});
