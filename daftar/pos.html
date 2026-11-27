@@ -169,7 +169,7 @@ tr.last td{background:#f0fdf4}
   <div id="held" style="display:none"><div style="font-size:14px;color:#5c6b78;margin-bottom:6px" id="heldT"></div><div id="heldL" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px"></div></div>
   <div id="camWrap"><video id="vid" playsinline muted></video><div class="ln"></div><div id="camMsg">وجّه الكاميرا على الباركود</div></div>
   <div class="cart" id="cart"></div>
-  <div id="totBar" style="position:sticky;bottom:8px;z-index:20;box-shadow:0 -6px 16px rgba(0,0,0,.18);background:#0f2a43;color:#fff;border-radius:14px;padding:14px 22px;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:22px">الإجمالي</span><b style="font-size:46px;font-weight:700"><span id="total2">0.00</span> <small style="font-size:20px;font-weight:400">ر.س</small></b></div>
+  <div id="totBar" style="position:sticky;bottom:8px;z-index:20;box-shadow:0 -6px 16px rgba(0,0,0,.18);background:#0f2a43;color:#fff;border-radius:14px;padding:14px 22px;display:flex;justify-content:space-between;align-items:baseline"><button type="button" id="clrTop" style="position:absolute;top:-16px;left:14px;background:#dc2626;color:#fff;border:0;border-radius:10px;padding:7px 16px;font-size:15px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.25)">تفريغ السلة</button><span style="font-size:22px">الإجمالي</span><b style="font-size:46px;font-weight:700"><span id="total2">0.00</span> <small style="font-size:20px;font-weight:400">ر.س</small></b></div>
   <div class="card" id="retBox" style="display:none;border:2px solid #dc2626">
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:19px;color:#991b1b">مرتجع</b><button id="retX" style="border:1px solid #cfd8df;border-radius:8px;padding:6px 14px">رجوع للبيع</button></div>
    <div style="display:flex;gap:10px;margin-bottom:10px"><input id="retNo" class="uin" style="margin:0;height:50px;font-size:18px;border:2px solid #dc2626" inputmode="numeric" placeholder="رقم الفاتورة"><button id="retGet" style="padding:0 22px;border-radius:10px;background:#991b1b;color:#fff;font-weight:600;white-space:nowrap">جلب الفاتورة</button></div>
@@ -223,7 +223,7 @@ tr.last td{background:#f0fdf4}
    <button class="save" id="saveBtn">حفظ الفاتورة</button>
    <div class="err" id="err"></div>
   </div>
-  <div class="mini" style="display:grid;grid-template-columns:1fr 1fr"><button id="retBtn" style="border-color:#dc2626;color:#991b1b;font-weight:600">مرتجع</button><button id="holdBtn" style="border-color:#d97706;color:#92400e;font-weight:600">تعليق الفاتورة (F8)</button><button id="clrBtn"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
+  <div class="mini" style="display:grid;grid-template-columns:1fr 1fr"><button id="retBtn" style="border-color:#dc2626;color:#991b1b;font-weight:600">مرتجع</button><button id="holdBtn" style="border-color:#d97706;color:#92400e;font-weight:600">تعليق الفاتورة (F8)</button><button id="clrBtn" style="display:none"><i class="ti ti-trash"></i>تفريغ السلة</button><button id="prnBtn"><i class="ti ti-printer"></i>طباعة آخر فاتورة</button></div>
   <div class="card" id="ownCard" style="display:none">
    <div class="ttl"><span>مبيعات اليوم (لحظي)</span><span id="ownDay" style="font-weight:400;font-size:13px;color:#6b7884"></span></div>
    <div class="sumg" id="sumg"></div>
@@ -661,6 +661,7 @@ document.addEventListener("click",e=>{const p=e.target.closest("[data-rcp]"),m=e
 document.addEventListener("focusin",e=>{const i=e.target;if(i&&i.classList&&i.classList.contains("rcI")){setTimeout(()=>{try{i.select()}catch(x){}},0)}});
 document.addEventListener("pointerup",e=>{const i=e.target;if(i&&i.classList&&i.classList.contains("rcI")){try{i.select()}catch(x){}}});
 document.addEventListener("input",e=>{const i=e.target;if(!i.classList||!i.classList.contains("rcI"))return;let v=String(i.value).replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g,"");if(v!==i.value)i.value=v;RCX=false;RC[i.dataset.d]=parseInt(v||"0",10)||0;$("err").textContent="";rcDraw()});
+$("clrTop").addEventListener("click",()=>$("clrBtn").click());
 $("lastQ").addEventListener("input",lastDraw);
 $("lastQ").addEventListener("keydown",e=>{if(e.key==="Enter"){const v=$("lastQ").value.trim().replace(/^[FfRr]/,"");if(!v)return;retOpen();$("retNo").value=v;retGet()}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-lret]");if(!b)return;retOpen();$("retNo").value=b.dataset.lret;retGet();window.scrollTo(0,0)});
