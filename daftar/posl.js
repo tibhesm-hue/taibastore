@@ -126,8 +126,8 @@
     var h = '<div class="small muted" style="margin:0 0 6px">' + svDm(R.f) + (one ? "" : " – " + svDm(R.t)) + (XS.any ? " · يشمل سمارت لايف قبل التحويل" : "") + ' · محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
       + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) )
       + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
-      + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : ""), "shop", A === "shop")
-      + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : ""), "del", A === "del")
+      + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : "") + (sh.n ? "<br>متوسط " + f2(sh.total / sh.n) : ""), "shop", A === "shop")
+      + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : "") + (dl.n ? "<br>متوسط " + f2(dl.total / dl.n) : ""), "del", A === "del")
       + '</div><a class="btn sm ghost" href="/pos/" style="display:block;margin-top:8px;text-align:center">فتح نقاط البيع</a>';
     if (pb.__h !== h) { pb.innerHTML = h; pb.__h = h; }
     svChart();
