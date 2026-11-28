@@ -780,7 +780,7 @@ try{if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").ca
 <script>
 /* owner 25 Nov: a POS window left open all day picks up a new version by itself — only while the invoice is empty and nothing is being saved */
 (function(){let h0=null;const hs=async()=>{try{const r=await fetch(location.pathname,{cache:"no-store"});if(!r.ok)return null;const t=await r.text();if(t.indexOf('id="scGo"')<0)return null;let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return h}catch(e){return null}};
-hs().then(h=>{h0=h});setInterval(async()=>{if(h0==null){h0=await hs();return}try{if(typeof cart==="undefined"||cart.length||saving)return}catch(e){return}const h=await hs();if(h!=null&&h!==h0)location.reload()},120000)})();
+hs().then(h=>{h0=h});setInterval(async()=>{if(h0==null){h0=await hs();return}try{if(typeof cart==="undefined"||cart.length||saving)return}catch(e){return}const h=await hs();if(h!=null&&h!==h0)h0=h},120000)})();
 </script>
 <script>
 /* owner 27 Nov: ZATCA link mark on the sales POS — green when the relay (Chrome extension) answered in the last 6 minutes, red otherwise with the waiting count; tapping red shows how to install it on this computer */
