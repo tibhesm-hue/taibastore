@@ -122,12 +122,13 @@
     if (!j) { if (!pb.__h) pb.innerHTML = '<p class="empty">⏳ يحمّل…</p>'; return; }
     var z = { n: 0, total: 0, cash: 0, card: 0, rn: 0, ret: 0 }, a = A === "all" ? j.all : (j.br[A] || z), sh = j.br.shop || z, dl = j.br.del || z;
     var XS = svSmart(j, R); if (XS.any) { sh = Object.assign({}, sh, { total: (sh.total || 0) + XS.s.t, n: (sh.n || 0) + XS.s.n }); dl = Object.assign({}, dl, { total: (dl.total || 0) + XS.d.t, n: (dl.n || 0) + XS.d.n }); a = A === "all" ? Object.assign({}, j.all, { total: (j.all.total || 0) + XS.s.t + XS.d.t, n: (j.all.n || 0) + XS.s.n + XS.d.n }) : (A === "shop" ? sh : dl); }
+    var dys = Math.max(1, Math.floor((Date.parse(R.t < td ? R.t : td) - Date.parse(R.f)) / 864e5) + 1), dA = function (o) { return one ? "" : "<br>متوسط يومي " + f2((o.total || 0) / dys) + " · " + Math.round((o.n || 0) / dys) + " فاتورة"; };
     var lbl = one ? (R.f === td ? "مبيعات اليوم" : "مبيعات " + svDm(R.f)) : "المبيعات";
     var h = '<div class="small muted" style="margin:0 0 6px">' + svDm(R.f) + (one ? "" : " – " + svDm(R.t)) + (XS.any ? " · يشمل سمارت لايف قبل التحويل" : "") + ' · محدّث ' + (function (t) { var d = new Date(t), h = d.getHours(); return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0") + (h < 12 ? " ص" : " م"); })(SV.got || Date.now()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) )
-      + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), a.n ? "متوسط " + f2((a.total) / a.n) : "")
-      + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : "") + (sh.n ? "<br>متوسط " + f2(sh.total / sh.n) : ""), "shop", A === "shop")
-      + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : "") + (dl.n ? "<br>متوسط " + f2(dl.total / dl.n) : ""), "del", A === "del")
+      + svBox(lbl, f2(a.total), "نقدي " + f2(a.cash) + "<br>شبكة " + f2(a.card) + (one ? "" : "<br>متوسط يومي " + f2((a.total || 0) / dys)))
+      + svBox("عدد الفواتير", (a.n || 0).toLocaleString("en-US"), (a.n ? "متوسط الفاتورة " + f2((a.total) / a.n) : "") + (one ? "" : "<br>متوسط يومي " + Math.round((a.n || 0) / dys) + " فاتورة"))
+      + svBox(BRN.shop, f2(sh.total), (sh.n || 0) + " فاتورة" + (sh.rn ? " · " + sh.rn + " مرتجع" : "") + dA(sh), "shop", A === "shop")
+      + svBox(BRN.del, f2(dl.total), (dl.n || 0) + " فاتورة" + (dl.rn ? " · " + dl.rn + " مرتجع" : "") + dA(dl), "del", A === "del")
       + '</div><a class="btn sm ghost" href="/pos/" style="display:block;margin-top:8px;text-align:center">فتح نقاط البيع</a>';
     if (pb.__h !== h) { pb.innerHTML = h; pb.__h = h; }
     svChart();
